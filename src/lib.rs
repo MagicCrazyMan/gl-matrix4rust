@@ -1,4 +1,5 @@
 pub mod error;
+pub mod mat2;
 pub mod mat2d;
 pub mod mat3;
 pub mod mat4;

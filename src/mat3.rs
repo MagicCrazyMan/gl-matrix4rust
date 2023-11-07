@@ -683,11 +683,6 @@ mod tests {
                 0.0, 1.0, 0.0,
                 3.0, 4.0, 1.0
             ];
-            static MAT_IDENTITY_RAW: [$t; 9] = [
-                1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                0.0, 0.0, 1.0
-            ];
 
             static MAT_A: OnceLock<Mat3<$t>> = OnceLock::new();
             static MAT_B: OnceLock<Mat3<$t>> = OnceLock::new();
@@ -718,7 +713,14 @@ mod tests {
 
             #[test]
             fn new_identity() {
-                assert_eq!(Mat3::<$t>::new_identity().raw(), &MAT_IDENTITY_RAW);
+                assert_eq!(
+                    Mat3::<$t>::new_identity().raw(),
+                    &[
+                        1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0,
+                        0.0, 0.0, 1.0
+                    ]
+                );
             }
 
             #[test]
@@ -835,9 +837,8 @@ mod tests {
 
             #[test]
             fn frob() {
-                let out = mat_a().frob();
                 assert_eq!(
-                    out,
+                    mat_a().frob(),
                     (
                         (1.0 as $t).powi(2) +
                         (0.0 as $t).powi(2) +
