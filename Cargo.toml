@@ -1,7 +1,7 @@
 [package]
 name = "gl-matrix4rust"
 description = "gl-matrix port version for Rust"
-authors = ["Magic Crazy Man"]
+authors = ["MagicCrazyMan <350088648@qq.com>"]
 license = "MIT"
 version = "0.1.0"
 edition = "2021"

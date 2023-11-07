@@ -8,6 +8,16 @@ macro_rules! float {
                 pub fn new() -> Vec3<$t> {
                     Self([0.0; 3])
                 }
+
+                pub fn from_values(x: $t, y: $t, z: $t) -> Vec3<$t> {
+                    Self([x, y, z])
+                }
+            }
+
+            impl Vec3<$t> {
+                pub fn raw(&self) -> &[$t; 3] {
+                    &self.0
+                }
             }
         )+
     };
