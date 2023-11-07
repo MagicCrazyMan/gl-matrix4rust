@@ -1,20 +1,20 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Quat<T = f64>(pub [T; 4]);
+pub struct Vec4<T = f64>(pub [T; 4]);
 
 macro_rules! float {
     ($(($t:tt, $epsilon:expr)),+) => {
         $(
-            impl Quat<$t> {
-                pub fn new() -> Quat<$t> {
+            impl Vec4<$t> {
+                pub fn new() -> Vec4<$t> {
                     Self([0.0; 4])
                 }
 
-                pub fn from_values(x: $t, y: $t, z: $t, w: $t) -> Quat<$t> {
+                pub fn from_values(x: $t, y: $t, z: $t, w: $t) -> Vec4<$t> {
                     Self([x, y, z, w])
                 }
             }
 
-            impl Quat<$t> {
+            impl Vec4<$t> {
                 pub fn raw(&self) -> &[$t; 4] {
                     &self.0
                 }

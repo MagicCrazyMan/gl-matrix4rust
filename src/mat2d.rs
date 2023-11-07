@@ -6,12 +6,12 @@ use std::{
 use crate::{error::Error, quat::Quat, quat2::Quat2, vec3::Vec3, EPSILON_F32, EPSILON_F64};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mat4<T = f32>(pub [T; 16]);
+pub struct Mat2d<T = f32>(pub [T; 16]);
 
 macro_rules! float {
     ($(($t:tt, $epsilon:expr, $pi:expr)),+) => {
         $(
-            impl Mat4<$t> {
+            impl Mat2d<$t> {
                 #[inline]
                 pub fn new() -> Self {
                     Self([0.0; 16])
@@ -888,7 +888,7 @@ macro_rules! float {
                 }
             }
 
-            impl Mat4<$t> {
+            impl Mat2d<$t> {
                 #[inline]
                 pub fn raw(&self) -> &[$t; 16] {
                     &self.0
@@ -1577,7 +1577,7 @@ macro_rules! float {
                 ///
                 /// Refers to `equals` function in `glMatrix`. `exactEquals` is implemented with [`PartialEq`] and [`Eq`],
                 #[inline]
-                pub fn approximate_eq(&self, b: &Mat4<$t>)  -> bool {
+                pub fn approximate_eq(&self, b: &Mat2d<$t>)  -> bool {
                     let a0 = self.0[0];
                     let a1 = self.0[1];
                     let a2 = self.0[2];
@@ -1633,7 +1633,7 @@ macro_rules! float {
                 }
 
                 // #[inline]
-                // pub fn mul_to<'a, 'b, 'c>(&'a self, b: &'b Mat4<$t>, out: &'c mut Mat4<$t>) {
+                // pub fn mul_to<'a, 'b, 'c>(&'a self, b: &'b Mat2d<$t>, out: &'c mut Mat2d<$t>) {
                 //     let a00 = self.0[0];
                 //     let a01 = self.0[1];
                 //     let a02 = self.0[2];
@@ -1690,12 +1690,12 @@ macro_rules! float {
                 // }
             }
 
-            impl Add<Mat4<$t>> for Mat4<$t> {
-                type Output = Mat4<$t>;
+            impl Add<Mat2d<$t>> for Mat2d<$t> {
+                type Output = Mat2d<$t>;
 
                 #[inline]
-                fn add(self, b: Mat4<$t>) -> Mat4<$t> {
-                    let mut out = Mat4::<$t>::new_identity();
+                fn add(self, b: Mat2d<$t>) -> Mat2d<$t> {
+                    let mut out = Mat2d::<$t>::new_identity();
                     out.0[0] = self.0[0] + b.0[0];
                     out.0[1] = self.0[1] + b.0[1];
                     out.0[2] = self.0[2] + b.0[2];
@@ -1716,12 +1716,12 @@ macro_rules! float {
                 }
             }
 
-            impl Sub<Mat4<$t>> for Mat4<$t> {
-                type Output = Mat4<$t>;
+            impl Sub<Mat2d<$t>> for Mat2d<$t> {
+                type Output = Mat2d<$t>;
 
                 #[inline]
-                fn sub(self, b: Mat4<$t>) -> Mat4<$t> {
-                    let mut out = Mat4::<$t>::new_identity();
+                fn sub(self, b: Mat2d<$t>) -> Mat2d<$t> {
+                    let mut out = Mat2d::<$t>::new_identity();
                     out.0[0] = self.0[0] - b.0[0];
                     out.0[1] = self.0[1] - b.0[1];
                     out.0[2] = self.0[2] - b.0[2];
@@ -1742,12 +1742,12 @@ macro_rules! float {
                 }
             }
 
-            impl Mul<Mat4<$t>> for Mat4<$t> {
-                type Output = Mat4<$t>;
+            impl Mul<Mat2d<$t>> for Mat2d<$t> {
+                type Output = Mat2d<$t>;
 
                 #[inline]
-                fn mul(self, b: Mat4<$t>) -> Mat4<$t> {
-                    let mut out = Mat4::<$t>::new_identity();
+                fn mul(self, b: Mat2d<$t>) -> Mat2d<$t> {
+                    let mut out = Mat2d::<$t>::new_identity();
                     let a00 = self.0[0];
                     let a01 = self.0[1];
                     let a02 = self.0[2];
@@ -1805,12 +1805,12 @@ macro_rules! float {
                 }
             }
 
-            impl Mul<$t> for Mat4<$t> {
-                type Output = Mat4<$t>;
+            impl Mul<$t> for Mat2d<$t> {
+                type Output = Mat2d<$t>;
 
                 #[inline]
-                fn mul(self, b: $t) -> Mat4<$t> {
-                    let mut out = Mat4::<$t>::new_identity();
+                fn mul(self, b: $t) -> Mat2d<$t> {
+                    let mut out = Mat2d::<$t>::new_identity();
                     out.0[0] = self.0[0] * b;
                     out.0[1] = self.0[1] * b;
                     out.0[2] = self.0[2] * b;
@@ -1831,10 +1831,10 @@ macro_rules! float {
                 }
             }
 
-            impl Display for Mat4<$t> {
+            impl Display for Mat2d<$t> {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     let value = self.0.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
-                    f.write_fmt(format_args!("mat4({})", value))
+                    f.write_fmt(format_args!("Mat2d({})", value))
                 }
             }
         )+
@@ -1854,9 +1854,15 @@ mod tests {
             use std::sync::OnceLock;
 
             use crate::error::Error;
-            use crate::mat4::Mat4;
+            use crate::mat2d::Mat2d;
             use crate::vec3::Vec3;
 
+            static MAT_ORDERED_RAW: [$t; 16] = [
+                1.0,  2.0,  3.0,  4.0,
+                5.0,  6.0,  7.0,  8.0,
+                9.0, 10.0, 11.0, 12.0,
+               13.0, 14.0, 15.0, 16.0
+            ];
             static MAT_A_RAW: [$t; 16] = [
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,
@@ -1869,6 +1875,12 @@ mod tests {
                 0.0, 0.0, 1.0, 0.0,
                 4.0, 5.0, 6.0, 1.0
             ];
+            static MAT_ZERO_RAW: [$t; 16] = [
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0
+            ];
             static MAT_IDENTITY_RAW: [$t; 16] = [
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,
@@ -1876,90 +1888,71 @@ mod tests {
                 0.0, 0.0, 0.0, 1.0
             ];
 
-            static MAT_A: OnceLock<Mat4<$t>> = OnceLock::new();
-            static MAT_B: OnceLock<Mat4<$t>> = OnceLock::new();
-            static MAT_IDENTITY: OnceLock<Mat4<$t>> = OnceLock::new();
+            static MAT_A: OnceLock<Mat2d<$t>> = OnceLock::new();
+            static MAT_B: OnceLock<Mat2d<$t>> = OnceLock::new();
+            // static MAT_ZERO: OnceLock<Mat2d<$t>> = OnceLock::new();
+            static MAT_IDENTITY: OnceLock<Mat2d<$t>> = OnceLock::new();
 
-            fn mat_a() -> &'static Mat4<$t> {
+            fn mat_a() -> &'static Mat2d<$t> {
                 MAT_A.get_or_init(|| {
-                    Mat4::<$t>::from_slice(&MAT_A_RAW)
+                    Mat2d::<$t>::from_slice(&MAT_A_RAW)
                 })
             }
 
-            fn mat_b() -> &'static Mat4<$t> {
+            fn mat_b() -> &'static Mat2d<$t> {
                 MAT_B.get_or_init(|| {
-                    Mat4::<$t>::from_slice(&MAT_B_RAW)
+                    Mat2d::<$t>::from_slice(&MAT_B_RAW)
                 })
             }
 
-            fn mat_identity() -> &'static Mat4<$t> {
+            // fn mat_zero() -> &'static Mat2d<$t> {
+            //     MAT_ZERO.get_or_init(|| {
+            //         Mat2d::<$t>::from_slice(&MAT_ZERO_RAW)
+            //     })
+            // }
+
+            fn mat_identity() -> &'static Mat2d<$t> {
                 MAT_IDENTITY.get_or_init(|| {
-                    Mat4::<$t>::from_slice(&MAT_IDENTITY_RAW)
+                    Mat2d::<$t>::from_slice(&MAT_IDENTITY_RAW)
                 })
             }
 
             #[test]
             fn new() {
-                assert_eq!(
-                    Mat4::<$t>::new().raw(),
-                    &[
-                        0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0, 0.0
-                    ]
-                );
+                assert_eq!(Mat2d::<$t>::new().raw(), &MAT_ZERO_RAW);
             }
 
             #[test]
             fn new_identity() {
-                assert_eq!(
-                    Mat4::<$t>::new_identity().raw(),
-                    &MAT_IDENTITY_RAW
-                );
+                assert_eq!(Mat2d::<$t>::new_identity().raw(), &MAT_IDENTITY_RAW);
             }
 
             #[test]
             fn from_slice() {
                 assert_eq!(
-                    Mat4::<$t>::from_slice(&[
-                        1.0,  2.0,  3.0,  4.0,
-                        5.0,  6.0,  7.0,  8.0,
-                        9.0, 10.0, 11.0, 12.0,
-                       13.0, 14.0, 15.0, 16.0
-                    ]).raw(),
-                    &[
-                        1.0,  2.0,  3.0,  4.0,
-                        5.0,  6.0,  7.0,  8.0,
-                        9.0, 10.0, 11.0, 12.0,
-                       13.0, 14.0, 15.0, 16.0
-                    ]
+                    Mat2d::<$t>::from_slice(&MAT_ORDERED_RAW).raw(),
+                    &MAT_ORDERED_RAW
                 );
             }
 
             #[test]
             fn from_values() {
                 assert_eq!(
-                    Mat4::<$t>::from_values(
+                    Mat2d::<$t>::from_values(
                          1.0,  2.0,  3.0,  4.0,
                          5.0,  6.0,  7.0,  8.0,
                          9.0, 10.0, 11.0, 12.0,
                         13.0, 14.0, 15.0, 16.0,
                     )
                     .raw(),
-                    &[
-                        1.0,  2.0,  3.0,  4.0,
-                        5.0,  6.0,  7.0,  8.0,
-                        9.0, 10.0, 11.0, 12.0,
-                       13.0, 14.0, 15.0, 16.0
-                    ]
+                    &MAT_ORDERED_RAW
                 );
             }
 
             #[test]
             fn from_frustum() {
                 assert_eq!(
-                    Mat4::<$t>::from_frustum(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0) .raw(),
+                    Mat2d::<$t>::from_frustum(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0) .raw(),
                     &[
                         -1.0,  0.0, 0.0,  0.0,
                          0.0, -1.0, 0.0,  0.0,
@@ -1971,7 +1964,7 @@ mod tests {
 
             #[test]
             fn from_look_at() {
-                let out = Mat4::<$t>::from_look_at(
+                let out = Mat2d::<$t>::from_look_at(
                     &Vec3::<$t>::from_values(0.0, 0.0, 1.0),
                     &Vec3::<$t>::from_values(0.0, 0.0, -1.0),
                     &Vec3::<$t>::from_values(0.0, 1.0, 0.0),
@@ -1990,7 +1983,7 @@ mod tests {
 
             #[test]
             fn from_target_to() {
-                let out = Mat4::<$t>::from_target_to(
+                let out = Mat2d::<$t>::from_target_to(
                     &Vec3::<$t>::from_values(0.0, 0.0, 1.0),
                     &Vec3::<$t>::from_values(0.0, 0.0, -1.0),
                     &Vec3::<$t>::from_values(0.0, 1.0, 0.0),
@@ -2201,7 +2194,7 @@ mod tests {
 
             #[test]
             fn set() {
-                let mut mat = Mat4::<$t>::new();
+                let mut mat = Mat2d::<$t>::new();
                 mat.set(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
@@ -2222,7 +2215,7 @@ mod tests {
 
             #[test]
             fn set_slice() {
-                let mut mat = Mat4::<$t>::new();
+                let mut mat = Mat2d::<$t>::new();
                 mat.set_slice(&[
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
@@ -2243,13 +2236,13 @@ mod tests {
 
             #[test]
             fn add() {
-                let mat_a = Mat4::<$t>::from_values(
+                let mat_a = Mat2d::<$t>::from_values(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
                      9.0, 10.0, 11.0, 12.0,
                     13.0, 14.0, 15.0, 16.0
                 );
-                let mat_b = Mat4::<$t>::from_values(
+                let mat_b = Mat2d::<$t>::from_values(
                     17.0, 18.0, 19.0, 20.0,
                     21.0, 22.0, 23.0, 24.0,
                     25.0, 26.0, 27.0, 28.0,
@@ -2269,13 +2262,13 @@ mod tests {
 
             #[test]
             fn sub() {
-                let mat_a = Mat4::<$t>::from_values(
+                let mat_a = Mat2d::<$t>::from_values(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
                      9.0, 10.0, 11.0, 12.0,
                     13.0, 14.0, 15.0, 16.0
                 );
-                let mat_b = Mat4::<$t>::from_values(
+                let mat_b = Mat2d::<$t>::from_values(
                     17.0, 18.0, 19.0, 20.0,
                     21.0, 22.0, 23.0, 24.0,
                     25.0, 26.0, 27.0, 28.0,
@@ -2309,7 +2302,7 @@ mod tests {
 
             #[test]
             fn mul_scalar() {
-                let mat = Mat4::<$t>::from_values(
+                let mat = Mat2d::<$t>::from_values(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
                      9.0, 10.0, 11.0, 12.0,
@@ -2329,13 +2322,13 @@ mod tests {
 
             #[test]
             fn mul_scalar_add() {
-                let mat_a = Mat4::<$t>::from_values(
+                let mat_a = Mat2d::<$t>::from_values(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
                      9.0, 10.0, 11.0, 12.0,
                     13.0, 14.0, 15.0, 16.0
                 );
-                let mat_b = Mat4::<$t>::from_values(
+                let mat_b = Mat2d::<$t>::from_values(
                     17.0, 18.0, 19.0, 20.0,
                     21.0, 22.0, 23.0, 24.0,
                     25.0, 26.0, 27.0, 28.0,
@@ -2354,26 +2347,56 @@ mod tests {
             }
 
             #[test]
-            fn approximate_eq() {
-                let mat_a = Mat4::<$t>::from_values(
+            fn eq() {
+                let mat_a = Mat2d::<$t>::from_values(
                      0.0,  1.0,  2.0,  3.0,
                      4.0,  5.0,  6.0,  7.0,
                      8.0,  9.0, 10.0, 11.0,
                     12.0, 13.0, 14.0, 15.0
                 );
-                let mat_b = Mat4::<$t>::from_values(
+                let mat_b = Mat2d::<$t>::from_values(
                      0.0,  1.0,  2.0,  3.0,
                      4.0,  5.0,  6.0,  7.0,
                      8.0,  9.0, 10.0, 11.0,
                     12.0, 13.0, 14.0, 15.0
                 );
-                let mat_c = Mat4::<$t>::from_values(
+                let mat_c = Mat2d::<$t>::from_values(
                      1.0,  2.0,  3.0,  4.0,
                      5.0,  6.0,  7.0,  8.0,
                      9.0, 10.0, 11.0, 12.0,
                     13.0, 14.0, 15.0, 16.0
                 );
-                let mat_d = Mat4::<$t>::from_values(
+                assert_eq!(
+                    mat_a,
+                    mat_b
+                );
+                assert_ne!(
+                    mat_a,
+                    mat_c
+                );
+            }
+
+            #[test]
+            fn approximate_eq() {
+                let mat_a = Mat2d::<$t>::from_values(
+                     0.0,  1.0,  2.0,  3.0,
+                     4.0,  5.0,  6.0,  7.0,
+                     8.0,  9.0, 10.0, 11.0,
+                    12.0, 13.0, 14.0, 15.0
+                );
+                let mat_b = Mat2d::<$t>::from_values(
+                     0.0,  1.0,  2.0,  3.0,
+                     4.0,  5.0,  6.0,  7.0,
+                     8.0,  9.0, 10.0, 11.0,
+                    12.0, 13.0, 14.0, 15.0
+                );
+                let mat_c = Mat2d::<$t>::from_values(
+                     1.0,  2.0,  3.0,  4.0,
+                     5.0,  6.0,  7.0,  8.0,
+                     9.0, 10.0, 11.0, 12.0,
+                    13.0, 14.0, 15.0, 16.0
+                );
+                let mat_d = Mat2d::<$t>::from_values(
                     1e-16,  1.0,  2.0,  3.0,
                      4.0,  5.0,  6.0,  7.0,
                      8.0,  9.0, 10.0, 11.0,
@@ -2399,7 +2422,7 @@ mod tests {
                 let out = mat_a().to_string();
                 assert_eq!(
                     out,
-                    "mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1)"
+                    "Mat2d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1)"
                 );
             }
         };
@@ -2430,7 +2453,7 @@ mod tests {
         #[test]
         fn from_perspective_no() {
             assert_eq!(
-                Mat4::<f32>::from_perspective_no(std::f32::consts::PI * 0.5, 1.0, 0.0, Some(1.0)).raw(),
+                Mat2d::<f32>::from_perspective_no(std::f32::consts::PI * 0.5, 1.0, 0.0, Some(1.0)).raw(),
                 &[
                     1.0, 0.0,  0.0,  0.0,
                     0.0, 1.0,  0.0,  0.0,
@@ -2440,7 +2463,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(200.0)).raw(),
+                Mat2d::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(200.0)).raw(),
                 &[
                     1.81066, 0.0, 0.0, 0.0,
                     0.0, 2.4142134, 0.0, 0.0,
@@ -2450,7 +2473,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, None).raw(),
+                Mat2d::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, None).raw(),
                 &[
                     1.81066, 0.0, 0.0, 0.0,
                     0.0, 2.4142134, 0.0, 0.0,
@@ -2460,7 +2483,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(f32::INFINITY)).raw(),
+                Mat2d::<f32>::from_perspective_no(std::f32::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(f32::INFINITY)).raw(),
                 &[
                     1.81066, 0.0, 0.0, 0.0,
                     0.0, 2.4142134, 0.0, 0.0,
@@ -2496,7 +2519,7 @@ mod tests {
         #[test]
         fn from_perspective_no() {
             assert_eq!(
-                Mat4::<f64>::from_perspective_no(std::f64::consts::PI * 0.5, 1.0, 0.0, Some(1.0)).raw(),
+                Mat2d::<f64>::from_perspective_no(std::f64::consts::PI * 0.5, 1.0, 0.0, Some(1.0)).raw(),
                 &[
                     1.0000000000000002, 0.0,  0.0,  0.0,
                     0.0, 1.0000000000000002,  0.0,  0.0,
@@ -2506,7 +2529,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(200.0)).raw(),
+                Mat2d::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(200.0)).raw(),
                 &[
                     1.8106601717798212, 0.0, 0.0, 0.0,
                     0.0, 2.414213562373095, 0.0, 0.0,
@@ -2516,7 +2539,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, None).raw(),
+                Mat2d::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, None).raw(),
                 &[
                     1.8106601717798212, 0.0, 0.0, 0.0,
                     0.0, 2.414213562373095, 0.0, 0.0,
@@ -2526,7 +2549,7 @@ mod tests {
             );
 
             assert_eq!(
-                Mat4::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(f64::INFINITY)).raw(),
+                Mat2d::<f64>::from_perspective_no(std::f64::consts::PI * 45.0 / 180.0, 640.0 / 480.0, 0.1, Some(f64::INFINITY)).raw(),
                 &[
                     1.8106601717798212, 0.0, 0.0, 0.0,
                     0.0, 2.414213562373095, 0.0, 0.0,
