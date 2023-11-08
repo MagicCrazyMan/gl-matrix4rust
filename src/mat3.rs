@@ -312,6 +312,34 @@ macro_rules! float {
                 }
 
                 #[inline]
+                pub fn set_zero(&mut self) -> &mut Self {
+                    self.0[0] = 0.0;
+                    self.0[1] = 0.0;
+                    self.0[2] = 0.0;
+                    self.0[3] = 0.0;
+                    self.0[4] = 0.0;
+                    self.0[5] = 0.0;
+                    self.0[6] = 0.0;
+                    self.0[7] = 0.0;
+                    self.0[8] = 0.0;
+                    self
+                }
+
+                #[inline]
+                pub fn set_identify(&mut self) -> &mut Self {
+                    self.0[0] = 1.0;
+                    self.0[1] = 0.0;
+                    self.0[2] = 0.0;
+                    self.0[3] = 0.0;
+                    self.0[4] = 1.0;
+                    self.0[5] = 0.0;
+                    self.0[6] = 0.0;
+                    self.0[7] = 0.0;
+                    self.0[8] = 1.0;
+                    self
+                }
+
+                #[inline]
                 pub fn transpose(&self) -> Self {
                     let mut out = Self::new();
                     out.0[0] = self.0[0];
