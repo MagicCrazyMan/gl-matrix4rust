@@ -220,6 +220,44 @@ macro_rules! float {
                 }
 
                 #[inline]
+                pub fn random(&self, scale: Option<$t>) -> Self {
+                    let scale = match scale {
+                        Some(scale) => scale,
+                        None => 1.0,
+                    };
+
+                    // Marsaglia, George. Choosing a Point from the Surface of a
+                    // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
+                    // http://projecteuclid.org/euclid.aoms/1177692644;
+                    let v1;
+                    let v2;
+                    let v3;
+                    let v4;
+                    let s1;
+                    let s2;
+                    let mut rand;
+                    
+                    rand = rand::random::<$t>();
+                    v1 = rand * 2.0 - 1.0;
+                    v2 = (4.0 * rand::random::<$t>() - 2.0) * (rand * -rand + rand).sqrt();
+                    s1 = v1 * v1 + v2 * v2;
+                  
+                    rand = rand::random::<$t>();
+                    v3 = rand * 2.0 - 1.0;
+                    v4 = (4.0 * rand::random::<$t>() - 2.0) * (rand * -rand + rand).sqrt();
+                    s2 = v3 * v3 + v4 * v4;
+
+                    let d = ((1.0 - s1) / s2).sqrt();
+
+                    Self::from_values(
+                        scale * v1,
+                        scale * v2,
+                        scale * v3 * d,
+                        scale * v4 * d,
+                    )
+                }
+
+                #[inline]
                 pub fn transform_mat4(&self, m: &Mat4<$t>) -> Self {
                     let x = self.0[0];
                     let y = self.0[1];

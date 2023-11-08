@@ -10,7 +10,7 @@ use crate::{
 pub struct Vec2<T = f32>(pub [T; 2]);
 
 macro_rules! float {
-    ($(($t:tt, $epsilon:expr)),+) => {
+    ($(($t:tt, $epsilon:expr, $pi:expr)),+) => {
         $(
             impl Vec2<$t> {
                 #[inline]
@@ -176,6 +176,21 @@ macro_rules! float {
                     out.0[0] = ax + t * (b.0[0] - ax);
                     out.0[1] = ay + t * (b.0[1] - ay);
                     out
+                }
+
+                #[inline]
+                pub fn random(&self, scale: Option<$t>) -> Self {
+                    let scale = match scale {
+                        Some(scale) => scale,
+                        None => 1.0,
+                    };
+
+                    let r = rand::random::<$t>() * 2.0 * $pi;
+
+                    Self::from_values(
+                        r.cos() * scale,
+                        r.sin() * scale
+                    )
                 }
 
                 #[inline]
@@ -349,6 +364,6 @@ macro_rules! float {
 }
 
 float! {
-    (f64, EPSILON_F64),
-    (f32, EPSILON_F32)
+    (f64, EPSILON_F64, std::f64::consts::PI),
+    (f32, EPSILON_F32, std::f32::consts::PI)
 }

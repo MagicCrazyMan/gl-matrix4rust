@@ -9,7 +9,7 @@ use crate::{mat3::Mat3, mat4::Mat4, quat::Quat, EPSILON_F32, EPSILON_F64};
 pub struct Vec3<T = f32>(pub [T; 3]);
 
 macro_rules! float {
-    ($(($t:tt, $epsilon:expr)),+) => {
+    ($(($t:tt, $epsilon:expr, $pi:expr)),+) => {
         $(
             impl Vec3<$t> {
                 #[inline]
@@ -242,6 +242,24 @@ macro_rules! float {
                         self.0[0] * factor1 + b.0[0] * factor2 + c.0[0] * factor3 + d.0[0] * factor4,
                         self.0[1] * factor1 + b.0[1] * factor2 + c.0[1] * factor3 + d.0[1] * factor4,
                         self.0[2] * factor1 + b.0[2] * factor2 + c.0[2] * factor3 + d.0[2] * factor4,
+                    )
+                }
+
+                #[inline]
+                pub fn random(&self, scale: Option<$t>) -> Self {
+                    let scale = match scale {
+                        Some(scale) => scale,
+                        None => 1.0,
+                    };
+
+                    let r = rand::random::<$t>() * 2.0 * $pi;
+                    let z = rand::random::<$t>() * 2.0 - 1.0;
+                    let z_scale = (1.0 - z * z).sqrt() * scale;
+
+                    Self::from_values(
+                        r.cos() * z_scale,
+                        r.sin() * z_scale,
+                        z * scale,
                     )
                 }
 
@@ -499,6 +517,6 @@ macro_rules! float {
 }
 
 float! {
-    (f64, EPSILON_F64),
-    (f32, EPSILON_F32)
+    (f64, EPSILON_F64, std::f64::consts::PI),
+    (f32, EPSILON_F32, std::f32::consts::PI)
 }
