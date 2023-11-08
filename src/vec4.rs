@@ -426,7 +426,6 @@ mod tests {
         ($t:tt, $epsilon:expr, $pi:expr, $e:expr, $sqrt2:expr) => {
             use std::sync::OnceLock;
 
-            use crate::error::Error;
             use crate::vec4::Vec4;
 
             static VEC_A_RAW: [$t; 4] = [1.0, 2.0, 3.0, 4.0];
@@ -480,48 +479,40 @@ mod tests {
             }
 
             #[test]
-            fn floor() -> Result<(), Error> {
+            fn floor() {
                 assert_eq!(
                     Vec4::<$t>::from_values($e, $pi, $sqrt2, (0.5 as $t).sqrt()).floor().raw(),
                     &[2.0, 3.0, 1.0, 0.0]
                 );
-
-                Ok(())
             }
 
             #[test]
-            fn min() -> Result<(), Error> {
+            fn min() {
                 let vec_a = Vec4::<$t>::from_values(1.0, 3.0, 1.0, 3.0);
                 let vec_b = Vec4::<$t>::from_values(3.0, 1.0, 3.0, 1.0);
                 assert_eq!(
                     vec_a.min(&vec_b).raw(),
                     &[1.0, 1.0, 1.0, 1.0]
                 );
-
-                Ok(())
             }
 
             #[test]
-            fn max() -> Result<(), Error> {
+            fn max() {
                 let vec_a = Vec4::<$t>::from_values(1.0, 3.0, 1.0, 3.0);
                 let vec_b = Vec4::<$t>::from_values(3.0, 1.0, 3.0, 1.0);
                 assert_eq!(
                     vec_a.max(&vec_b).raw(),
                     &[3.0, 3.0, 3.0, 3.0]
                 );
-
-                Ok(())
             }
 
             #[test]
-            fn round() -> Result<(), Error> {
+            fn round() {
                 let vec = Vec4::<$t>::from_values($e, $pi, $sqrt2, (0.5 as $t).sqrt());
                 assert_eq!(
                     vec.round().raw(),
                     &[3.0, 3.0, 1.0, 1.0]
                 );
-
-                Ok(())
             }
 
             #[test]
