@@ -3,7 +3,17 @@ use std::{
     ops::{Add, Mul},
 };
 
-use crate::{mat3::Mat3, vec3::Vec3, EulerOrder, EPSILON_F32, EPSILON_F64};
+use crate::{mat3::Mat3, vec3::Vec3, EPSILON_F32, EPSILON_F64};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EulerOrder {
+    XYZ,
+    XZY,
+    YZX,
+    YXZ,
+    ZXY,
+    ZYX,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat<T = f32>(pub [T; 4]);
