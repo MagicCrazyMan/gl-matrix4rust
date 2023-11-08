@@ -11,3 +11,12 @@ pub mod vec4;
 
 pub static EPSILON_F64: f64 = 0.000001;
 pub static EPSILON_F32: f32 = 0.000001;
+
+pub enum EulerOrder {
+    XYZ,
+    XZY,
+    YZX,
+    YXZ,
+    ZXY,
+    ZYX,
+}
