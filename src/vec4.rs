@@ -60,6 +60,7 @@ macro_rules! float {
                     self.0[3] = 0.0;
                     self
                 }
+
                 #[inline]
                 pub fn ceil(&self) -> Self {
                     let mut out = Self::new();
@@ -184,17 +185,17 @@ macro_rules! float {
                 }
 
                 #[inline]
-                pub fn cross(&self, u: &Vec4<$t>, v: &Vec4<$t>, w: &Vec4<$t>) -> Self {
+                pub fn cross(&self, v: &Vec4<$t>, w: &Vec4<$t>) -> Self {
                     let a = v.0[0] * w.0[1] - v.0[1] * w.0[0];
                     let b = v.0[0] * w.0[2] - v.0[2] * w.0[0];
                     let c = v.0[0] * w.0[3] - v.0[3] * w.0[0];
                     let d = v.0[1] * w.0[2] - v.0[2] * w.0[1];
                     let e = v.0[1] * w.0[3] - v.0[3] * w.0[1];
                     let f = v.0[2] * w.0[3] - v.0[3] * w.0[2];
-                    let g = u.0[0];
-                    let h = u.0[1];
-                    let i = u.0[2];
-                    let j = u.0[3];
+                    let g = self.0[0];
+                    let h = self.0[1];
+                    let i = self.0[2];
+                    let j = self.0[3];
 
                     Self::from_values(
                         h * f - i * e + j * d,
@@ -236,12 +237,12 @@ macro_rules! float {
                     let s1;
                     let s2;
                     let mut rand;
-                    
+
                     rand = rand::random::<$t>();
                     v1 = rand * 2.0 - 1.0;
                     v2 = (4.0 * rand::random::<$t>() - 2.0) * (rand * -rand + rand).sqrt();
                     s1 = v1 * v1 + v2 * v2;
-                  
+
                     rand = rand::random::<$t>();
                     v3 = rand * 2.0 - 1.0;
                     v4 = (4.0 * rand::random::<$t>() - 2.0) * (rand * -rand + rand).sqrt();
@@ -281,7 +282,7 @@ macro_rules! float {
                     let qy = q.0[1];
                     let qz = q.0[2];
                     let qw = q.0[3];
-                  
+
                     // calculate quat * vec
                     let ix = qw * x + qy * z - qz * y;
                     let iy = qw * y + qz * x - qx * z;
@@ -416,4 +417,339 @@ macro_rules! float {
 float! {
     (f64, EPSILON_F64),
     (f32, EPSILON_F32)
+}
+
+#[cfg(test)]
+#[rustfmt::skip]
+mod tests {
+    macro_rules! float_test {
+        ($t:tt, $epsilon:expr, $pi:expr, $e:expr, $sqrt2:expr) => {
+            use std::sync::OnceLock;
+
+            use crate::error::Error;
+            use crate::vec4::Vec4;
+
+            static VEC_A_RAW: [$t; 4] = [1.0, 2.0, 3.0, 4.0];
+            static VEC_B_RAW: [$t; 4] = [5.0, 6.0, 7.0, 8.0];
+
+            static VEC_A: OnceLock<Vec4<$t>> = OnceLock::new();
+            static VEC_B: OnceLock<Vec4<$t>> = OnceLock::new();
+
+            fn vec_a() -> &'static Vec4<$t> {
+                VEC_A.get_or_init(|| {
+                    Vec4::<$t>::from_slice(&VEC_A_RAW)
+                })
+            }
+
+            fn vec_b() -> &'static Vec4<$t> {
+                VEC_B.get_or_init(|| {
+                    Vec4::<$t>::from_slice(&VEC_B_RAW)
+                })
+            }
+
+            #[test]
+            fn new() {
+                assert_eq!(
+                    Vec4::<$t>::new().raw(),
+                    &[0.0, 0.0, 0.0, 0.0]
+                );
+            }
+
+            #[test]
+            fn from_slice() {
+                assert_eq!(
+                    Vec4::<$t>::from_slice(&[3.0, 4.0, 5.0, 6.0]).raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn from_values() {
+                assert_eq!(
+                    Vec4::<$t>::from_values(3.0, 4.0, 5.0, 6.0).raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn ceil() {
+                assert_eq!(
+                    Vec4::<$t>::from_values($e, $pi, $sqrt2, (0.5 as $t).sqrt()).ceil().raw(),
+                    &[3.0, 4.0, 2.0, 1.0]
+                );
+            }
+
+            #[test]
+            fn floor() -> Result<(), Error> {
+                assert_eq!(
+                    Vec4::<$t>::from_values($e, $pi, $sqrt2, (0.5 as $t).sqrt()).floor().raw(),
+                    &[2.0, 3.0, 1.0, 0.0]
+                );
+
+                Ok(())
+            }
+
+            #[test]
+            fn min() -> Result<(), Error> {
+                let vec_a = Vec4::<$t>::from_values(1.0, 3.0, 1.0, 3.0);
+                let vec_b = Vec4::<$t>::from_values(3.0, 1.0, 3.0, 1.0);
+                assert_eq!(
+                    vec_a.min(&vec_b).raw(),
+                    &[1.0, 1.0, 1.0, 1.0]
+                );
+
+                Ok(())
+            }
+
+            #[test]
+            fn max() -> Result<(), Error> {
+                let vec_a = Vec4::<$t>::from_values(1.0, 3.0, 1.0, 3.0);
+                let vec_b = Vec4::<$t>::from_values(3.0, 1.0, 3.0, 1.0);
+                assert_eq!(
+                    vec_a.max(&vec_b).raw(),
+                    &[3.0, 3.0, 3.0, 3.0]
+                );
+
+                Ok(())
+            }
+
+            #[test]
+            fn round() -> Result<(), Error> {
+                let vec = Vec4::<$t>::from_values($e, $pi, $sqrt2, (0.5 as $t).sqrt());
+                assert_eq!(
+                    vec.round().raw(),
+                    &[3.0, 3.0, 1.0, 1.0]
+                );
+
+                Ok(())
+            }
+
+            #[test]
+            fn scale() {
+                assert_eq!(
+                    (*vec_a() * 2.0).raw(),
+                    &[2.0, 4.0, 6.0, 8.0]
+                );
+            }
+
+            #[test]
+            fn scale_add() {
+                assert_eq!(
+                    (*vec_a() + *vec_b() * 0.5).raw(),
+                    &[3.5, 5.0, 6.5, 8.0]
+                );
+            }
+
+            #[test]
+            fn squared_distance() {
+                assert_eq!(
+                    vec_a().squared_distance(vec_b()),
+                    64.0
+                );
+            }
+
+            #[test]
+            fn distance() {
+                assert_eq!(
+                    vec_a().distance(vec_b()),
+                    8.0
+                );
+            }
+
+            #[test]
+            fn squared_length() {
+                assert_eq!(
+                    vec_a().squared_length(),
+                    30.0
+                );
+            }
+
+            #[test]
+            fn length() {
+                assert_eq!(
+                    vec_a().length(),
+                    5.477225575051661
+                );
+            }
+
+            #[test]
+            fn negate() {
+                assert_eq!(
+                    vec_a().negate().raw(),
+                    &[-1.0 ,-2.0, -3.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn normalize() {
+                assert_eq!(
+                    Vec4::<$t>::from_values(5.0, 0.0, 0.0, 0.0).normalize().raw(),
+                    &[1.0 ,0.0, 0.0, 0.0]
+                );
+            }
+
+            #[test]
+            fn dot() {
+                assert_eq!(
+                    vec_a().dot(vec_b()),
+                    70.0
+                );
+            }
+
+            #[test]
+            fn cross() {
+                let vec_a = Vec4::<$t>::from_values(1.0, 0.0, 0.0, 0.0);
+                let vec_b = Vec4::<$t>::from_values(0.0, 1.0, 0.0, 0.0);
+                let vec_c = Vec4::<$t>::from_values(0.0, 1.0, 1.0, 0.0);
+                assert_eq!(
+                    vec_a.cross(&vec_b, &vec_c).raw(),
+                    &[0.0, 0.0, 0.0, -1.0]
+                );
+            }
+
+            #[test]
+            fn lerp() {
+                assert_eq!(
+                    vec_a().lerp(vec_b(), 0.5).raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn set() {
+                let mut mat = Vec4::<$t>::new();
+                mat.set(3.0, 4.0, 5.0, 6.0);
+
+                assert_eq!(
+                    mat.raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn set_slice() {
+                let mut mat = Vec4::<$t>::new();
+                mat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
+
+                assert_eq!(
+                    mat.raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn add() {
+                assert_eq!(
+                    (*vec_a() + *vec_b()).raw(),
+                    &[6.0, 8.0, 10.0, 12.0]
+                );
+            }
+
+            #[test]
+            fn sub() {
+                assert_eq!(
+                    (*vec_a() - *vec_b()).raw(),
+                    &[-4.0, -4.0, -4.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn mul() {
+                assert_eq!(
+                    (*vec_a() * *vec_b()).raw(),
+                    &[5.0, 12.0, 21.0, 32.0]
+                );
+            }
+
+            #[test]
+            fn mul_scalar() {
+                assert_eq!(
+                    (*vec_a() * 2.0).raw(),
+                    &[2.0, 4.0, 6.0, 8.0]
+                );
+            }
+
+            #[test]
+            fn mul_scalar_add() {
+                assert_eq!(
+                    (*vec_a() + *vec_b() * 0.5).raw(),
+                    &[3.5, 5.0, 6.5, 8.0]
+                );
+            }
+
+            #[test]
+            fn div() {
+                assert_eq!(
+                    (*vec_a() / *vec_b()).raw(),
+                    &[0.2, 0.3333333333333333, 0.42857142857142855, 0.5]
+                );
+            }
+
+            #[test]
+            fn div_scalar() {
+                assert_eq!(
+                    (*vec_a() / 2.0).raw(),
+                    &[0.5, 1.0, 1.5, 2.0]
+                );
+            }
+
+            #[test]
+            fn div_scalar_add() {
+                assert_eq!(
+                    (*vec_a() + *vec_b() / 0.5).raw(),
+                    &[11.0, 14.0, 17.0, 20.0]
+                );
+            }
+
+            #[test]
+            fn approximate_eq() {
+                let vec_a = Vec4::<$t>::from_values(0.0,  1.0, 2.0, 3.0);
+                let vec_b = Vec4::<$t>::from_values(0.0,  1.0, 2.0, 3.0);
+                let vec_c = Vec4::<$t>::from_values(1.0,  2.0, 3.0, 4.0);
+                let vec_d = Vec4::<$t>::from_values(1e-16,  1.0, 2.0, 3.0);
+
+                assert_eq!(
+                    true,
+                    vec_a.approximate_eq(&vec_b)
+                );
+                assert_eq!(
+                    false,
+                    vec_a.approximate_eq(&vec_c)
+                );
+                assert_eq!(
+                    true,
+                    vec_a.approximate_eq(&vec_d)
+                );
+            }
+
+            #[test]
+            fn display() {
+                let out = vec_a().to_string();
+                assert_eq!(
+                    out,
+                    "vec4(1, 2, 3, 4)"
+                );
+            }
+        };
+    }
+
+    mod f32 {
+        float_test!(
+            f32,
+            crate::EPSILON_F32,
+            std::f32::consts::PI,
+            std::f32::consts::E,
+            std::f32::consts::SQRT_2
+        );
+    }
+
+    mod f64 {
+        float_test!(
+            f64,
+            crate::EPSILON_F64,
+            std::f64::consts::PI,
+            std::f64::consts::E,
+            std::f64::consts::SQRT_2
+        );
+    }
 }
