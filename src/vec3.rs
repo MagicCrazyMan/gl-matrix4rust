@@ -10,6 +10,12 @@ use crate::{epsilon, mat3::Mat3, mat4::Mat4, quat::Quat};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec3<T = f32>(pub [T; 3]);
 
+impl<T> AsRef<Vec3<T>> for Vec3<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -68,7 +74,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn min(&self, b: &Self) -> Self {
+    pub fn min(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
+        
         Self([
             self.0[0].min(b.0[0]),
             self.0[1].min(b.0[1]),
@@ -77,7 +85,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn max(&self, b: &Self) -> Self {
+    pub fn max(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
+        
         Self([
             self.0[0].max(b.0[0]),
             self.0[1].max(b.0[1]),
@@ -96,7 +106,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn squared_distance(&self, b: &Self) -> T {
+    pub fn squared_distance(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+        
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         let z = b.0[2] - self.0[2];
@@ -104,7 +116,7 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn distance(&self, b: &Self) -> T {
+    pub fn distance(&self, b: impl AsRef<Self>) -> T {
         self.squared_distance(b).sqrt()
     }
 
@@ -146,12 +158,16 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Self) -> T {
+    pub fn dot(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+        
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2]
     }
 
     #[inline(always)]
-    pub fn cross(&self, b: &Self) -> Self {
+    pub fn cross(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
+        
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -163,7 +179,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Self, t: T) -> Self {
+    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -175,7 +193,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn slerp(&self, b: &Self, t: T) -> Self {
+    pub fn slerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+
         let angle = self.dot(b).max(-T::one()).min(T::one()).acos();
         let sin_total = angle.sin();
 
@@ -189,7 +209,11 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn hermite(&self, b: &Self, c: &Self, d: &Self, t: T) -> Self {
+    pub fn hermite(&self, b: impl AsRef<Self>, c: impl AsRef<Self>, d: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+        let c = c.as_ref();
+        let d = d.as_ref();
+        
         let factor_times2 = t * t;
         let factor1 =
             factor_times2 * (T::from(2.0).unwrap() * t - T::from(3.0).unwrap()) + T::one();
@@ -205,7 +229,11 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn bezier(&self, b: &Self, c: &Self, d: &Self, t: T) -> Self {
+    pub fn bezier(&self, b: impl AsRef<Self>, c: impl AsRef<Self>, d: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+        let c = c.as_ref();
+        let d = d.as_ref();
+        
         let inverse_factor = T::one() - t;
         let inverse_factor_times_two = inverse_factor * inverse_factor;
         let factor_times2 = t * t;
@@ -222,7 +250,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn transform_mat3(&self, m: &Mat3<T>) -> Self {
+    pub fn transform_mat3(&self, m: impl AsRef<Mat3<T>>) -> Self {
+        let m = m.as_ref();
+        
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -235,7 +265,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn transform_quat(&self, q: &Quat<T>) -> Self {
+    pub fn transform_quat(&self, q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+        
         // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
         let qx = q.0[0];
         let qy = q.0[1];
@@ -268,7 +300,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn transform_mat4(&self, m: &Mat4<T>) -> Self {
+    pub fn transform_mat4(&self, m: impl AsRef<Mat4<T>>) -> Self {
+        let m = m.as_ref();
+        
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -283,7 +317,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_x(&self, b: &Self, rad: T) -> Self {
+    pub fn rotate_x(&self, b: impl AsRef<Self>, rad: T) -> Self {
+        let b = b.as_ref();
+        
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -300,7 +336,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_y(&self, b: &Self, rad: T) -> Self {
+    pub fn rotate_y(&self, b: impl AsRef<Self>, rad: T) -> Self {
+        let b = b.as_ref();
+        
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -317,7 +355,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_z(&self, b: &Self, rad: T) -> Self {
+    pub fn rotate_z(&self, b: impl AsRef<Self>, rad: T) -> Self {
+        let b = b.as_ref();
+        
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -334,7 +374,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: &Self) -> T {
+    pub fn angle(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+        
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -352,7 +394,9 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
+        
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -552,7 +596,7 @@ mod tests {
     fn min() -> Result<(), Error> {
         let vec_a = Vec3::from_values(1.0, 3.0, 1.0);
         let vec_b = Vec3::from_values(3.0, 1.0, 3.0);
-        assert_eq!(vec_a.min(&vec_b).raw(), &[1.0, 1.0, 1.0]);
+        assert_eq!(vec_a.min(vec_b).raw(), &[1.0, 1.0, 1.0]);
 
         Ok(())
     }
@@ -561,7 +605,7 @@ mod tests {
     fn max() -> Result<(), Error> {
         let vec_a = Vec3::from_values(1.0, 3.0, 1.0);
         let vec_b = Vec3::from_values(3.0, 1.0, 3.0);
-        assert_eq!(vec_a.max(&vec_b).raw(), &[3.0, 3.0, 3.0]);
+        assert_eq!(vec_a.max(vec_b).raw(), &[3.0, 3.0, 3.0]);
 
         Ok(())
     }
@@ -640,10 +684,10 @@ mod tests {
     fn slerp() {
         let vec_a = Vec3::from_values(1.0, 0.0, 0.0);
         let vec_b = Vec3::from_values(0.0, 1.0, 0.0);
-        assert_eq!(vec_a.slerp(&vec_b, 0.0).raw(), &[1.0, 0.0, 0.0]);
-        assert_eq!(vec_a.slerp(&vec_b, 1.0).raw(), &[0.0, 1.0, 0.0]);
+        assert_eq!(vec_a.slerp(vec_b, 0.0).raw(), &[1.0, 0.0, 0.0]);
+        assert_eq!(vec_a.slerp(vec_b, 1.0).raw(), &[0.0, 1.0, 0.0]);
         assert_eq!(
-            vec_a.slerp(&vec_b, 0.5).raw(),
+            vec_a.slerp(vec_b, 0.5).raw(),
             &[0.7071067811865475, 0.7071067811865475, 0.0]
         );
     }
@@ -653,13 +697,13 @@ mod tests {
         let mat = Mat4::from_values(
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
-        assert_eq!(vec_a().transform_mat4(&mat).raw(), &[1.0, 2.0, 3.0]);
+        assert_eq!(vec_a().transform_mat4(mat).raw(), &[1.0, 2.0, 3.0]);
     }
 
     #[test]
     fn transform_mat3() {
         let mat = Mat3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        assert_eq!(vec_a().transform_mat3(&mat).raw(), &[1.0, 2.0, 3.0]);
+        assert_eq!(vec_a().transform_mat3(mat).raw(), &[1.0, 2.0, 3.0]);
     }
 
     #[test]
@@ -670,7 +714,7 @@ mod tests {
             0.5477225570103322,
             0.730296742680443,
         );
-        assert_eq!(vec_a().transform_quat(&quat).raw(), &[1.0, 2.0, 3.0]);
+        assert_eq!(vec_a().transform_quat(quat).raw(), &[1.0, 2.0, 3.0]);
     }
 
     #[test]
@@ -736,9 +780,9 @@ mod tests {
         let vec_c = Vec3::from_values(1.0, 2.0, 3.0);
         let vec_d = Vec3::from_values(1e-16, 1.0, 2.0);
 
-        assert_eq!(true, vec_a.approximate_eq(&vec_b));
-        assert_eq!(false, vec_a.approximate_eq(&vec_c));
-        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+        assert_eq!(true, vec_a.approximate_eq(vec_b));
+        assert_eq!(false, vec_a.approximate_eq(vec_c));
+        assert_eq!(true, vec_a.approximate_eq(vec_d));
     }
 
     #[test]
@@ -749,7 +793,7 @@ mod tests {
 
     #[test]
     fn angle() {
-        assert_eq!(vec_a().angle(&vec_b()), 0.22572586);
+        assert_eq!(vec_a().angle(vec_b()), 0.22572586);
     }
 
     #[test]
@@ -757,14 +801,14 @@ mod tests {
         let vec_a = Vec3::<f32>::from_values(0.0, 1.0, 0.0);
         let vec_b = Vec3::<f32>::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_x(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_x(vec_b, std::f32::consts::PI).raw(),
             &[0.0, -1.0, -8.742278e-8]
         );
 
         let vec_a = Vec3::<f32>::from_values(2.0, 7.0, 0.0);
         let vec_b = Vec3::<f32>::from_values(2.0, 5.0, 0.0);
         assert_eq!(
-            vec_a.rotate_x(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_x(vec_b, std::f32::consts::PI).raw(),
             &[2.0, 3.0, -1.7484555e-7]
         );
     }
@@ -774,14 +818,14 @@ mod tests {
         let vec_a = Vec3::<f32>::from_values(1.0, 0.0, 0.0);
         let vec_b = Vec3::<f32>::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_y(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_y(vec_b, std::f32::consts::PI).raw(),
             &[-1.0, 0.0, 8.742278e-8]
         );
 
         let vec_a = Vec3::<f32>::from_values(-2.0, 3.0, 10.0);
         let vec_b = Vec3::<f32>::from_values(-4.0, 3.0, 10.0);
         assert_eq!(
-            vec_a.rotate_y(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_y(vec_b, std::f32::consts::PI).raw(),
             &[-6.0, 3.0, 10.0]
         );
     }
@@ -791,14 +835,14 @@ mod tests {
         let vec_a = Vec3::<f32>::from_values(0.0, 1.0, 0.0);
         let vec_b = Vec3::<f32>::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_z(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_z(vec_b, std::f32::consts::PI).raw(),
             &[8.742278e-8, -1.0, 0.0]
         );
 
         let vec_a = Vec3::<f32>::from_values(0.0, 6.0, -5.0);
         let vec_b = Vec3::<f32>::from_values(0.0, 0.0, -5.0);
         assert_eq!(
-            vec_a.rotate_z(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate_z(vec_b, std::f32::consts::PI).raw(),
             &[5.2453663e-7, -6.0, -5.0]
         );
     }

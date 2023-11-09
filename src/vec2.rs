@@ -6,8 +6,15 @@ use std::{
 use num_traits::Float;
 
 use crate::{epsilon, mat2::Mat2, mat2d::Mat2d, mat3::Mat3, mat4::Mat4, vec3::Vec3};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec2<T = f32>(pub [T; 2]);
+
+impl<T> AsRef<Vec2<T>> for Vec2<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
 
 impl<T: Float> Vec2<T> {
     #[inline(always)]
@@ -64,12 +71,14 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn min(&self, b: &Self) -> Self {
+    pub fn min(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
         Self([self.0[0].min(b.0[0]), self.0[1].min(b.0[1])])
     }
 
     #[inline(always)]
-    pub fn max(&self, b: &Self) -> Self {
+    pub fn max(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
         Self([self.0[0].max(b.0[0]), self.0[1].max(b.0[1])])
     }
 
@@ -84,14 +93,16 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn squared_distance(&self, b: &Self) -> T {
+    pub fn squared_distance(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         x * x + y * y
     }
 
     #[inline(always)]
-    pub fn distance(&self, b: &Self) -> T {
+    pub fn distance(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
         self.squared_distance(b).sqrt()
     }
 
@@ -128,12 +139,14 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Self) -> T {
+    pub fn dot(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
         self.0[0] * b.0[0] + self.0[1] * b.0[1]
     }
 
     #[inline(always)]
-    pub fn cross(&self, b: &Self) -> Vec3<T> {
+    pub fn cross(&self, b: impl AsRef<Self>) -> Vec3<T> {
+        let b = b.as_ref();
         Vec3::<T>::from_values(
             T::zero(),
             T::zero(),
@@ -142,21 +155,24 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Self, t: T) -> Self {
+    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
         let ax = self.0[0];
         let ay = self.0[1];
         Self([ax + t * (b.0[0] - ax), ay + t * (b.0[1] - ay)])
     }
 
     #[inline(always)]
-    pub fn transform_mat2(&self, m: &Mat2<T>) -> Self {
+    pub fn transform_mat2(&self, m: impl AsRef<Mat2<T>>) -> Self {
+        let m = m.as_ref();
         let x = self.0[0];
         let y = self.0[1];
         Self([m.0[0] * x + m.0[2] * y, m.0[1] * x + m.0[3] * y])
     }
 
     #[inline(always)]
-    pub fn transform_mat2d(&self, m: &Mat2d<T>) -> Self {
+    pub fn transform_mat2d(&self, m: impl AsRef<Mat2d<T>>) -> Self {
+        let m = m.as_ref();
         let x = self.0[0];
         let y = self.0[1];
         Self([
@@ -166,7 +182,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn transform_mat3(&self, m: &Mat3<T>) -> Self {
+    pub fn transform_mat3(&self, m: impl AsRef<Mat3<T>>) -> Self {
+        let m = m.as_ref();
         let x = self.0[0];
         let y = self.0[1];
         Self([
@@ -176,7 +193,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn transform_mat4(&self, m: &Mat4<T>) -> Self {
+    pub fn transform_mat4(&self, m: impl AsRef<Mat4<T>>) -> Self {
+        let m = m.as_ref();
         let x = self.0[0];
         let y = self.0[1];
         Self([
@@ -186,7 +204,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn rotate(&self, b: &Self, rad: T) -> Self {
+    pub fn rotate(&self, b: impl AsRef<Self>, rad: T) -> Self {
+        let b = b.as_ref();
         //Translate point to the origin
         let p0 = self.0[0] - b.0[0];
         let p1 = self.0[1] - b.0[1];
@@ -201,7 +220,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: &Self) -> T {
+    pub fn angle(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
         let x1 = self.0[0];
         let y1 = self.0[1];
         let x2 = b.0[0];
@@ -219,7 +239,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
         let a0 = self.0[0];
         let a1 = self.0[1];
         let b0 = b.0[0];
@@ -404,7 +425,7 @@ mod tests {
     fn min() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.min(&vec_b).raw(), &[1.0, 2.0]);
+        assert_eq!(vec_a.min(vec_b).raw(), &[1.0, 2.0]);
 
         Ok(())
     }
@@ -413,7 +434,7 @@ mod tests {
     fn max() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.max(&vec_b).raw(), &[3.0, 4.0]);
+        assert_eq!(vec_a.max(vec_b).raw(), &[3.0, 4.0]);
 
         Ok(())
     }
@@ -489,19 +510,19 @@ mod tests {
     fn angle() {
         let vec_a = Vec2::from_values(1.0, 0.0);
         let vec_b = Vec2::from_values(1.0, 2.0);
-        assert_eq!(vec_a.angle(&vec_b), 1.1071487177940904);
+        assert_eq!(vec_a.angle(vec_b), 1.1071487177940904);
     }
 
     #[test]
     fn transform_mat2() {
         let mat = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(vec_a().transform_mat2(&mat).raw(), &[7.0, 10.0]);
+        assert_eq!(vec_a().transform_mat2(mat).raw(), &[7.0, 10.0]);
     }
 
     #[test]
     fn transform_mat2d() {
         let mat = Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        assert_eq!(vec_a().transform_mat2d(&mat).raw(), &[12.0, 16.0]);
+        assert_eq!(vec_a().transform_mat2d(mat).raw(), &[12.0, 16.0]);
     }
 
     #[test]
@@ -567,9 +588,9 @@ mod tests {
         let vec_c = Vec2::from_values(1.0, 2.0);
         let vec_d = Vec2::from_values(1e-16, 1.0);
 
-        assert_eq!(true, vec_a.approximate_eq(&vec_b));
-        assert_eq!(false, vec_a.approximate_eq(&vec_c));
-        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+        assert_eq!(true, vec_a.approximate_eq(vec_b));
+        assert_eq!(false, vec_a.approximate_eq(vec_c));
+        assert_eq!(true, vec_a.approximate_eq(vec_d));
     }
 
     #[test]
@@ -583,14 +604,14 @@ mod tests {
         let vec_a = Vec2::<f32>::from_values(0.0, 1.0);
         let vec_b = Vec2::<f32>::from_values(0.0, 0.0);
         assert_eq!(
-            vec_a.rotate(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate(vec_b, std::f32::consts::PI).raw(),
             &[8.742278e-8, -1.0]
         );
 
         let vec_a = Vec2::<f32>::from_values(6.0, -5.0);
         let vec_b = Vec2::<f32>::from_values(0.0, -5.0);
         assert_eq!(
-            vec_a.rotate(&vec_b, std::f32::consts::PI).raw(),
+            vec_a.rotate(vec_b, std::f32::consts::PI).raw(),
             &[-6.0, -5.0000005]
         );
     }

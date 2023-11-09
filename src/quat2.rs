@@ -10,6 +10,12 @@ use crate::{epsilon, mat4::Mat4, quat::Quat, vec3::Vec3};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat2<T = f32>(pub [T; 8]);
 
+impl<T> AsRef<Quat2<T>> for Quat2<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Quat2<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -66,7 +72,10 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation_translation(q: &Quat<T>, t: &Vec3<T>) -> Self {
+    pub fn from_rotation_translation(q: impl AsRef<Quat<T>>, t: impl AsRef<Vec3<T>>) -> Self {
+        let q = q.as_ref();
+        let t = t.as_ref();
+
         let ax = t.0[0] * T::from(0.5).unwrap();
         let ay = t.0[1] * T::from(0.5).unwrap();
         let az = t.0[2] * T::from(0.5).unwrap();
@@ -87,7 +96,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_translation(t: &Vec3<T>) -> Self {
+    pub fn from_translation(t: impl AsRef<Vec3<T>>) -> Self {
+        let t = t.as_ref();
+
         Self([
             T::zero(),
             T::zero(),
@@ -101,7 +112,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation(q: &Quat<T>) -> Self {
+    pub fn from_rotation(q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+
         Self([
             q.0[0],
             q.0[1],
@@ -115,10 +128,12 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_mat4(a: &Mat4<T>) -> Self {
+    pub fn from_mat4(a: impl AsRef<Mat4<T>>) -> Self {
+        let a = a.as_ref();
+
         let outer = a.rotation();
         let t = a.translation();
-        Self::from_rotation_translation(&outer, &t)
+        Self::from_rotation_translation(outer, t)
     }
 }
 
@@ -208,7 +223,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn set_real(&mut self, q: &Quat<T>) -> &mut Self {
+    pub fn set_real(&mut self, q: impl AsRef<Quat<T>>) -> &mut Self {
+        let q = q.as_ref();
+
         self.0[0] = q.0[0];
         self.0[1] = q.0[1];
         self.0[2] = q.0[2];
@@ -217,7 +234,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn set_dual(&mut self, q: &Quat<T>) -> &mut Self {
+    pub fn set_dual(&mut self, q: impl AsRef<Quat<T>>) -> &mut Self {
+        let q = q.as_ref();
+
         self.0[4] = q.0[0];
         self.0[5] = q.0[1];
         self.0[6] = q.0[2];
@@ -226,7 +245,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn translate(&self, v: &Vec3<T>) -> Self {
+    pub fn translate(&self, v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+
         let ax1 = self.0[0];
         let ay1 = self.0[1];
         let az1 = self.0[2];
@@ -347,7 +368,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_by_quat_append(&self, q: &Quat<T>) -> Self {
+    pub fn rotate_by_quat_append(&self, q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+
         let mut out = Self::new();
 
         let qx = q.0[0];
@@ -376,7 +399,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_by_quat_prepend(&self, q: &Quat<T>) -> Self {
+    pub fn rotate_by_quat_prepend(&self, q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+
         let mut out = Self::new();
 
         let qx = q.0[0];
@@ -406,7 +431,9 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn rotate_around_axis(&self, axis: &Vec3<T>, rad: T) -> Self {
+    pub fn rotate_around_axis(&self, axis: impl AsRef<Vec3<T>>, rad: T) -> Self {
+        let axis = axis.as_ref();
+
         if rad.abs() < epsilon() {
             return *self;
         }
@@ -774,7 +801,7 @@ mod tests {
 
         assert_eq!(
             quat2_a()
-                .rotate_by_quat_prepend(&quat2_rotation.real())
+                .rotate_by_quat_prepend(quat2_rotation.real())
                 .raw(),
             (quat2_rotation * *quat2_a()).raw()
         );
@@ -834,7 +861,7 @@ mod tests {
         assert_eq!(
             quat2_a()
                 .clone()
-                .set_real(&Quat::from_values(4.0, 6.0, 8.0, -100.0))
+                .set_real(Quat::from_values(4.0, 6.0, 8.0, -100.0))
                 .raw(),
             &[4.0, 6.0, 8.0, -100.0, 2.0, 5.0, 6.0, -2.0]
         );
@@ -848,7 +875,7 @@ mod tests {
         assert_eq!(
             quat2_a()
                 .clone()
-                .set_dual(&Quat::from_values(4.3, 6.0, 8.0, -100.0))
+                .set_dual(Quat::from_values(4.3, 6.0, 8.0, -100.0))
                 .raw(),
             &[1.0, 2.0, 3.0, 4.0, 4.3, 6.0, 8.0, -100.0]
         );
@@ -908,8 +935,8 @@ mod tests {
     fn from_mat4() {
         let quat_rotation = Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0).normalize();
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &quat_rotation,
-            &Vec3::<f32>::from_values(1.0, -5.0, 3.0),
+            quat_rotation,
+            Vec3::<f32>::from_values(1.0, -5.0, 3.0),
         )
         .normalize();
 
@@ -985,12 +1012,12 @@ mod tests {
     #[test]
     fn rotate_around_axis() -> Result<(), Error> {
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
-            &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+            Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
         )
         .normalize();
 
-        let result = quat2_a.rotate_around_axis(&Vec3::<f32>::from_values(1.0, 4.0, 2.0), 5.0);
+        let result = quat2_a.rotate_around_axis(Vec3::<f32>::from_values(1.0, 4.0, 2.0), 5.0);
 
         assert_eq!(
             result.raw(),
@@ -1012,8 +1039,8 @@ mod tests {
     #[test]
     fn rotate_x() {
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
-            &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+            Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
         )
         .normalize();
 
@@ -1031,8 +1058,8 @@ mod tests {
     #[test]
     fn rotate_y() {
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
-            &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+            Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
         )
         .normalize();
 
@@ -1056,8 +1083,8 @@ mod tests {
     #[test]
     fn rotate_z() {
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
-            &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+            Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
         )
         .normalize();
 
@@ -1095,8 +1122,8 @@ mod tests {
         );
         assert_ne!(
             Quat2::<f32>::from_rotation_translation(
-                &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
-                &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                Vec3::<f32>::from_values(1.0, 2.0, 3.0)
             )
             .translation()
             .raw(),
@@ -1104,8 +1131,8 @@ mod tests {
         );
         assert_eq!(
             Quat2::<f32>::from_rotation_translation(
-                &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
-                &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                Vec3::<f32>::from_values(1.0, 2.0, 3.0)
             )
             .normalize()
             .translation()
@@ -1117,8 +1144,8 @@ mod tests {
     #[test]
     fn translate() {
         let quat2_a = Quat2::<f32>::from_rotation_translation(
-            &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
-            &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+            Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
         )
         .normalize();
 

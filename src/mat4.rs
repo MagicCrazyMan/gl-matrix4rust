@@ -10,6 +10,12 @@ use crate::{error::Error, quat::Quat, quat2::Quat2, vec3::Vec3};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat4<T = f32>(pub [T; 16]);
 
+impl<T> AsRef<Mat4<T>> for Mat4<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -68,7 +74,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_translation(v: &Vec3<T>) -> Self {
+    pub fn from_translation(v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+
         Self([
             T::one(),
             T::zero(),
@@ -90,7 +98,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_scaling(v: &Vec3<T>) -> Self {
+    pub fn from_scaling(v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+
         Self([
             v.0[0],
             T::zero(),
@@ -112,7 +122,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation(rad: T, axis: &Vec3<T>) -> Result<Self, Error> {
+    pub fn from_rotation(rad: T, axis: impl AsRef<Vec3<T>>) -> Result<Self, Error> {
+        let axis = axis.as_ref();
+
         let mut x = axis.0[0];
         let mut y = axis.0[1];
         let mut z = axis.0[2];
@@ -234,7 +246,10 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation_translation(q: &Quat2<T>, v: &Vec3<T>) -> Self {
+    pub fn from_rotation_translation(q: impl AsRef<Quat2<T>>, v: impl AsRef<Vec3<T>>) -> Self {
+        let q = q.as_ref();
+        let v = v.as_ref();
+
         // Quaternion math
         let x = q.0[0];
         let y = q.0[1];
@@ -275,7 +290,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_quat2(a: &Quat2<T>) -> Self {
+    pub fn from_quat2(a: impl AsRef<Quat2<T>>) -> Self {
+        let a = a.as_ref();
+
         let mut translation = Vec3::<T>::new();
         let bx = -a.0[0];
         let by = -a.0[1];
@@ -304,7 +321,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation_translation_scale(q: &Quat2<T>, v: &Vec3<T>, s: &Vec3<T>) -> Self {
+    pub fn from_rotation_translation_scale(q: impl AsRef<Quat2<T>>, v: impl AsRef<Vec3<T>>, s: impl AsRef<Vec3<T>>) -> Self {
+        let q = q.as_ref();
+        let v = v.as_ref();
+        let s = s.as_ref();
+
         // Quaternion math
         let x = q.0[0];
         let y = q.0[1];
@@ -349,11 +370,16 @@ impl<T: Float> Mat4<T> {
 
     #[inline(always)]
     pub fn from_rotation_translation_scale_origin(
-        q: &Quat2<T>,
-        v: &Vec3<T>,
-        s: &Vec3<T>,
-        o: &Vec3<T>,
+        q: impl AsRef<Quat2<T>>,
+        v: impl AsRef<Vec3<T>>,
+        s: impl AsRef<Vec3<T>>,
+        o: impl AsRef<Vec3<T>>,
     ) -> Self {
+        let q = q.as_ref();
+        let v = v.as_ref();
+        let s = s.as_ref();
+        let o = o.as_ref();
+
         // Quaternion math
         let x = q.0[0];
         let y = q.0[1];
@@ -412,7 +438,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_quat(q: &Quat<T>) -> Self {
+    pub fn from_quat(q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+
         // Quaternion math
         let x = q.0[0];
         let y = q.0[1];
@@ -623,7 +651,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_look_at(eye: &Vec3<T>, center: &Vec3<T>, up: &Vec3<T>) -> Self {
+    pub fn from_look_at(eye: impl AsRef<Vec3<T>>, center: impl AsRef<Vec3<T>>, up: impl AsRef<Vec3<T>>) -> Self {
+        let eye = eye.as_ref();
+        let center = center.as_ref();
+        let up = up.as_ref();
+
         let eye_x = eye.0[0];
         let eye_y = eye.0[1];
         let eye_z = eye.0[2];
@@ -702,7 +734,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_target_to(eye: &Vec3<T>, target: &Vec3<T>, up: &Vec3<T>) -> Self {
+    pub fn from_target_to(eye: impl AsRef<Vec3<T>>, target: impl AsRef<Vec3<T>>, up: impl AsRef<Vec3<T>>) -> Self {
+        let eye = eye.as_ref();
+        let target = target.as_ref();
+        let up = up.as_ref();
+
         let eye_x = eye.0[0];
         let eye_y = eye.0[1];
         let eye_z = eye.0[2];
@@ -1005,7 +1041,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn translate(&self, v: &Vec3<T>) -> Self {
+    pub fn translate(&self, v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+
         let x = v.0[0];
         let y = v.0[1];
         let z = v.0[2];
@@ -1056,7 +1094,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn scale(&self, v: &Vec3<T>) -> Self {
+    pub fn scale(&self, v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+        
         let x = v.0[0];
         let y = v.0[1];
         let z = v.0[2];
@@ -1082,7 +1122,9 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn rotate(&self, axis: &Vec3<T>, rad: T) -> Result<Self, Error> {
+    pub fn rotate(&self, axis: impl AsRef<Vec3<T>>, rad: T) -> Result<Self, Error> {
+        let axis = axis.as_ref();
+        
         let mut x = axis.0[0];
         let mut y = axis.0[1];
         let mut z = axis.0[2];
@@ -1454,7 +1496,9 @@ impl<T: Float> Mat4<T> {
     ///
     /// Refers to `equals` function in `glMatrix`. `exactEquals` is implemented with [`PartialEq`] and [`Eq`],
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
+        
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -1794,9 +1838,9 @@ mod tests {
     #[test]
     fn from_look_at() {
         let out = Mat4::from_look_at(
-            &Vec3::from_values(0.0, 0.0, 1.0),
-            &Vec3::from_values(0.0, 0.0, -1.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, 0.0, 1.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         );
 
         assert_eq!(
@@ -1808,9 +1852,9 @@ mod tests {
     #[test]
     fn from_target_to() {
         let out = Mat4::from_target_to(
-            &Vec3::from_values(0.0, 0.0, 1.0),
-            &Vec3::from_values(0.0, 0.0, -1.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, 0.0, 1.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         );
 
         assert_eq!(
@@ -1855,7 +1899,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let out = mat_a().translate(&Vec3::from_values(4.0, 5.0, 6.0));
+        let out = mat_a().translate(Vec3::from_values(4.0, 5.0, 6.0));
         assert_eq!(
             out.raw(),
             &[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 5.0, 7.0, 9.0, 1.0]
@@ -1864,7 +1908,7 @@ mod tests {
 
     #[test]
     fn scale() {
-        let out = mat_a().scale(&Vec3::from_values(4.0, 5.0, 6.0));
+        let out = mat_a().scale(Vec3::from_values(4.0, 5.0, 6.0));
         assert_eq!(
             out.raw(),
             &[4.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 6.0, 0.0, 1.0, 2.0, 3.0, 1.0]
@@ -2125,9 +2169,9 @@ mod tests {
             1e-16, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
         );
 
-        assert_eq!(true, mat_a.approximate_eq(&mat_b));
-        assert_eq!(false, mat_a.approximate_eq(&mat_c));
-        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+        assert_eq!(true, mat_a.approximate_eq(mat_b));
+        assert_eq!(false, mat_a.approximate_eq(mat_c));
+        assert_eq!(true, mat_a.approximate_eq(mat_d));
     }
 
     #[test]
@@ -2141,7 +2185,7 @@ mod tests {
         let rad = std::f32::consts::PI * 0.5;
         let axis = Vec3::<f32>::from_values(1.0, 0.0, 0.0);
 
-        let out = mat_a().rotate(&axis, rad)?;
+        let out = mat_a().rotate(axis, rad)?;
         assert_eq!(
             out.raw(),
             &[

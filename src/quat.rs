@@ -20,6 +20,12 @@ pub enum EulerOrder {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat<T = f32>(pub [T; 4]);
 
+impl<T> AsRef<Quat<T>> for Quat<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Quat<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -42,7 +48,9 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_axis_angle(axis: &Vec3<T>, rad: T) -> Self {
+    pub fn from_axis_angle(axis: impl AsRef<Vec3<T>>, rad: T) -> Self {
+        let axis = axis.as_ref();
+
         let rad = rad * T::from(0.5).unwrap();
         let s = rad.sin();
 
@@ -50,17 +58,27 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_axes(view: &Vec3<T>, right: &Vec3<T>, up: &Vec3<T>) -> Self {
+    pub fn from_axes(
+        view: impl AsRef<Vec3<T>>,
+        right: impl AsRef<Vec3<T>>,
+        up: impl AsRef<Vec3<T>>,
+    ) -> Self {
+        let view = view.as_ref();
+        let right = right.as_ref();
+        let up = up.as_ref();
+
         let matr = Mat3::<T>::from_values(
             right.0[0], up.0[0], -view.0[0], right.0[1], up.0[1], -view.0[1], right.0[2], up.0[2],
             -view.0[2],
         );
 
-        Self::from_mat3(&matr).normalize()
+        Self::from_mat3(matr).normalize()
     }
 
     #[inline(always)]
-    pub fn from_mat3(m: &Mat3<T>) -> Self {
+    pub fn from_mat3(m: impl AsRef<Mat3<T>>) -> Self {
+        let m = m.as_ref();
+
         let mut out = Self::new();
 
         // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
@@ -161,7 +179,10 @@ impl<T: Float + FloatConst> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotate_to(a: &Vec3<T>, b: &Vec3<T>) -> Self {
+    pub fn from_rotate_to(a: impl AsRef<Vec3<T>>, b: impl AsRef<Vec3<T>>) -> Self {
+        let a = a.as_ref();
+        let b = b.as_ref();
+
         let dot = a.dot(b);
         if dot < T::from(-0.999999).unwrap() {
             let x_unit = Vec3::<T>::from_values(T::one(), T::zero(), T::zero());
@@ -204,7 +225,9 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: &Self) -> T {
+    pub fn angle(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+
         let dotproduct = self.dot(b);
         (T::from(2.0).unwrap() * dotproduct * dotproduct - T::one()).acos()
     }
@@ -362,12 +385,16 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Self) -> T {
+    pub fn dot(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Self, t: T) -> Self {
+    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -382,7 +409,9 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn slerp(&self, b: &Self, t: T) -> Self {
+    pub fn slerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -431,7 +460,17 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn sqlerp(&self, b: &Self, c: &Self, d: &Self, t: T) -> Self {
+    pub fn sqlerp(
+        &self,
+        b: impl AsRef<Self>,
+        c: impl AsRef<Self>,
+        d: impl AsRef<Self>,
+        t: T,
+    ) -> Self {
+        let b = b.as_ref();
+        let c = c.as_ref();
+        let d = d.as_ref();
+        
         let tmp1 = self.slerp(d, t);
         let tmp2 = b.slerp(c, t);
         tmp1.slerp(&tmp2, T::from(2.0).unwrap() * t * (T::one() - t))
@@ -489,7 +528,7 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
         self.dot(b).abs() >= T::one() - epsilon()
     }
 }
@@ -733,10 +772,10 @@ mod tests {
         let vec_d = Quat::from_values(1e-16, 1.0, 2.0, 3.0);
         let vec_e = Quat::from_values(0.0, -1.0, 0.0, 0.0);
 
-        assert_eq!(true, vec_a.approximate_eq(&vec_b));
-        assert_eq!(false, vec_a.approximate_eq(&vec_c));
-        assert_eq!(true, vec_a.approximate_eq(&vec_d));
-        assert_eq!(true, vec_c.approximate_eq(&vec_e));
+        assert_eq!(true, vec_a.approximate_eq(vec_b));
+        assert_eq!(false, vec_a.approximate_eq(vec_c));
+        assert_eq!(true, vec_a.approximate_eq(vec_d));
+        assert_eq!(true, vec_c.approximate_eq(vec_e));
     }
 
     #[test]
@@ -748,33 +787,36 @@ mod tests {
     #[test]
     fn from_mat3() -> Result<(), Error> {
         let mat = Mat3::from_values(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0);
-        let quat = Quat::from_mat3(&mat);
-        assert_eq!(quat.raw(), &[-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]);
+        let quat = Quat::from_mat3(mat);
+        assert_eq!(
+            quat.raw(),
+            &[-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]
+        );
 
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
             &[0.0, 2.220446049250313e-16, -1.0]
         );
 
-        let mat = Mat3::from_mat4(&Mat4::from_look_at(
-            &Vec3::from_values(0.0, 0.0, 0.0),
-            &Vec3::from_values(0.0, 0.0, 1.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+        let mat = Mat3::from_mat4(Mat4::from_look_at(
+        Vec3::from_values(0.0, 0.0, 0.0),
+            Vec3::from_values(0.0, 0.0, 1.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         ))
         .invert()?
         .transpose();
-        let quat = Quat::from_mat3(&mat);
+        let quat = Quat::from_mat3(mat);
         assert_eq!(
             Vec3::from_values(3.0, 2.0, -1.0)
-                .transform_quat(&quat.normalize())
+                .transform_quat(quat.normalize())
                 .raw(),
-            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(&mat).raw()
+            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(mat).raw()
         );
 
-        let mat = Mat3::from_mat4(&Mat4::from_look_at(
-            &Vec3::from_values(0.0, 0.0, 0.0),
-            &Vec3::from_values(-1.0, 0.0, 0.0),
-            &Vec3::from_values(0.0, -1.0, 0.0),
+        let mat = Mat3::from_mat4(Mat4::from_look_at(
+            Vec3::from_values(0.0, 0.0, 0.0),
+            Vec3::from_values(-1.0, 0.0, 0.0),
+            Vec3::from_values(0.0, -1.0, 0.0),
         ))
         .invert()?
         .transpose();
@@ -786,19 +828,19 @@ mod tests {
             &[-0.9999999999999991, -2.0, 3.0]
         );
 
-        let mat = Mat3::from_mat4(&Mat4::from_look_at(
-            &Vec3::from_values(0.0, 0.0, 0.0),
-            &Vec3::from_values(0.0, 0.0, -1.0),
-            &Vec3::from_values(0.0, -1.0, 0.0),
+        let mat = Mat3::from_mat4(Mat4::from_look_at(
+            Vec3::from_values(0.0, 0.0, 0.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(0.0, -1.0, 0.0),
         ))
         .invert()?
         .transpose();
-        let quat = Quat::from_mat3(&mat);
+        let quat = Quat::from_mat3(mat);
         assert_eq!(
             Vec3::from_values(3.0, 2.0, -1.0)
-                .transform_quat(&quat.normalize())
+                .transform_quat(quat.normalize())
                 .raw(),
-            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(&mat).raw()
+            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(mat).raw()
         );
 
         Ok(())
@@ -808,46 +850,46 @@ mod tests {
     fn from_rotate_to() {
         assert_eq!(
             Quat::from_rotate_to(
-                &Vec3::from_values(0.0, 1.0, 0.0),
-                &Vec3::from_values(1.0, 0.0, 0.0),
+                Vec3::from_values(0.0, 1.0, 0.0),
+                Vec3::from_values(1.0, 0.0, 0.0),
             )
             .raw(),
             &[0.0, 0.0, -0.7071067811865475, 0.7071067811865475]
         );
 
         let quat = Quat::from_rotate_to(
-            &Vec3::from_values(0.0, 1.0, 0.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         );
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
             &[0.0, 1.0, 0.0]
         );
 
         let quat = Quat::from_rotate_to(
-            &Vec3::from_values(1.0, 0.0, 0.0),
-            &Vec3::from_values(-1.0, 0.0, 0.0),
+            Vec3::from_values(1.0, 0.0, 0.0),
+            Vec3::from_values(-1.0, 0.0, 0.0),
         );
         assert_eq!(
-            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(quat).raw(),
             &[-1.0, -1.2246467991473532e-16, 0.0]
         );
 
         let quat = Quat::from_rotate_to(
-            &Vec3::from_values(0.0, 1.0, 0.0),
-            &Vec3::from_values(0.0, -1.0, 0.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, -1.0, 0.0),
         );
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
             &[-1.2246467991473532e-16, -1.0, 0.0]
         );
 
         let quat = Quat::from_rotate_to(
-            &Vec3::from_values(0.0, 0.0, 1.0),
-            &Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(0.0, 0.0, 1.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
         );
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, 1.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 0.0, 1.0).transform_quat(quat).raw(),
             &[-1.2246467991473532e-16, 0.0, -1.0]
         );
     }
@@ -855,70 +897,68 @@ mod tests {
     #[test]
     fn from_axes() {
         let quat = Quat::from_axes(
-            &Vec3::from_values(-1.0, 0.0, 0.0),
-            &Vec3::from_values(0.0, 0.0, -1.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(-1.0, 0.0, 0.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         );
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0)
-                .transform_quat(&quat)
-                .raw(),
+            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
             &[1.0, 0.0, -2.220446049250313e-16]
         );
         assert_eq!(
-            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(quat).raw(),
             &[2.220446049250313e-16, 0.0, 1.0]
         );
 
         let quat = Quat::from_axes(
-            &Vec3::from_values(0.0, 0.0, -1.0),
-            &Vec3::from_values(1.0, 0.0, 0.0),
-            &Vec3::from_values(0.0, 1.0, 0.0),
+            Vec3::from_values(0.0, 0.0, -1.0),
+            Vec3::from_values(1.0, 0.0, 0.0),
+            Vec3::from_values(0.0, 1.0, 0.0),
         );
         assert_eq!(quat.raw(), &[-0.0, 0.0, 0.0, 1.0]);
     }
 
     #[test]
     fn angle() {
-        assert_eq!(quat_a().normalize().angle(&quat_a().normalize()), 0.0);
+        assert_eq!(quat_a().normalize().angle(quat_a().normalize()), 0.0);
 
         // precision consider
         assert_eq!(
             quat_a()
                 .normalize()
-                .angle(&quat_a().normalize().rotate_x(std::f32::consts::PI / 4.0)),
+                .angle(quat_a().normalize().rotate_x(std::f32::consts::PI / 4.0)),
             0.7853986
         );
 
         // precision consider
         let quat_a = quat_a().normalize();
         let quat_b = quat_b().normalize();
-        assert_eq!(quat_a.angle(&quat_b), 0.5003915);
+        assert_eq!(quat_a.angle(quat_b), 0.5003915);
     }
 
     #[test]
     fn axis_angle() {
-        let quat = Quat::from_axis_angle(&Vec3::from_values(0.0, 1.0, 0.0), 0.0);
+        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 1.0, 0.0), 0.0);
         let (_, rad) = quat.axis_angle();
         assert_eq!(rad % (std::f32::consts::PI * 2.0), 0.0);
 
-        let quat = Quat::from_axis_angle(&Vec3::from_values(1.0, 0.0, 0.0), 0.7778);
+        let quat = Quat::from_axis_angle(Vec3::from_values(1.0, 0.0, 0.0), 0.7778);
         let (vec3, rad) = quat.axis_angle();
         assert_eq!(vec3.raw(), &[1.0, 0.0, 0.0]);
         assert_eq!(rad, 0.7778);
 
-        let quat = Quat::from_axis_angle(&Vec3::from_values(0.0, 1.0, 0.0), 0.879546);
+        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 1.0, 0.0), 0.879546);
         let (vec3, rad) = quat.axis_angle();
         assert_eq!(vec3.raw(), &[0.0, 1.0000000000000002, 0.0]);
         assert_eq!(rad, 0.8795459999999998);
 
-        let quat = Quat::from_axis_angle(&Vec3::from_values(0.0, 0.0, 1.0), 0.123456);
+        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 0.0, 1.0), 0.123456);
         let (vec3, rad) = quat.axis_angle();
         assert_eq!(vec3.raw(), &[0.0, 0.0, 1.0000000000000138]);
         assert_eq!(rad, 0.1234559999999983);
 
         let quat = Quat::from_axis_angle(
-            &Vec3::from_values(0.707106, 0.0, 0.707106),
+            Vec3::from_values(0.707106, 0.0, 0.707106),
             std::f32::consts::PI * 0.5,
         );
         let (vec3, rad) = quat.axis_angle();
@@ -926,7 +966,7 @@ mod tests {
         assert_eq!(rad, std::f32::consts::PI * 0.5);
 
         let quat = Quat::from_axis_angle(
-            &Vec3::from_values(0.65538555, 0.49153915, 0.57346237),
+            Vec3::from_values(0.65538555, 0.49153915, 0.57346237),
             8.8888,
         );
         let (_, rad) = quat.axis_angle();
@@ -980,9 +1020,7 @@ mod tests {
     fn rotate_x() {
         let quat = quat_identity().rotate_x((90.0f32).to_radians());
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0)
-                .transform_quat(&quat)
-                .raw(),
+            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
             &[0.0, 0.99999994, -5.9604645e-8]
         );
     }
@@ -991,9 +1029,7 @@ mod tests {
     fn rotate_y() {
         let quat = quat_identity().rotate_y((90.0f32).to_radians());
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0)
-                .transform_quat(&quat)
-                .raw(),
+            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
             &[-0.99999994, 0.0, -5.9604645e-8]
         );
     }
@@ -1002,7 +1038,7 @@ mod tests {
     fn rotate_z() {
         let quat = quat_identity().rotate_z((90.0f32).to_radians());
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
             &[-0.99999994, 5.9604645e-8, 0.0]
         );
     }
@@ -1011,12 +1047,17 @@ mod tests {
     fn from_euler() {
         assert_eq!(
             Quat::from_euler(-30.0, 30.0, 30.0).raw(),
-            &[-0.30618621784789724, 0.17677669529663687, 0.30618621784789724, 0.8838834764831845]
+            &[
+                -0.30618621784789724,
+                0.17677669529663687,
+                0.30618621784789724,
+                0.8838834764831845
+            ]
         );
 
         let quat = Quat::from_euler(-90.0, 0.0, 0.0);
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(&quat).raw(),
+            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
             &[0.0, 2.220446049250313e-16, -1.0]
         );
     }
@@ -1025,7 +1066,7 @@ mod tests {
     fn from_axis_angle() {
         assert_eq!(
             Quat::from_axis_angle(
-                &Vec3::from_values(1.0, 0.0, 0.0),
+                Vec3::from_values(1.0, 0.0, 0.0),
                 std::f32::consts::PI * 0.5,
             )
             .raw(),

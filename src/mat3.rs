@@ -10,6 +10,12 @@ use crate::{epsilon, error::Error, mat2d::Mat2d, mat4::Mat4, quat::Quat, vec2::V
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat3<T = f32>(pub [T; 9]);
 
+impl<T> AsRef<Mat3<T>> for Mat3<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Mat3<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -32,7 +38,8 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn from_mat4(mat: &Mat4<T>) -> Self {
+    pub fn from_mat4(mat: impl AsRef<Mat4<T>>) -> Self {
+        let mat = mat.as_ref();
         Self([
             mat.0[0], mat.0[1], mat.0[2], mat.0[4], mat.0[5], mat.0[6], mat.0[8], mat.0[9],
             mat.0[10],
@@ -60,7 +67,8 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn from_translation(v: &Vec2<T>) -> Self {
+    pub fn from_translation(v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
         Self([
             T::one(),
             T::zero(),
@@ -75,7 +83,8 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn from_scaling(v: &Vec2<T>) -> Self {
+    pub fn from_scaling(v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
         Self([
             v.0[0],
             T::zero(),
@@ -107,7 +116,8 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn from_mat_2d(a: &Mat2d<T>) -> Self {
+    pub fn from_mat_2d(a: impl AsRef<Mat2d<T>>) -> Self {
+        let a = a.as_ref();
         Self([
             a.0[0],
             a.0[1],
@@ -122,7 +132,8 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn from_quat(q: &Quat<T>) -> Self {
+    pub fn from_quat(q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
         let x = q.0[0];
         let y = q.0[1];
         let z = q.0[2];
@@ -170,7 +181,9 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn normal_matrix_from_mat4(a: &Mat4<T>) -> Result<Self, Error> {
+    pub fn normal_matrix_from_mat4(a: impl AsRef<Mat4<T>>) -> Result<Self, Error> {
+        let a = a.as_ref();
+
         let a00 = a.0[0];
         let a01 = a.0[1];
         let a02 = a.0[2];
@@ -377,7 +390,9 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn translate(&self, v: &Vec3<T>) -> Self {
+    pub fn translate(&self, v: impl AsRef<Vec3<T>>) -> Self {
+        let v = v.as_ref();
+
         let a00 = self.0[0];
         let a01 = self.0[1];
         let a02 = self.0[2];
@@ -404,7 +419,9 @@ impl<T: Float> Mat3<T> {
     }
 
     #[inline(always)]
-    pub fn scale(&self, v: &Vec2<T>) -> Self {
+    pub fn scale(&self, v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
+
         let x = v.0[0];
         let y = v.0[1];
 
@@ -466,7 +483,9 @@ impl<T: Float> Mat3<T> {
     ///
     /// Refers to `equals` function in `glMatrix`. `exactEquals` is implemented with [`PartialEq`] and [`Eq`],
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Mat3<T>) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Mat3<T>>) -> bool {
+        let b = b.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -685,7 +704,7 @@ mod tests {
         );
 
         assert_eq!(
-            Mat3::from_mat4(&mat4).raw(),
+            Mat3::from_mat4(mat4).raw(),
             &[1.0, 2.0, 3.0, 5.0, 6.0, 7.0, 9.0, 10.0, 11.0,]
         );
     }
@@ -819,9 +838,9 @@ mod tests {
         let mat_c = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
         let mat_d = Mat3::from_values(1e-16, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
 
-        assert_eq!(true, mat_a.approximate_eq(&mat_b));
-        assert_eq!(false, mat_a.approximate_eq(&mat_c));
-        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+        assert_eq!(true, mat_a.approximate_eq(mat_b));
+        assert_eq!(false, mat_a.approximate_eq(mat_c));
+        assert_eq!(true, mat_a.approximate_eq(mat_d));
     }
 
     #[test]
@@ -832,7 +851,7 @@ mod tests {
     #[test]
     fn normal_matrix_from_mat4() -> Result<(), Error> {
         let mut mat4 = Mat4::new_identity();
-        mat4 = mat4.translate(&Vec3::from_values(2.0, 4.0, 6.0));
+        mat4 = mat4.translate(Vec3::from_values(2.0, 4.0, 6.0));
         mat4 = mat4.rotate_x(std::f32::consts::PI / 2.0);
 
         assert_eq!(
@@ -850,10 +869,10 @@ mod tests {
             ]
         );
 
-        mat4 = mat4.scale(&Vec3::from_values(2.0, 3.0, 4.0));
+        mat4 = mat4.scale(Vec3::from_values(2.0, 3.0, 4.0));
 
         assert_eq!(
-            Mat3::normal_matrix_from_mat4(&mat4)?.raw(),
+            Mat3::normal_matrix_from_mat4(mat4)?.raw(),
             &[
                 0.5,
                 0.0,

@@ -10,6 +10,12 @@ use crate::{epsilon, error::Error, vec2::Vec2};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat2<T = f32>(pub [T; 4]);
 
+impl<T> AsRef<Mat2<T>> for Mat2<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Mat2<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -32,7 +38,8 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_scaling(v: &Vec2<T>) -> Self {
+    pub fn from_scaling(v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
         Self([v.0[0], T::zero(), T::zero(), v.0[1]])
     }
 
@@ -119,7 +126,9 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn scale(&self, v: &Vec2<T>) -> Self {
+    pub fn scale(&self, v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -159,7 +168,16 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn ldu(&self, l: &Self, d: &Self, u: &Self) -> (Self, Self, Self) {
+    pub fn ldu(
+        &self,
+        l: impl AsRef<Self>,
+        d: impl AsRef<Self>,
+        u: impl AsRef<Self>,
+    ) -> (Self, Self, Self) {
+        let l = l.as_ref();
+        let d = d.as_ref();
+        let u = u.as_ref();
+
         let mut l = Self::from_slice(l.raw());
         let d = Self::from_slice(d.raw());
         let mut u = Self::from_slice(u.raw());
@@ -174,7 +192,8 @@ impl<T: Float> Mat2<T> {
     ///
     /// Refers to `equals` function in `glMatrix`. `exactEquals` is impl<T: Float>emented with [`PartialEq`] and [`Eq`],
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -338,7 +357,7 @@ mod tests {
     #[test]
     fn scale() {
         assert_eq!(
-            mat_a().scale(&Vec2::from_values(2.0, 3.0)).raw(),
+            mat_a().scale(Vec2::from_values(2.0, 3.0)).raw(),
             &[2.0, 4.0, 9.0, 12.0]
         );
     }
@@ -358,7 +377,7 @@ mod tests {
         let u = Mat2::new_identity();
         let mat = Mat2::from_values(4.0, 3.0, 6.0, 3.0);
 
-        let (l, d, u) = mat.ldu(&l, &d, &u);
+        let (l, d, u) = mat.ldu(l, d, u);
 
         assert_eq!(l.raw(), &[1.0, 0.0, 1.5, 1.0]);
         assert_eq!(d.raw(), &[1.0, 0.0, 0.0, 1.0]);
@@ -414,9 +433,9 @@ mod tests {
         let mat_c = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
         let mat_d = Mat2::from_values(1e-16, 1.0, 2.0, 3.0);
 
-        assert_eq!(true, mat_a.approximate_eq(&mat_b));
-        assert_eq!(false, mat_a.approximate_eq(&mat_c));
-        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+        assert_eq!(true, mat_a.approximate_eq(mat_b));
+        assert_eq!(false, mat_a.approximate_eq(mat_c));
+        assert_eq!(true, mat_a.approximate_eq(mat_d));
     }
 
     #[test]

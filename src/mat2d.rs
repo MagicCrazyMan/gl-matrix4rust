@@ -10,6 +10,12 @@ use crate::{epsilon, error::Error, vec2::Vec2};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat2d<T = f32>(pub [T; 6]);
 
+impl<T> AsRef<Mat2d<T>> for Mat2d<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Mat2d<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -39,7 +45,8 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn from_scaling(v: &Vec2<T>) -> Self {
+    pub fn from_scaling(v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
         Self([v.0[0], T::zero(), T::zero(), v.0[1], T::zero(), T::zero()])
     }
 
@@ -51,7 +58,8 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn from_translation(v: &Vec2<T>) -> Self {
+    pub fn from_translation(v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
         Self([T::one(), T::zero(), T::zero(), T::one(), v.0[0], v.0[1]])
     }
 }
@@ -134,7 +142,9 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn scale(&self, v: &Vec2<T>) -> Self {
+    pub fn scale(&self, v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -169,7 +179,9 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn translate(&self, v: &Vec2<T>) -> Self {
+    pub fn translate(&self, v: impl AsRef<Vec2<T>>) -> Self {
+        let v = v.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -204,7 +216,9 @@ impl<T: Float> Mat2d<T> {
     ///
     /// Refers to `equals` function in `glMatrix`. `exactEquals` is impl<T: Float>emented with [`PartialEq`] and [`Eq`],
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -385,7 +399,7 @@ mod tests {
     #[test]
     fn scale() {
         assert_eq!(
-            mat_a().scale(&Vec2::from_values(2.0, 3.0)).raw(),
+            mat_a().scale(Vec2::from_values(2.0, 3.0)).raw(),
             &[2.0, 4.0, 9.0, 12.0, 5.0, 6.0]
         );
     }
@@ -393,7 +407,7 @@ mod tests {
     #[test]
     fn translate() {
         assert_eq!(
-            mat_a().translate(&Vec2::from_values(2.0, 3.0)).raw(),
+            mat_a().translate(Vec2::from_values(2.0, 3.0)).raw(),
             &[1.0, 2.0, 3.0, 4.0, 16.0, 22.0]
         );
     }
@@ -473,9 +487,9 @@ mod tests {
         let mat_c = Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
         let mat_d = Mat2d::from_values(1e-16, 1.0, 2.0, 3.0, 4.0, 5.0);
 
-        assert_eq!(true, mat_a.approximate_eq(&mat_b));
-        assert_eq!(false, mat_a.approximate_eq(&mat_c));
-        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+        assert_eq!(true, mat_a.approximate_eq(mat_b));
+        assert_eq!(false, mat_a.approximate_eq(mat_c));
+        assert_eq!(true, mat_a.approximate_eq(mat_d));
     }
 
     #[test]

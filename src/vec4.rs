@@ -10,6 +10,12 @@ use crate::{epsilon, mat4::Mat4, quat::Quat};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec4<T = f32>(pub [T; 4]);
 
+impl<T> AsRef<Vec4<T>> for Vec4<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 impl<T: Float> Vec4<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -81,7 +87,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn min(&self, b: &Self) -> Self {
+    pub fn min(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
+
         Self([
             self.0[0].min(b.0[0]),
             self.0[1].min(b.0[1]),
@@ -91,7 +99,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn max(&self, b: &Self) -> Self {
+    pub fn max(&self, b: impl AsRef<Self>) -> Self {
+        let b = b.as_ref();
+
         Self([
             self.0[0].max(b.0[0]),
             self.0[1].max(b.0[1]),
@@ -116,7 +126,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn squared_distance(&self, b: &Self) -> T {
+    pub fn squared_distance(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         let z = b.0[2] - self.0[2];
@@ -125,7 +137,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn distance(&self, b: &Self) -> T {
+    pub fn distance(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+
         self.squared_distance(b).sqrt()
     }
 
@@ -174,12 +188,17 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Self) -> T {
+    pub fn dot(&self, b: impl AsRef<Self>) -> T {
+        let b = b.as_ref();
+
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
     }
 
     #[inline(always)]
-    pub fn cross(&self, v: &Self, w: &Self) -> Self {
+    pub fn cross(&self, v: impl AsRef<Self>, w: impl AsRef<Self>) -> Self {
+        let v = v.as_ref();
+        let w = w.as_ref();
+
         let a = v.0[0] * w.0[1] - v.0[1] * w.0[0];
         let b = v.0[0] * w.0[2] - v.0[2] * w.0[0];
         let c = v.0[0] * w.0[3] - v.0[3] * w.0[0];
@@ -200,7 +219,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Self, t: T) -> Self {
+    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
+        let b = b.as_ref();
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -215,7 +236,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn transform_mat4(&self, m: &Mat4<T>) -> Self {
+    pub fn transform_mat4(&self, m: impl AsRef<Mat4<T>>) -> Self {
+        let m = m.as_ref();
+
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -230,7 +253,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn transform_quat(&self, q: &Quat<T>) -> Self {
+    pub fn transform_quat(&self, q: impl AsRef<Quat<T>>) -> Self {
+        let q = q.as_ref();
+
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -254,7 +279,9 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Self) -> bool {
+    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
+        let b = b.as_ref();
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -521,14 +548,14 @@ mod tests {
     fn min() {
         let vec_a = Vec4::from_values(1.0, 3.0, 1.0, 3.0);
         let vec_b = Vec4::from_values(3.0, 1.0, 3.0, 1.0);
-        assert_eq!(vec_a.min(&vec_b).raw(), &[1.0, 1.0, 1.0, 1.0]);
+        assert_eq!(vec_a.min(vec_b).raw(), &[1.0, 1.0, 1.0, 1.0]);
     }
 
     #[test]
     fn max() {
         let vec_a = Vec4::from_values(1.0, 3.0, 1.0, 3.0);
         let vec_b = Vec4::from_values(3.0, 1.0, 3.0, 1.0);
-        assert_eq!(vec_a.max(&vec_b).raw(), &[3.0, 3.0, 3.0, 3.0]);
+        assert_eq!(vec_a.max(vec_b).raw(), &[3.0, 3.0, 3.0, 3.0]);
     }
 
     #[test]
@@ -595,7 +622,7 @@ mod tests {
         let vec_a = Vec4::from_values(1.0, 0.0, 0.0, 0.0);
         let vec_b = Vec4::from_values(0.0, 1.0, 0.0, 0.0);
         let vec_c = Vec4::from_values(0.0, 1.0, 1.0, 0.0);
-        assert_eq!(vec_a.cross(&vec_b, &vec_c).raw(), &[0.0, 0.0, 0.0, -1.0]);
+        assert_eq!(vec_a.cross(vec_b, vec_c).raw(), &[0.0, 0.0, 0.0, -1.0]);
     }
 
     #[test]
@@ -669,9 +696,9 @@ mod tests {
         let vec_c = Vec4::from_values(1.0, 2.0, 3.0, 4.0);
         let vec_d = Vec4::from_values(1e-16, 1.0, 2.0, 3.0);
 
-        assert_eq!(true, vec_a.approximate_eq(&vec_b));
-        assert_eq!(false, vec_a.approximate_eq(&vec_c));
-        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+        assert_eq!(true, vec_a.approximate_eq(vec_b));
+        assert_eq!(false, vec_a.approximate_eq(vec_c));
+        assert_eq!(true, vec_a.approximate_eq(vec_d));
     }
 
     #[test]
