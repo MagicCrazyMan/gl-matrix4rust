@@ -1009,7 +1009,6 @@ mod tests {
             // precision consider
             let quat_a = quat_a().normalize();
             let quat_b = quat_b().normalize();
-            let dummy = (quat_a.conjugate() * quat_b).axis_angle();
             assert_eq!(
                 quat_a.angle(&quat_b),
                 0.5003915
@@ -1070,7 +1069,7 @@ mod tests {
             );
 
             let quat = Quat::<f32>::from_axis_angle(&Vec3::<f32>::from_values(0.65538555, 0.49153915, 0.57346237), 8.8888);
-            let (vec3, rad) = quat.axis_angle();
+            let (_, rad) = quat.axis_angle();
             assert_eq!(
                 quat.raw(),
                 &[-0.63199174, -0.4739938, -0.55299276, -0.2647929]
@@ -1410,7 +1409,7 @@ mod tests {
             );
 
             let quat = Quat::<f64>::from_axis_angle(&Vec3::<f64>::from_values(0.65538555, 0.49153915, 0.57346237), 8.8888);
-            let (vec3, rad) = quat.axis_angle();
+            let (_, rad) = quat.axis_angle();
             assert_eq!(
                 quat.raw(),
                 &[-0.6319917917288304, -0.4739938317428059, -0.5529928310219251, -0.2647927364605179]
