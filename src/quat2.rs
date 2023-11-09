@@ -53,7 +53,7 @@ impl<T: Float> Quat2<T> {
         let ax = x2 * T::from(0.5).unwrap();
         let ay = y2 * T::from(0.5).unwrap();
         let az = z2 * T::from(0.5).unwrap();
-        Self::from_values(
+        Self([
             x1,
             y1,
             z1,
@@ -62,7 +62,7 @@ impl<T: Float> Quat2<T> {
             ay * w1 + az * x1 - ax * z1,
             az * w1 + ax * y1 - ay * x1,
             -ax * x1 - ay * y1 - az * z1,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -74,7 +74,7 @@ impl<T: Float> Quat2<T> {
         let by = q.0[1];
         let bz = q.0[2];
         let bw = q.0[3];
-        Self::from_values(
+        Self([
             bx,
             by,
             bz,
@@ -83,12 +83,12 @@ impl<T: Float> Quat2<T> {
             ay * bw + az * bx - ax * bz,
             az * bw + ax * by - ay * bx,
             -ax * bx - ay * by - az * bz,
-        )
+        ])
     }
 
     #[inline(always)]
     pub fn from_translation(t: &Vec3<T>) -> Self {
-        Self::from_values(
+        Self([
             T::zero(),
             T::zero(),
             T::zero(),
@@ -97,12 +97,12 @@ impl<T: Float> Quat2<T> {
             t.0[1] * T::from(0.5).unwrap(),
             t.0[2] * T::from(0.5).unwrap(),
             T::zero(),
-        )
+        ])
     }
 
     #[inline(always)]
     pub fn from_rotation(q: &Quat<T>) -> Self {
-        Self::from_values(
+        Self([
             q.0[0],
             q.0[1],
             q.0[2],
@@ -111,7 +111,7 @@ impl<T: Float> Quat2<T> {
             T::zero(),
             T::zero(),
             T::zero(),
-        )
+        ])
     }
 
     #[inline(always)]
@@ -238,7 +238,7 @@ impl<T: Float> Quat2<T> {
         let ay2 = self.0[5];
         let az2 = self.0[6];
         let aw2 = self.0[7];
-        Self::from_values(
+        Self([
             ax1,
             ay1,
             az1,
@@ -247,7 +247,7 @@ impl<T: Float> Quat2<T> {
             aw1 * by1 + az1 * bx1 - ax1 * bz1 + ay2,
             aw1 * bz1 + ax1 * by1 - ay1 * bx1 + az2,
             -ax1 * bx1 - ay1 * by1 - az1 * bz1 + aw2,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -270,7 +270,7 @@ impl<T: Float> Quat2<T> {
         let bz = quat.0[2];
         let bw = quat.0[3];
 
-        Self::from_values(
+        Self([
             bx,
             by,
             bz,
@@ -279,7 +279,7 @@ impl<T: Float> Quat2<T> {
             ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
             az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
             aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -302,7 +302,7 @@ impl<T: Float> Quat2<T> {
         let bz = quat.0[2];
         let bw = quat.0[3];
 
-        Self::from_values(
+        Self([
             bx,
             by,
             bz,
@@ -311,7 +311,7 @@ impl<T: Float> Quat2<T> {
             ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
             az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
             aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -334,7 +334,7 @@ impl<T: Float> Quat2<T> {
         let bz = quat.0[2];
         let bw = quat.0[3];
 
-        Self::from_values(
+        Self([
             bx,
             by,
             bz,
@@ -343,7 +343,7 @@ impl<T: Float> Quat2<T> {
             ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
             az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
             aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -449,16 +449,16 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Quat2<T>) -> T {
+    pub fn dot(&self, b: &Self) -> T {
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Quat2<T>, t: T) -> Self {
+    pub fn lerp(&self, b: &Self, t: T) -> Self {
         let mt = T::one() - t;
         let t = if self.dot(b) < T::zero() { -t } else { t };
 
-        Self::from_values(
+        Self([
             self.0[0] * mt + b.0[0] * t,
             self.0[1] * mt + b.0[1] * t,
             self.0[2] * mt + b.0[2] * t,
@@ -467,7 +467,7 @@ impl<T: Float> Quat2<T> {
             self.0[5] * mt + b.0[5] * t,
             self.0[6] * mt + b.0[6] * t,
             self.0[7] * mt + b.0[7] * t,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -503,7 +503,7 @@ impl<T: Float> Quat2<T> {
 
         let a_dot_b = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
 
-        Self::from_values(
+        Self([
             a0,
             a1,
             a2,
@@ -512,13 +512,13 @@ impl<T: Float> Quat2<T> {
             (b1 - a1 * a_dot_b) / magnitude,
             (b2 - a2 * a_dot_b) / magnitude,
             (b3 - a3 * a_dot_b) / magnitude,
-        )
+        ])
     }
 
     #[inline(always)]
     pub fn invert(&self) -> Self {
         let sqlen = self.squared_length();
-        Self::from_values(
+        Self([
             -self.0[0] / sqlen,
             -self.0[1] / sqlen,
             -self.0[2] / sqlen,
@@ -527,19 +527,19 @@ impl<T: Float> Quat2<T> {
             -self.0[5] / sqlen,
             -self.0[6] / sqlen,
             self.0[7] / sqlen,
-        )
+        ])
     }
 
     #[inline(always)]
     pub fn conjugate(&self) -> Self {
-        Self::from_values(
+        Self([
             -self.0[0], -self.0[1], -self.0[2], self.0[3], -self.0[4], -self.0[5], -self.0[6],
             self.0[7],
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Quat2<T>) -> bool {
+    pub fn approximate_eq(&self, b: &Self) -> bool {
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -569,11 +569,11 @@ impl<T: Float> Quat2<T> {
 }
 
 impl<T: Float> Add<Quat2<T>> for Quat2<T> {
-    type Output = Quat2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Quat2<T>) -> Quat2<T> {
-        Self::from_values(
+    fn add(self, b: Self) -> Self {
+        Self([
             self.0[0] + b.0[0],
             self.0[1] + b.0[1],
             self.0[2] + b.0[2],
@@ -582,15 +582,15 @@ impl<T: Float> Add<Quat2<T>> for Quat2<T> {
             self.0[5] + b.0[5],
             self.0[6] + b.0[6],
             self.0[7] + b.0[7],
-        )
+        ])
     }
 }
 
 impl<T: Float> Mul<Quat2<T>> for Quat2<T> {
-    type Output = Quat2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Quat2<T>) -> Quat2<T> {
+    fn mul(self, b: Self) -> Self {
         let ax0 = self.0[0];
         let ay0 = self.0[1];
         let az0 = self.0[2];
@@ -608,7 +608,7 @@ impl<T: Float> Mul<Quat2<T>> for Quat2<T> {
         let bz0 = b.0[2];
         let bw0 = b.0[3];
 
-        Self::from_values(
+        Self([
             ax0 * bw0 + aw0 * bx0 + ay0 * bz0 - az0 * by0,
             ay0 * bw0 + aw0 * by0 + az0 * bx0 - ax0 * bz0,
             az0 * bw0 + aw0 * bz0 + ax0 * by0 - ay0 * bx0,
@@ -623,16 +623,16 @@ impl<T: Float> Mul<Quat2<T>> for Quat2<T> {
                 - ax1 * bx0
                 - ay1 * by0
                 - az1 * bz0,
-        )
+        ])
     }
 }
 
 impl<T: Float> Mul<T> for Quat2<T> {
-    type Output = Quat2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Quat2<T> {
-        Self::from_values(
+    fn mul(self, b: T) -> Self {
+        Self([
             self.0[0] * b,
             self.0[1] * b,
             self.0[2] * b,
@@ -641,7 +641,7 @@ impl<T: Float> Mul<T> for Quat2<T> {
             self.0[5] * b,
             self.0[6] * b,
             self.0[7] * b,
-        )
+        ])
     }
 }
 

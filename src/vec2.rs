@@ -21,8 +21,8 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice([x, y]: &[T; 2]) -> Self {
-        Self([*x, *y])
+    pub fn from_slice(slice: &[T; 2]) -> Self {
+        Self(slice.clone())
     }
 }
 
@@ -55,39 +55,27 @@ impl<T: Float> Vec2<T> {
 
     #[inline(always)]
     pub fn ceil(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].ceil();
-        out.0[1] = self.0[1].ceil();
-        out
+        Self([self.0[0].ceil(), self.0[1].ceil()])
     }
 
     #[inline(always)]
     pub fn floor(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].floor();
-        out.0[1] = self.0[1].floor();
-        out
+        Self([self.0[0].floor(), self.0[1].floor()])
     }
 
     #[inline(always)]
-    pub fn min(&self, b: &Vec2<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].min(b.0[0]);
-        out.0[1] = self.0[1].min(b.0[1]);
-        out
+    pub fn min(&self, b: &Self) -> Self {
+        Self([self.0[0].min(b.0[0]), self.0[1].min(b.0[0])])
     }
 
     #[inline(always)]
-    pub fn max(&self, b: &Vec2<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].max(b.0[0]);
-        out.0[1] = self.0[1].max(b.0[1]);
-        out
+    pub fn max(&self, b: &Self) -> Self {
+        Self([self.0[0].max(b.0[0]), self.0[1].max(b.0[1])])
     }
 
     #[inline(always)]
     pub fn round(&self) -> Self {
-        Self::from_values(self.0[0].round(), self.0[1].round())
+        Self([self.0[0].round(), self.0[1].round()])
     }
 
     #[inline(always)]
@@ -96,14 +84,14 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn squared_distance(&self, b: &Vec2<T>) -> T {
+    pub fn squared_distance(&self, b: &Self) -> T {
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         x * x + y * y
     }
 
     #[inline(always)]
-    pub fn distance(&self, b: &Vec2<T>) -> T {
+    pub fn distance(&self, b: &Self) -> T {
         self.squared_distance(b).sqrt()
     }
 
@@ -121,18 +109,12 @@ impl<T: Float> Vec2<T> {
 
     #[inline(always)]
     pub fn negate(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = -self.0[0];
-        out.0[1] = -self.0[1];
-        out
+        Self([-self.0[0], -self.0[1]])
     }
 
     #[inline(always)]
     pub fn inverse(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = T::one() / self.0[0];
-        out.0[1] = T::one() / self.0[1];
-        out
+        Self([T::one() / self.0[0], T::one() / self.0[1]])
     }
 
     #[inline(always)]
@@ -142,19 +124,16 @@ impl<T: Float> Vec2<T> {
             len = T::one() / len.sqrt();
         }
 
-        let mut out = Self::new();
-        out.0[0] = self.0[0] * len;
-        out.0[1] = self.0[1] * len;
-        out
+        Self([self.0[0] * len, self.0[1] * len])
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Vec2<T>) -> T {
+    pub fn dot(&self, b: &Self) -> T {
         self.0[0] * b.0[0] + self.0[1] * b.0[1]
     }
 
     #[inline(always)]
-    pub fn cross(&self, b: &Vec2<T>) -> Vec3<T> {
+    pub fn cross(&self, b: &Self) -> Vec3<T> {
         Vec3::<T>::from_values(
             T::zero(),
             T::zero(),
@@ -163,58 +142,51 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Vec2<T>, t: T) -> Self {
-        let mut out = Self::new();
+    pub fn lerp(&self, b: &Self, t: T) -> Self {
         let ax = self.0[0];
         let ay = self.0[1];
-        out.0[0] = ax + t * (b.0[0] - ax);
-        out.0[1] = ay + t * (b.0[1] - ay);
-        out
+        Self([ax + t * (b.0[0] - ax), ay + t * (b.0[1] - ay)])
     }
 
     #[inline(always)]
     pub fn transform_mat2(&self, m: &Mat2<T>) -> Self {
-        let mut out = Self::new();
         let x = self.0[0];
         let y = self.0[1];
-        out.0[0] = m.0[0] * x + m.0[2] * y;
-        out.0[1] = m.0[1] * x + m.0[3] * y;
-        out
+        Self([m.0[0] * x + m.0[2] * y, m.0[1] * x + m.0[3] * y])
     }
 
     #[inline(always)]
     pub fn transform_mat2d(&self, m: &Mat2d<T>) -> Self {
-        let mut out = Self::new();
         let x = self.0[0];
         let y = self.0[1];
-        out.0[0] = m.0[0] * x + m.0[2] * y + m.0[4];
-        out.0[1] = m.0[1] * x + m.0[3] * y + m.0[5];
-        out
+        Self([
+            m.0[0] * x + m.0[2] * y + m.0[4],
+            m.0[1] * x + m.0[3] * y + m.0[5],
+        ])
     }
 
     #[inline(always)]
     pub fn transform_mat3(&self, m: &Mat3<T>) -> Self {
-        let mut out = Self::new();
         let x = self.0[0];
         let y = self.0[1];
-        out.0[0] = m.0[0] * x + m.0[3] * y + m.0[6];
-        out.0[1] = m.0[1] * x + m.0[4] * y + m.0[7];
-        out
+        Self([
+            m.0[0] * x + m.0[3] * y + m.0[6],
+            m.0[1] * x + m.0[4] * y + m.0[7],
+        ])
     }
 
     #[inline(always)]
     pub fn transform_mat4(&self, m: &Mat4<T>) -> Self {
-        let mut out = Self::new();
         let x = self.0[0];
         let y = self.0[1];
-        out.0[0] = m.0[0] * x + m.0[4] * y + m.0[12];
-        out.0[1] = m.0[1] * x + m.0[5] * y + m.0[13];
-        out
+        Self([
+            m.0[0] * x + m.0[4] * y + m.0[12],
+            m.0[1] * x + m.0[5] * y + m.0[13],
+        ])
     }
 
     #[inline(always)]
-    pub fn rotate(&self, b: &Vec2<T>, rad: T) -> Self {
-        let mut out = Self::new();
+    pub fn rotate(&self, b: &Self, rad: T) -> Self {
         //Translate point to the origin
         let p0 = self.0[0] - b.0[0];
         let p1 = self.0[1] - b.0[1];
@@ -222,13 +194,14 @@ impl<T: Float> Vec2<T> {
         let cos_c = rad.cos();
 
         //perform rotation and translate to correct position
-        out.0[0] = p0 * cos_c - p1 * sin_c + b.0[0];
-        out.0[1] = p0 * sin_c + p1 * cos_c + b.0[1];
-        out
+        Self([
+            p0 * cos_c - p1 * sin_c + b.0[0],
+            p0 * sin_c + p1 * cos_c + b.0[1],
+        ])
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: &Vec2<T>) -> T {
+    pub fn angle(&self, b: &Self) -> T {
         let x1 = self.0[0];
         let y1 = self.0[1];
         let x2 = b.0[0];
@@ -246,7 +219,7 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Vec2<T>) -> bool {
+    pub fn approximate_eq(&self, b: &Self) -> bool {
         let a0 = self.0[0];
         let a1 = self.0[1];
         let b0 = b.0[0];
@@ -257,99 +230,75 @@ impl<T: Float> Vec2<T> {
     }
 }
 
-impl<T: Float> Add<Vec2<T>> for Vec2<T> {
-    type Output = Vec2<T>;
+impl<T: Float> Add<Self> for Vec2<T> {
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Vec2<T>) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] + b.0[0];
-        out.0[1] = self.0[1] + b.0[1];
-        out
+    fn add(self, b: Self) -> Self {
+        Self([self.0[0] + b.0[0], self.0[1] + b.0[1]])
     }
 }
 
 impl<T: Float> Add<T> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: T) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] + b;
-        out.0[1] = self.0[1] + b;
-        out
+    fn add(self, b: T) -> Self {
+        Self([self.0[0] + b, self.0[1] + b])
     }
 }
 
 impl<T: Float> Sub<Vec2<T>> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Vec2<T>) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] - b.0[0];
-        out.0[1] = self.0[1] - b.0[1];
-        out
+    fn sub(self, b: Self) -> Self {
+        Self([self.0[0] - b.0[0], self.0[1] - b.0[1]])
     }
 }
 
 impl<T: Float> Sub<T> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: T) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] - b;
-        out.0[1] = self.0[1] - b;
-        out
+    fn sub(self, b: T) -> Self {
+        Self([self.0[0] - b, self.0[1] - b])
     }
 }
 
 impl<T: Float> Mul<Vec2<T>> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Vec2<T>) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] * b.0[0];
-        out.0[1] = self.0[1] * b.0[1];
-        out
+    fn mul(self, b: Self) -> Self {
+        Self([self.0[0] * b.0[0], self.0[1] * b.0[1]])
     }
 }
 
 impl<T: Float> Mul<T> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] * b;
-        out.0[1] = self.0[1] * b;
-        out
+    fn mul(self, b: T) -> Self {
+        Self([self.0[0] * b, self.0[1] * b])
     }
 }
 
 impl<T: Float> Div<Vec2<T>> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn div(self, b: Vec2<T>) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] / b.0[0];
-        out.0[1] = self.0[1] / b.0[1];
-        out
+    fn div(self, b: Self) -> Self {
+        Self([self.0[0] / b.0[0], self.0[1] / b.0[1]])
     }
 }
 
 impl<T: Float> Div<T> for Vec2<T> {
-    type Output = Vec2<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn div(self, b: T) -> Vec2<T> {
-        let mut out = Vec2::<T>::new();
-        out.0[0] = self.0[0] / b;
-        out.0[1] = self.0[1] / b;
-        out
+    fn div(self, b: T) -> Self {
+        Self([self.0[0] / b, self.0[1] / b])
     }
 }
 
@@ -375,7 +324,7 @@ impl Vec2<f32> {
 
         let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
 
-        Self::from_values(r.cos() * scale, r.sin() * scale)
+        Self([r.cos() * scale, r.sin() * scale])
     }
 }
 
@@ -389,7 +338,7 @@ impl Vec2<f64> {
 
         let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
 
-        Self::from_values(r.cos() * scale, r.sin() * scale)
+        Self([r.cos() * scale, r.sin() * scale])
     }
 }
 

@@ -12,12 +12,12 @@ pub struct Vec4<T = f32>(pub [T; 4]);
 
 impl<T: Float> Vec4<T> {
     #[inline(always)]
-    pub fn new() -> Vec4<T> {
+    pub fn new() -> Self {
         Self([T::zero(); 4])
     }
 
     #[inline(always)]
-    pub fn from_values(x: T, y: T, z: T, w: T) -> Vec4<T> {
+    pub fn from_values(x: T, y: T, z: T, w: T) -> Self {
         Self([x, y, z, w])
     }
 
@@ -62,52 +62,52 @@ impl<T: Float> Vec4<T> {
 
     #[inline(always)]
     pub fn ceil(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].ceil();
-        out.0[1] = self.0[1].ceil();
-        out.0[2] = self.0[2].ceil();
-        out.0[3] = self.0[3].ceil();
-        out
+        Self([
+            self.0[0].ceil(),
+            self.0[1].ceil(),
+            self.0[2].ceil(),
+            self.0[3].ceil()
+        ])
     }
 
     #[inline(always)]
     pub fn floor(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].floor();
-        out.0[1] = self.0[1].floor();
-        out.0[2] = self.0[2].floor();
-        out.0[3] = self.0[3].floor();
-        out
+        Self([
+            self.0[0].floor(),
+            self.0[1].floor(),
+            self.0[2].floor(),
+            self.0[3].floor()
+        ])
     }
 
     #[inline(always)]
-    pub fn min(&self, b: &Vec4<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].min(b.0[0]);
-        out.0[1] = self.0[1].min(b.0[1]);
-        out.0[2] = self.0[2].min(b.0[2]);
-        out.0[3] = self.0[3].min(b.0[3]);
-        out
+    pub fn min(&self, b: &Self) -> Self {
+        Self([
+            self.0[0].min(b.0[0]),
+            self.0[1].min(b.0[1]),
+            self.0[2].min(b.0[2]),
+            self.0[3].min(b.0[3])
+        ])
     }
 
     #[inline(always)]
-    pub fn max(&self, b: &Vec4<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].max(b.0[0]);
-        out.0[1] = self.0[1].max(b.0[1]);
-        out.0[2] = self.0[2].max(b.0[2]);
-        out.0[3] = self.0[3].max(b.0[3]);
-        out
+    pub fn max(&self, b: &Self) -> Self {
+        Self([
+            self.0[0].max(b.0[0]),
+            self.0[1].max(b.0[1]),
+            self.0[2].max(b.0[2]),
+            self.0[3].max(b.0[3])
+        ])
     }
 
     #[inline(always)]
     pub fn round(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0].round();
-        out.0[1] = self.0[1].round();
-        out.0[2] = self.0[2].round();
-        out.0[3] = self.0[3].round();
-        out
+        Self([
+            self.0[0].round(),
+            self.0[1].round(),
+            self.0[2].round(),
+            self.0[3].round()
+        ])
     }
 
     #[inline(always)]
@@ -116,7 +116,7 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn squared_distance(&self, b: &Vec4<T>) -> T {
+    pub fn squared_distance(&self, b: &Self) -> T {
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         let z = b.0[2] - self.0[2];
@@ -125,7 +125,7 @@ impl<T: Float> Vec4<T> {
     }
 
     #[inline(always)]
-    pub fn distance(&self, b: &Vec4<T>) -> T {
+    pub fn distance(&self, b: &Self) -> T {
         self.squared_distance(b).sqrt()
     }
 
@@ -145,22 +145,22 @@ impl<T: Float> Vec4<T> {
 
     #[inline(always)]
     pub fn negate(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = -self.0[0];
-        out.0[1] = -self.0[1];
-        out.0[2] = -self.0[2];
-        out.0[3] = -self.0[3];
-        out
+        Self([
+            -self.0[0],
+            -self.0[1],
+            -self.0[2],
+            -self.0[3]
+        ])
     }
 
     #[inline(always)]
     pub fn inverse(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = T::one() / self.0[0];
-        out.0[1] = T::one() / self.0[1];
-        out.0[2] = T::one() / self.0[2];
-        out.0[3] = T::one() / self.0[3];
-        out
+        Self([
+            T::one() / self.0[0],
+            T::one() / self.0[1],
+            T::one() / self.0[2],
+            T::one() / self.0[3]
+        ])
     }
 
     #[inline(always)]
@@ -170,21 +170,21 @@ impl<T: Float> Vec4<T> {
             len = T::one() / len.sqrt();
         }
 
-        Self::from_values(
+        Self([
             self.0[0] * len,
             self.0[1] * len,
             self.0[2] * len,
             self.0[3] * len,
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Vec4<T>) -> T {
+    pub fn dot(&self, b: &Self) -> T {
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
     }
 
     #[inline(always)]
-    pub fn cross(&self, v: &Vec4<T>, w: &Vec4<T>) -> Self {
+    pub fn cross(&self, v: &Self, w: &Self) -> Self {
         let a = v.0[0] * w.0[1] - v.0[1] * w.0[0];
         let b = v.0[0] * w.0[2] - v.0[2] * w.0[0];
         let c = v.0[0] * w.0[3] - v.0[3] * w.0[0];
@@ -196,27 +196,27 @@ impl<T: Float> Vec4<T> {
         let i = self.0[2];
         let j = self.0[3];
 
-        Self::from_values(
+        Self([
             h * f - i * e + j * d,
             -(g * f) + i * c - j * b,
             g * e - h * c + j * a,
             -(g * d) + h * b - i * a,
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Vec4<T>, t: T) -> Self {
+    pub fn lerp(&self, b: &Self, t: T) -> Self {
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
         let aw = self.0[3];
 
-        Self::from_values(
+        Self([
             ax + t * (b.0[0] - ax),
             ay + t * (b.0[1] - ay),
             az + t * (b.0[2] - az),
             aw + t * (b.0[3] - aw),
-        )
+        ])
     }
 
     #[inline(always)]
@@ -226,12 +226,12 @@ impl<T: Float> Vec4<T> {
         let z = self.0[2];
         let w = self.0[3];
 
-        Self::from_values(
+        Self([
             m.0[0] * x + m.0[4] * y + m.0[8] * z + m.0[12] * w,
             m.0[1] * x + m.0[5] * y + m.0[9] * z + m.0[13] * w,
             m.0[2] * x + m.0[6] * y + m.0[10] * z + m.0[14] * w,
             m.0[3] * x + m.0[7] * y + m.0[11] * z + m.0[15] * w,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -250,16 +250,16 @@ impl<T: Float> Vec4<T> {
         let iz = qw * z + qx * y - qy * x;
         let iw = -qx * x - qy * y - qz * z;
 
-        Self::from_values(
+        Self([
             ix * qw + iw * -qx + iy * -qz - iz * -qy,
             iy * qw + iw * -qy + iz * -qx - ix * -qz,
             iz * qw + iw * -qz + ix * -qy - iy * -qx,
             self.0[3],
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Vec4<T>) -> bool {
+    pub fn approximate_eq(&self, b: &Self) -> bool {
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -277,86 +277,114 @@ impl<T: Float> Vec4<T> {
 }
 
 impl<T: Float> Add<Vec4<T>> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Vec4<T>) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] + b.0[0];
-        out.0[1] = self.0[1] + b.0[1];
-        out.0[2] = self.0[2] + b.0[2];
-        out.0[3] = self.0[3] + b.0[3];
-        out
+    fn add(self, b: Self) -> Self {
+        Self([
+            self.0[0] + b.0[0],
+            self.0[1] + b.0[1],
+            self.0[2] + b.0[2],
+            self.0[3] + b.0[3]
+        ])
+    }
+}
+
+impl<T: Float> Add<T> for Vec4<T> {
+    type Output = Self;
+
+    #[inline(always)]
+    fn add(self, b: T) -> Self {
+        Self([
+            self.0[0] + b,
+            self.0[1] + b,
+            self.0[2] + b,
+            self.0[3] + b
+        ])
     }
 }
 
 impl<T: Float> Sub<Vec4<T>> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Vec4<T>) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] - b.0[0];
-        out.0[1] = self.0[1] - b.0[1];
-        out.0[2] = self.0[2] - b.0[2];
-        out.0[3] = self.0[3] - b.0[3];
-        out
+    fn sub(self, b: Self) -> Self {
+        Self([
+            self.0[0] - b.0[0],
+            self.0[1] - b.0[1],
+            self.0[2] - b.0[2],
+            self.0[3] - b.0[3]
+        ])
+    }
+}
+
+impl<T: Float> Sub<T> for Vec4<T> {
+    type Output = Self;
+
+    #[inline(always)]
+    fn sub(self, b: T) -> Self {
+        Self([
+            self.0[0] - b,
+            self.0[1] - b,
+            self.0[2] - b,
+            self.0[3] - b
+        ])
     }
 }
 
 impl<T: Float> Mul<Vec4<T>> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Vec4<T>) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] * b.0[0];
-        out.0[1] = self.0[1] * b.0[1];
-        out.0[2] = self.0[2] * b.0[2];
-        out.0[3] = self.0[3] * b.0[3];
-        out
+    fn mul(self, b: Self) -> Self {
+        Self([
+            self.0[0] * b.0[0],
+            self.0[1] * b.0[1],
+            self.0[2] * b.0[2],
+            self.0[3] * b.0[3]
+        ])
     }
 }
 
 impl<T: Float> Mul<T> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] * b;
-        out.0[1] = self.0[1] * b;
-        out.0[2] = self.0[2] * b;
-        out.0[3] = self.0[3] * b;
-        out
+    fn mul(self, b: T) -> Self {
+        Self([
+            self.0[0] * b,
+            self.0[1] * b,
+            self.0[2] * b,
+            self.0[3] * b
+        ])
     }
 }
 
 impl<T: Float> Div<Vec4<T>> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn div(self, b: Vec4<T>) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] / b.0[0];
-        out.0[1] = self.0[1] / b.0[1];
-        out.0[2] = self.0[2] / b.0[2];
-        out.0[3] = self.0[3] / b.0[3];
-        out
+    fn div(self, b: Self) -> Self {
+        Self([
+            self.0[0] / b.0[0],
+            self.0[1] / b.0[1],
+            self.0[2] / b.0[2],
+            self.0[3] / b.0[3]
+        ])
     }
 }
 
 impl<T: Float> Div<T> for Vec4<T> {
-    type Output = Vec4<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn div(self, b: T) -> Vec4<T> {
-        let mut out = Vec4::<T>::new();
-        out.0[0] = self.0[0] / b;
-        out.0[1] = self.0[1] / b;
-        out.0[2] = self.0[2] / b;
-        out.0[3] = self.0[3] / b;
-        out
+    fn div(self, b: T) -> Self {
+        Self([
+            self.0[0] / b,
+            self.0[1] / b,
+            self.0[2] / b,
+            self.0[3] / b
+        ])
     }
 }
 
@@ -403,7 +431,7 @@ impl Vec4<f32> {
 
         let d = ((1.0 - s1) / s2).sqrt();
 
-        Self::from_values(scale * v1, scale * v2, scale * v3 * d, scale * v4 * d)
+        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
     }
 }
 
@@ -438,7 +466,7 @@ impl Vec4<f64> {
 
         let d = ((1.0 - s1) / s2).sqrt();
 
-        Self::from_values(scale * v1, scale * v2, scale * v3 * d, scale * v4 * d)
+        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
     }
 }
 

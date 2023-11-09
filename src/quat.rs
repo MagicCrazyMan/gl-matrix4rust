@@ -37,8 +37,8 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice([x, y, z, w]: &[T; 4]) -> Self {
-        Self([*x, *y, *z, *w])
+    pub fn from_slice(slice: &[T; 4]) -> Self {
+        Self(slice.clone())
     }
 
     #[inline(always)]
@@ -46,7 +46,7 @@ impl<T: Float> Quat<T> {
         let rad = rad * T::from(0.5).unwrap();
         let s = rad.sin();
 
-        Self::from_values(s * axis.0[0], s * axis.0[1], s * axis.0[2], rad.cos())
+        Self([s * axis.0[0], s * axis.0[1], s * axis.0[2], rad.cos()])
     }
 
     #[inline(always)]
@@ -116,42 +116,42 @@ impl<T: Float + FloatConst> Quat<T> {
         let cz = z.cos();
 
         match order {
-            EulerOrder::XYZ => Self::from_values(
+            EulerOrder::XYZ => Self([
                 sx * cy * cz + cx * sy * sz,
                 cx * sy * cz - sx * cy * sz,
                 cx * cy * sz + sx * sy * cz,
                 cx * cy * cz - sx * sy * sz,
-            ),
-            EulerOrder::XZY => Self::from_values(
+            ]),
+            EulerOrder::XZY => Self([
                 sx * cy * cz - cx * sy * sz,
                 cx * sy * cz - sx * cy * sz,
                 cx * cy * sz + sx * sy * cz,
                 cx * cy * cz + sx * sy * sz,
-            ),
-            EulerOrder::YXZ => Self::from_values(
+            ]),
+            EulerOrder::YXZ => Self([
                 sx * cy * cz + cx * sy * sz,
                 cx * sy * cz - sx * cy * sz,
                 cx * cy * sz - sx * sy * cz,
                 cx * cy * cz + sx * sy * sz,
-            ),
-            EulerOrder::YZX => Self::from_values(
+            ]),
+            EulerOrder::YZX => Self([
                 sx * cy * cz + cx * sy * sz,
                 cx * sy * cz + sx * cy * sz,
                 cx * cy * sz - sx * sy * cz,
                 cx * cy * cz - sx * sy * sz,
-            ),
-            EulerOrder::ZXY => Self::from_values(
+            ]),
+            EulerOrder::ZXY => Self([
                 sx * cy * cz - cx * sy * sz,
                 cx * sy * cz + sx * cy * sz,
                 cx * cy * sz + sx * sy * cz,
                 cx * cy * cz - sx * sy * sz,
-            ),
-            EulerOrder::ZYX => Self::from_values(
+            ]),
+            EulerOrder::ZYX => Self([
                 sx * cy * cz - cx * sy * sz,
                 cx * sy * cz + sx * cy * sz,
                 cx * cy * sz - sx * sy * cz,
                 cx * cy * cz + sx * sy * sz,
-            ),
+            ]),
         }
     }
 
@@ -173,10 +173,10 @@ impl<T: Float + FloatConst> Quat<T> {
             tmp = tmp.normalize();
             Self::from_axis_angle(&tmp, T::PI())
         } else if dot > T::from(0.999999).unwrap() {
-            Self::from_values(T::zero(), T::zero(), T::zero(), T::one())
+            Self([T::zero(), T::zero(), T::zero(), T::one()])
         } else {
             let tmp = a.cross(b);
-            let out = Self::from_values(tmp.0[0], tmp.0[1], tmp.0[2], T::one() + dot);
+            let out = Self([tmp.0[0], tmp.0[1], tmp.0[2], T::one() + dot]);
             out.normalize()
         }
     }
@@ -204,7 +204,7 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: &Quat<T>) -> T {
+    pub fn angle(&self, b: &Self) -> T {
         let dotproduct = self.dot(b);
         (T::from(2.0).unwrap() * dotproduct * dotproduct - T::one()).acos()
     }
@@ -256,12 +256,12 @@ impl<T: Float> Quat<T> {
         let bx = rad.sin();
         let bw = rad.cos();
 
-        Self::from_values(
+        Self([
             ax * bw + aw * bx,
             ay * bw + az * bx,
             az * bw - ay * bx,
             aw * bw - ax * bx,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -275,12 +275,12 @@ impl<T: Float> Quat<T> {
         let by = rad.sin();
         let bw = rad.cos();
 
-        Self::from_values(
+        Self([
             ax * bw - az * by,
             ay * bw + aw * by,
             az * bw + ax * by,
             aw * bw - ay * by,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -294,12 +294,12 @@ impl<T: Float> Quat<T> {
         let bz = rad.sin();
         let bw = rad.cos();
 
-        Self::from_values(
+        Self([
             ax * bw + ay * bz,
             ay * bw - ax * bz,
             az * bw + aw * bz,
             aw * bw - az * bz,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -308,7 +308,7 @@ impl<T: Float> Quat<T> {
         let y = self.0[1];
         let z = self.0[2];
 
-        Self::from_values(x, y, z, (T::one() - x * x - y * y - z * z).abs().sqrt())
+        Self([x, y, z, (T::one() - x * x - y * y - z * z).abs().sqrt()])
     }
 
     #[inline(always)]
@@ -326,7 +326,7 @@ impl<T: Float> Quat<T> {
             T::zero()
         };
 
-        Self::from_values(x * s, y * s, z * s, et * r.cos())
+        Self([x * s, y * s, z * s, et * r.cos()])
     }
 
     #[inline(always)]
@@ -343,12 +343,12 @@ impl<T: Float> Quat<T> {
             T::zero()
         };
 
-        Self::from_values(
+        Self([
             x * t,
             y * t,
             z * t,
             T::from(0.5).unwrap() * (x * x + y * y + z * z + w * w).ln(),
-        )
+        ])
     }
 
     #[inline(always)]
@@ -362,27 +362,27 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn dot(&self, b: &Quat<T>) -> T {
+    pub fn dot(&self, b: &Self) -> T {
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
     }
 
     #[inline(always)]
-    pub fn lerp(&self, b: &Quat<T>, t: T) -> Self {
+    pub fn lerp(&self, b: &Self, t: T) -> Self {
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
         let aw = self.0[3];
 
-        Self::from_values(
+        Self([
             ax + t * (b.0[0] - ax),
             ay + t * (b.0[1] - ay),
             az + t * (b.0[2] - az),
             aw + t * (b.0[3] - aw),
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn slerp(&self, b: &Quat<T>, t: T) -> Self {
+    pub fn slerp(&self, b: &Self, t: T) -> Self {
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -422,16 +422,16 @@ impl<T: Float> Quat<T> {
             scale1 = t;
         }
 
-        Self::from_values(
+        Self([
             scale0 * ax + scale1 * bx,
             scale0 * ay + scale1 * by,
             scale0 * az + scale1 * bz,
             scale0 * aw + scale1 * bw,
-        )
+        ])
     }
 
     #[inline(always)]
-    pub fn sqlerp(&self, b: &Quat<T>, c: &Quat<T>, d: &Quat<T>, t: T) -> Self {
+    pub fn sqlerp(&self, b: &Self, c: &Self, d: &Self, t: T) -> Self {
         let tmp1 = self.slerp(d, t);
         let tmp2 = b.slerp(c, t);
         tmp1.slerp(&tmp2, T::from(2.0).unwrap() * t * (T::one() - t))
@@ -458,12 +458,12 @@ impl<T: Float> Quat<T> {
             len = T::one() / len.sqrt();
         }
 
-        Self::from_values(
+        Self([
             self.0[0] * len,
             self.0[1] * len,
             self.0[2] * len,
             self.0[3] * len,
-        )
+        ])
     }
 
     #[inline(always)]
@@ -480,25 +480,25 @@ impl<T: Float> Quat<T> {
             T::zero()
         };
 
-        Self::from_values(-a0 * inv_dot, -a1 * inv_dot, -a2 * inv_dot, a3 * inv_dot)
+        Self([-a0 * inv_dot, -a1 * inv_dot, -a2 * inv_dot, a3 * inv_dot])
     }
 
     #[inline(always)]
     pub fn conjugate(&self) -> Self {
-        Self::from_values(-self.0[0], -self.0[1], -self.0[2], self.0[3])
+        Self([-self.0[0], -self.0[1], -self.0[2], self.0[3]])
     }
 
     #[inline(always)]
-    pub fn approximate_eq(&self, b: &Quat<T>) -> bool {
+    pub fn approximate_eq(&self, b: &Self) -> bool {
         self.dot(b).abs() >= T::one() - epsilon()
     }
 }
 
 impl<T: Float> Add<Quat<T>> for Quat<T> {
-    type Output = Quat<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Quat<T>) -> Quat<T> {
+    fn add(self, b: Self) -> Self {
         let mut out = Quat::<T>::new();
         out.0[0] = self.0[0] + b.0[0];
         out.0[1] = self.0[1] + b.0[1];
@@ -509,10 +509,10 @@ impl<T: Float> Add<Quat<T>> for Quat<T> {
 }
 
 impl<T: Float> Mul<Quat<T>> for Quat<T> {
-    type Output = Quat<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Quat<T>) -> Quat<T> {
+    fn mul(self, b: Self) -> Self {
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -532,11 +532,11 @@ impl<T: Float> Mul<Quat<T>> for Quat<T> {
 }
 
 impl<T: Float> Mul<T> for Quat<T> {
-    type Output = Quat<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Quat<T> {
-        Self::from_values(self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b)
+    fn mul(self, b: T) -> Self {
+        Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
     }
 }
 
@@ -560,12 +560,12 @@ impl Quat<f32> {
         let u3 = rand::random::<f32>();
         let sqrt1_minus_u1 = (1.0 - u1).sqrt();
         let sqrt_u1 = u1.sqrt();
-        Self::from_values(
+        Self([
             sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).sin(),
             sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).cos(),
             sqrt_u1 * (2.0 * std::f32::consts::PI * u3).sin(),
             sqrt_u1 * (2.0 * std::f32::consts::PI * u3).cos(),
-        )
+        ])
     }
 }
 
@@ -577,12 +577,12 @@ impl Quat<f64> {
         let u3 = rand::random::<f64>();
         let sqrt1_minus_u1 = (1.0 - u1).sqrt();
         let sqrt_u1 = u1.sqrt();
-        Self::from_values(
+        Self([
             sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).sin(),
             sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).cos(),
             sqrt_u1 * (2.0 * std::f64::consts::PI * u3).sin(),
             sqrt_u1 * (2.0 * std::f64::consts::PI * u3).cos(),
-        )
+        ])
     }
 }
 

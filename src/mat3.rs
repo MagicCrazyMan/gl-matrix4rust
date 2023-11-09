@@ -18,26 +18,25 @@ impl<T: Float> Mat3<T> {
 
     #[inline(always)]
     pub fn new_identity() -> Self {
-        let mut out = Self::new();
-        out.0[0] = T::one();
-        out.0[4] = T::one();
-        out.0[8] = T::one();
-        out
+        Self([
+            T::one(),
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::one(),
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn from_mat4(mat: &Mat4<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = mat.0[0];
-        out.0[1] = mat.0[1];
-        out.0[2] = mat.0[2];
-        out.0[3] = mat.0[4];
-        out.0[4] = mat.0[5];
-        out.0[5] = mat.0[6];
-        out.0[6] = mat.0[8];
-        out.0[7] = mat.0[9];
-        out.0[8] = mat.0[10];
-        out
+        Self([
+            mat.0[0], mat.0[1], mat.0[2], mat.0[4], mat.0[5], mat.0[6], mat.0[8], mat.0[9],
+            mat.0[10],
+        ])
     }
 
     #[inline(always)]
@@ -52,111 +51,78 @@ impl<T: Float> Mat3<T> {
         m21: T,
         m22: T,
     ) -> Self {
-        let mut out = Self::new();
-        out.0[0] = m00;
-        out.0[1] = m01;
-        out.0[2] = m02;
-        out.0[3] = m10;
-        out.0[4] = m11;
-        out.0[5] = m12;
-        out.0[6] = m20;
-        out.0[7] = m21;
-        out.0[8] = m22;
-        out
+        Self([m00, m01, m02, m10, m11, m12, m20, m21, m22])
     }
 
     #[inline(always)]
     pub fn from_slice(slice: &[T; 9]) -> Self {
-        let mut out = Self::new();
-        out.0[0] = slice[0];
-        out.0[1] = slice[1];
-        out.0[2] = slice[2];
-        out.0[3] = slice[3];
-        out.0[4] = slice[4];
-        out.0[5] = slice[5];
-        out.0[6] = slice[6];
-        out.0[7] = slice[7];
-        out.0[8] = slice[8];
-
-        out
+        Self(slice.clone())
     }
 
     #[inline(always)]
     pub fn from_translation(v: &Vec2<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = T::one();
-        out.0[1] = T::zero();
-        out.0[2] = T::zero();
-        out.0[3] = T::zero();
-        out.0[4] = T::one();
-        out.0[5] = T::zero();
-        out.0[6] = v.0[0];
-        out.0[7] = v.0[1];
-        out.0[8] = T::one();
-        out
+        Self([
+            T::one(),
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::one(),
+            T::zero(),
+            v.0[0],
+            v.0[1],
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn from_scaling(v: &Vec2<T>) -> Self {
-        let mut out = Self::new();
-        out.0[0] = v.0[0];
-        out.0[1] = T::zero();
-        out.0[2] = T::zero();
-
-        out.0[3] = T::zero();
-        out.0[4] = v.0[1];
-        out.0[5] = T::zero();
-
-        out.0[6] = T::zero();
-        out.0[7] = T::zero();
-        out.0[8] = T::one();
-        out
+        Self([
+            v.0[0],
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            v.0[1],
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn from_rotation(rad: T) -> Self {
-        let mut out = Self::new();
-
         let s = rad.sin();
         let c = rad.cos();
-
-        out.0[0] = c;
-        out.0[1] = s;
-        out.0[2] = T::zero();
-
-        out.0[3] = -s;
-        out.0[4] = c;
-        out.0[5] = T::zero();
-
-        out.0[6] = T::zero();
-        out.0[7] = T::zero();
-        out.0[8] = T::one();
-
-        out
+        Self([
+            c,
+            s,
+            T::zero(),
+            -s,
+            c,
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn from_mat_2d(a: &Mat2d<T>) -> Self {
-        let mut out = Self::new();
-
-        out.0[0] = a.0[0];
-        out.0[1] = a.0[1];
-        out.0[2] = T::zero();
-
-        out.0[3] = a.0[2];
-        out.0[4] = a.0[3];
-        out.0[5] = T::zero();
-
-        out.0[6] = a.0[4];
-        out.0[7] = a.0[5];
-        out.0[8] = T::one();
-        out
+        Self([
+            a.0[0],
+            a.0[1],
+            T::zero(),
+            a.0[2],
+            a.0[3],
+            T::zero(),
+            a.0[4],
+            a.0[5],
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn from_quat(q: &Quat<T>) -> Self {
-        let mut out = Self::new();
-
         let x = q.0[0];
         let y = q.0[1];
         let z = q.0[2];
@@ -175,42 +141,36 @@ impl<T: Float> Mat3<T> {
         let wy = w * y2;
         let wz = w * z2;
 
-        out.0[0] = T::one() - yy - zz;
-        out.0[3] = yx - wz;
-        out.0[6] = zx + wy;
-
-        out.0[1] = yx + wz;
-        out.0[4] = T::one() - xx - zz;
-        out.0[7] = zy - wx;
-
-        out.0[2] = zx - wy;
-        out.0[5] = zy + wx;
-        out.0[8] = T::one() - xx - yy;
-
-        out
+        Self([
+            T::one() - yy - zz,
+            yx + wz,
+            zx - wy,
+            yx - wz,
+            T::one() - xx - zz,
+            zy + wx,
+            zx + wy,
+            zy - wx,
+            T::one() - xx - yy,
+        ])
     }
 
     #[inline(always)]
     pub fn from_projection(width: T, height: T) -> Self {
-        let mut out = Self::new();
-
-        out.0[0] = T::from(2.0).unwrap() / width;
-        out.0[1] = T::zero();
-        out.0[2] = T::zero();
-        out.0[3] = T::zero();
-        out.0[4] = T::from(-2.0).unwrap() / height;
-        out.0[5] = T::zero();
-        out.0[6] = -T::one();
-        out.0[7] = T::one();
-        out.0[8] = T::one();
-
-        out
+        Self([
+            T::from(2.0).unwrap() / width,
+            T::zero(),
+            T::zero(),
+            T::zero(),
+            T::from(-2.0).unwrap() / height,
+            T::zero(),
+            -T::one(),
+            T::one(),
+            T::one(),
+        ])
     }
 
     #[inline(always)]
     pub fn normal_matrix_from_mat4(a: &Mat4<T>) -> Result<Self, Error> {
-        let mut out = Self::new();
-
         let a00 = a.0[0];
         let a01 = a.0[1];
         let a02 = a.0[2];
@@ -249,19 +209,17 @@ impl<T: Float> Mat3<T> {
         }
         det = T::one() / det;
 
-        out.0[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
-        out.0[1] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
-        out.0[2] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
-
-        out.0[3] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
-        out.0[4] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
-        out.0[5] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
-
-        out.0[6] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
-        out.0[7] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
-        out.0[8] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
-
-        Ok(out)
+        Ok(Self([
+            (a11 * b11 - a12 * b10 + a13 * b09) * det,
+            (a12 * b08 - a10 * b11 - a13 * b07) * det,
+            (a10 * b10 - a11 * b08 + a13 * b06) * det,
+            (a02 * b10 - a01 * b11 - a03 * b09) * det,
+            (a00 * b11 - a02 * b08 + a03 * b07) * det,
+            (a01 * b08 - a00 * b10 - a03 * b06) * det,
+            (a31 * b05 - a32 * b04 + a33 * b03) * det,
+            (a32 * b02 - a30 * b05 - a33 * b01) * det,
+            (a30 * b04 - a31 * b02 + a33 * b00) * det,
+        ]))
     }
 }
 
@@ -333,23 +291,14 @@ impl<T: Float> Mat3<T> {
 
     #[inline(always)]
     pub fn transpose(&self) -> Self {
-        let mut out = Self::new();
-        out.0[0] = self.0[0];
-        out.0[1] = self.0[3];
-        out.0[2] = self.0[6];
-        out.0[3] = self.0[1];
-        out.0[4] = self.0[4];
-        out.0[5] = self.0[7];
-        out.0[6] = self.0[2];
-        out.0[7] = self.0[5];
-        out.0[8] = self.0[8];
-        out
+        Self([
+            self.0[0], self.0[3], self.0[6], self.0[1], self.0[4], self.0[7], self.0[2], self.0[5],
+            self.0[8],
+        ])
     }
 
     #[inline(always)]
     pub fn invert(&self) -> Result<Self, Error> {
-        let mut out = Self::new();
-
         let a00 = self.0[0];
         let a01 = self.0[1];
         let a02 = self.0[2];
@@ -372,23 +321,21 @@ impl<T: Float> Mat3<T> {
         }
         det = T::one() / det;
 
-        out.0[0] = b01 * det;
-        out.0[1] = (-a22 * a01 + a02 * a21) * det;
-        out.0[2] = (a12 * a01 - a02 * a11) * det;
-        out.0[3] = b11 * det;
-        out.0[4] = (a22 * a00 - a02 * a20) * det;
-        out.0[5] = (-a12 * a00 + a02 * a10) * det;
-        out.0[6] = b21 * det;
-        out.0[7] = (-a21 * a00 + a01 * a20) * det;
-        out.0[8] = (a11 * a00 - a01 * a10) * det;
-
-        Ok(out)
+        Ok(Self([
+            b01 * det,
+            (-a22 * a01 + a02 * a21) * det,
+            (a12 * a01 - a02 * a11) * det,
+            b11 * det,
+            (a22 * a00 - a02 * a20) * det,
+            (-a12 * a00 + a02 * a10) * det,
+            b21 * det,
+            (-a21 * a00 + a01 * a20) * det,
+            (a11 * a00 - a01 * a10) * det,
+        ]))
     }
 
     #[inline(always)]
     pub fn adjoint(&self) -> Self {
-        let mut out = Self::new();
-
         let a00 = self.0[0];
         let a01 = self.0[1];
         let a02 = self.0[2];
@@ -399,17 +346,17 @@ impl<T: Float> Mat3<T> {
         let a21 = self.0[7];
         let a22 = self.0[8];
 
-        out.0[0] = a11 * a22 - a12 * a21;
-        out.0[1] = a02 * a21 - a01 * a22;
-        out.0[2] = a01 * a12 - a02 * a11;
-        out.0[3] = a12 * a20 - a10 * a22;
-        out.0[4] = a00 * a22 - a02 * a20;
-        out.0[5] = a02 * a10 - a00 * a12;
-        out.0[6] = a10 * a21 - a11 * a20;
-        out.0[7] = a01 * a20 - a00 * a21;
-        out.0[8] = a00 * a11 - a01 * a10;
-
-        out
+        Self([
+            a11 * a22 - a12 * a21,
+            a02 * a21 - a01 * a22,
+            a01 * a12 - a02 * a11,
+            a12 * a20 - a10 * a22,
+            a00 * a22 - a02 * a20,
+            a02 * a10 - a00 * a12,
+            a10 * a21 - a11 * a20,
+            a01 * a20 - a00 * a21,
+            a00 * a11 - a01 * a10,
+        ])
     }
 
     #[inline(always)]
@@ -431,8 +378,6 @@ impl<T: Float> Mat3<T> {
 
     #[inline(always)]
     pub fn translate(&self, v: &Vec3<T>) -> Self {
-        let mut out = Self::new();
-
         let a00 = self.0[0];
         let a01 = self.0[1];
         let a02 = self.0[2];
@@ -445,47 +390,39 @@ impl<T: Float> Mat3<T> {
         let x = v.0[0];
         let y = v.0[1];
 
-        out.0[0] = a00;
-        out.0[1] = a01;
-        out.0[2] = a02;
-
-        out.0[3] = a10;
-        out.0[4] = a11;
-        out.0[5] = a12;
-
-        out.0[6] = x * a00 + y * a10 + a20;
-        out.0[7] = x * a01 + y * a11 + a21;
-        out.0[8] = x * a02 + y * a12 + a22;
-
-        out
+        Self([
+            a00,
+            a01,
+            a02,
+            a10,
+            a11,
+            a12,
+            x * a00 + y * a10 + a20,
+            x * a01 + y * a11 + a21,
+            x * a02 + y * a12 + a22,
+        ])
     }
 
     #[inline(always)]
     pub fn scale(&self, v: &Vec2<T>) -> Self {
-        let mut out = Self::new();
-
         let x = v.0[0];
         let y = v.0[1];
 
-        out.0[0] = x * self.0[0];
-        out.0[1] = x * self.0[1];
-        out.0[2] = x * self.0[2];
-
-        out.0[3] = y * self.0[3];
-        out.0[4] = y * self.0[4];
-        out.0[5] = y * self.0[5];
-
-        out.0[6] = self.0[6];
-        out.0[7] = self.0[7];
-        out.0[8] = self.0[8];
-
-        out
+        Self([
+            x * self.0[0],
+            x * self.0[1],
+            x * self.0[2],
+            y * self.0[3],
+            y * self.0[4],
+            y * self.0[5],
+            self.0[6],
+            self.0[7],
+            self.0[8],
+        ])
     }
 
     #[inline(always)]
     pub fn rotate(&self, rad: T) -> Self {
-        let mut out = Self::new();
-
         let a00 = self.0[0];
         let a01 = self.0[1];
         let a02 = self.0[2];
@@ -498,19 +435,17 @@ impl<T: Float> Mat3<T> {
         let s = rad.sin();
         let c = rad.cos();
 
-        out.0[0] = c * a00 + s * a10;
-        out.0[1] = c * a01 + s * a11;
-        out.0[2] = c * a02 + s * a12;
-
-        out.0[3] = c * a10 - s * a00;
-        out.0[4] = c * a11 - s * a01;
-        out.0[5] = c * a12 - s * a02;
-
-        out.0[6] = a20;
-        out.0[7] = a21;
-        out.0[8] = a22;
-
-        out
+        Self([
+            c * a00 + s * a10,
+            c * a01 + s * a11,
+            c * a02 + s * a12,
+            c * a10 - s * a00,
+            c * a11 - s * a01,
+            c * a12 - s * a02,
+            a20,
+            a21,
+            a22,
+        ])
     }
 
     #[inline(always)]
@@ -565,10 +500,10 @@ impl<T: Float> Mat3<T> {
 }
 
 impl<T: Float> Add<Mat3<T>> for Mat3<T> {
-    type Output = Mat3<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Mat3<T>) -> Mat3<T> {
+    fn add(self, b: Self) -> Self {
         let mut out = Mat3::<T>::new_identity();
         out.0[0] = self.0[0] + b.0[0];
         out.0[1] = self.0[1] + b.0[1];
@@ -584,10 +519,10 @@ impl<T: Float> Add<Mat3<T>> for Mat3<T> {
 }
 
 impl<T: Float> Sub<Mat3<T>> for Mat3<T> {
-    type Output = Mat3<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Mat3<T>) -> Mat3<T> {
+    fn sub(self, b: Self) -> Self {
         let mut out = Mat3::<T>::new_identity();
         out.0[0] = self.0[0] - b.0[0];
         out.0[1] = self.0[1] - b.0[1];
@@ -603,10 +538,10 @@ impl<T: Float> Sub<Mat3<T>> for Mat3<T> {
 }
 
 impl<T: Float> Mul<Mat3<T>> for Mat3<T> {
-    type Output = Mat3<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Mat3<T>) -> Mat3<T> {
+    fn mul(self, b: Self) -> Self {
         let mut out = Mat3::<T>::new_identity();
         let a00 = self.0[0];
         let a01 = self.0[1];
@@ -644,10 +579,10 @@ impl<T: Float> Mul<Mat3<T>> for Mat3<T> {
 }
 
 impl<T: Float> Mul<T> for Mat3<T> {
-    type Output = Mat3<T>;
+    type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Mat3<T> {
+    fn mul(self, b: T) -> Self {
         let mut out = Mat3::<T>::new_identity();
         out.0[0] = self.0[0] * b;
         out.0[1] = self.0[1] * b;
