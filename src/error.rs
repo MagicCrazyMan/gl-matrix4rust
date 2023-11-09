@@ -1,4 +1,4 @@
-use crate::EPSILON_F64;
+use crate::epsilon;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Error {
@@ -14,7 +14,7 @@ impl std::fmt::Display for Error {
             Error::ZeroDeterminant => f.write_str("determinant of the matrix is 0.0"),
             Error::LengthSmallerThanEpsilon => f.write_fmt(format_args!(
                 "length of the vector smaller than epsilon({})",
-                EPSILON_F64
+                epsilon::<f64>()
             )),
         }
     }

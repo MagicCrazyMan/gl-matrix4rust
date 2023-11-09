@@ -1,3 +1,5 @@
+use num_traits::Float;
+
 pub mod error;
 pub mod mat2;
 pub mod mat2d;
@@ -9,5 +11,7 @@ pub mod vec2;
 pub mod vec3;
 pub mod vec4;
 
-pub static EPSILON_F64: f64 = 0.000001;
-pub static EPSILON_F32: f32 = 0.000001;
+#[inline(always)]
+pub fn epsilon<T: Float>() -> T {
+    T::from(0.000001).unwrap()
+}
