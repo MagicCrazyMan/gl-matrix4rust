@@ -721,7 +721,6 @@ mod tests {
             use crate::quat::Quat;
             use crate::quat2::Quat2;
             use crate::vec3::Vec3;
-            use crate::mat4::Mat4;
 
             static QUAT2_A_RAW: [$t; 8] = [1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0];
             static QUAT2_B_RAW: [$t; 8] = [5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 6.0, -4.0];
