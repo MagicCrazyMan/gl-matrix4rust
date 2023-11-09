@@ -1240,7 +1240,7 @@ macro_rules! float {
                 }
 
                 #[inline]
-                pub fn rotate(&self, rad: $t, axis: &Vec3<$t>) -> Result<Self, Error> {
+                pub fn rotate(&self, axis: &Vec3<$t>, rad: $t) -> Result<Self, Error> {
                     let mut out = Self::new();
 
                     let mut x = axis.0[0];
@@ -2455,7 +2455,7 @@ mod tests {
             let rad = std::f32::consts::PI * 0.5;
             let axis = Vec3::<f32>::from_values(1.0, 0.0, 0.0);
 
-            let out = mat_a().rotate(rad, &axis)?;
+            let out = mat_a().rotate(&axis, rad)?;
             assert_eq!(
                 out.raw(),
                 &[
@@ -2521,7 +2521,7 @@ mod tests {
             let rad = std::f64::consts::PI * 0.5;
             let axis = Vec3::<f64>::from_values(1.0, 0.0, 0.0);
 
-            let out = mat_a().rotate(rad, &axis)?;
+            let out = mat_a().rotate(&axis, rad)?;
             assert_eq!(
                 out.raw(),
                 &[

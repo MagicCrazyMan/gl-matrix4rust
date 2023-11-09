@@ -245,6 +245,117 @@ macro_rules! float {
                 }
 
                 #[inline]
+                pub fn rotate_x(&self, rad: $t) -> Self {
+                    let bx = -self.0[0];
+                    let by = -self.0[1];
+                    let bz = -self.0[2];
+                    let bw = self.0[3];
+                    let ax = self.0[4];
+                    let ay = self.0[5];
+                    let az = self.0[6];
+                    let aw = self.0[7];
+                    let ax1 = ax * bw + aw * bx + ay * bz - az * by;
+                    let ay1 = ay * bw + aw * by + az * bx - ax * bz;
+                    let az1 = az * bw + aw * bz + ax * by - ay * bx;
+                    let aw1 = aw * bw - ax * bx - ay * by - az * bz;
+                    let quat = Quat::<$t>::from_values(
+                        self.0[0],
+                        self.0[1],
+                        self.0[2],
+                        self.0[3],
+                    ).rotate_x(rad);
+                    let bx = quat.0[0];
+                    let by = quat.0[1];
+                    let bz = quat.0[2];
+                    let bw = quat.0[3];
+
+                    Self::from_values(
+                        bx,
+                        by,
+                        bz,
+                        bw,
+                        ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+                        ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+                        az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+                        aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+                    )
+                }
+
+                #[inline]
+                pub fn rotate_y(&self, rad: $t) -> Self {
+                    let bx = -self.0[0];
+                    let by = -self.0[1];
+                    let bz = -self.0[2];
+                    let bw = self.0[3];
+                    let ax = self.0[4];
+                    let ay = self.0[5];
+                    let az = self.0[6];
+                    let aw = self.0[7];
+                    let ax1 = ax * bw + aw * bx + ay * bz - az * by;
+                    let ay1 = ay * bw + aw * by + az * bx - ax * bz;
+                    let az1 = az * bw + aw * bz + ax * by - ay * bx;
+                    let aw1 = aw * bw - ax * bx - ay * by - az * bz;
+                    let quat = Quat::<$t>::from_values(
+                        self.0[0],
+                        self.0[1],
+                        self.0[2],
+                        self.0[3],
+                    ).rotate_y(rad);
+                    let bx = quat.0[0];
+                    let by = quat.0[1];
+                    let bz = quat.0[2];
+                    let bw = quat.0[3];
+
+                    Self::from_values(
+                        bx,
+                        by,
+                        bz,
+                        bw,
+                        ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+                        ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+                        az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+                        aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+                    )
+                }
+
+                #[inline]
+                pub fn rotate_z(&self, rad: $t) -> Self {
+                    let bx = -self.0[0];
+                    let by = -self.0[1];
+                    let bz = -self.0[2];
+                    let bw = self.0[3];
+                    let ax = self.0[4];
+                    let ay = self.0[5];
+                    let az = self.0[6];
+                    let aw = self.0[7];
+                    let ax1 = ax * bw + aw * bx + ay * bz - az * by;
+                    let ay1 = ay * bw + aw * by + az * bx - ax * bz;
+                    let az1 = az * bw + aw * bz + ax * by - ay * bx;
+                    let aw1 = aw * bw - ax * bx - ay * by - az * bz;
+                    let quat = Quat::<$t>::from_values(
+                        self.0[0],
+                        self.0[1],
+                        self.0[2],
+                        self.0[3],
+                    ).rotate_z(rad);
+                    let bx = quat.0[0];
+                    let by = quat.0[1];
+                    let bz = quat.0[2];
+                    let bw = quat.0[3];
+
+                    Self::from_values(
+                        bx,
+                        by,
+                        bz,
+                        bw,
+                        ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+                        ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+                        az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+                        aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+                    )
+                }
+
+                #[inline]
                 pub fn rotate_by_quat_append(&self, q: &Quat::<$t>) -> Self {
                     let mut out = Self::new();
 
@@ -597,4 +708,614 @@ macro_rules! float {
 float! {
     (f64, EPSILON_F64),
     (f32, EPSILON_F32)
+}
+
+#[cfg(test)]
+#[rustfmt::skip]
+mod tests {
+    macro_rules! float_test {
+        ($t:tt, $epsilon:expr, $pi:expr, $e:expr, $sqrt2:expr) => {
+            use std::sync::OnceLock;
+
+            use crate::error::Error;
+            use crate::quat::Quat;
+            use crate::quat2::Quat2;
+            use crate::vec3::Vec3;
+            use crate::mat4::Mat4;
+
+            static QUAT2_A_RAW: [$t; 8] = [1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0];
+            static QUAT2_B_RAW: [$t; 8] = [5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 6.0, -4.0];
+
+            static QUAT2_A: OnceLock<Quat2<$t>> = OnceLock::new();
+            static QUAT2_B: OnceLock<Quat2<$t>> = OnceLock::new();
+
+            fn quat2_a() -> &'static Quat2<$t> {
+                QUAT2_A.get_or_init(|| {
+                    Quat2::<$t>::from_slice(&QUAT2_A_RAW)
+                })
+            }
+
+            fn quat2_b() -> &'static Quat2<$t> {
+                QUAT2_B.get_or_init(|| {
+                    Quat2::<$t>::from_slice(&QUAT2_B_RAW)
+                })
+            }
+
+            #[test]
+            fn new() {
+                assert_eq!(
+                    Quat2::<$t>::new().raw(),
+                    &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                );
+            }
+
+            #[test]
+            fn from_slice() {
+                assert_eq!(
+                    Quat2::<$t>::from_slice(&[3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]).raw(),
+                    &[3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+                );
+            }
+
+            #[test]
+            fn from_values() {
+                assert_eq!(
+                    Quat2::<$t>::from_values(3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0).raw(),
+                    &[3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+                );
+            }
+
+            #[test]
+            fn from_rotation() {
+                assert_eq!(
+                    Quat2::<$t>::from_rotation(&Quat::<$t>::from_values(1.0, 2.0, 3.0, 4.0)).raw(),
+                    &[1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+                );
+            }
+
+            #[test]
+            fn from_translation() {
+                assert_eq!(
+                    Quat2::<$t>::from_translation(&Vec3::<$t>::from_values(1.0, 2.0, 3.0)).raw(),
+                    &[0.0, 0.0, 0.0, 1.0, 0.5, 1.0, 1.5, 0.0]
+                );
+            }
+
+            #[test]
+            fn from_rotation_translation() {
+                assert_eq!(
+                    Quat2::<$t>::from_rotation_translation(
+                        &Quat::<$t>::from_values(1.0, 2.0, 3.0, 4.0),
+                        &Vec3::<$t>::from_values(1.0, 2.0, 3.0)
+                    ).raw(),
+                    &[1.0, 2.0, 3.0, 4.0, 2.0, 4.0, 6.0, -7.0]
+                );
+            }
+
+            #[test]
+            fn from_rotation_translation_values() {
+                assert_eq!(
+                    Quat2::<$t>::from_rotation_translation_values(
+                        1.0, 2.0 , 3.0, 4.0,
+                        1.0, 2.0 , 3.0
+                    ).raw(),
+                    &[1.0, 2.0, 3.0, 4.0, 2.0, 4.0, 6.0, -7.0]
+                );
+            }
+
+            #[test]
+            fn scale() {
+                assert_eq!(
+                    (*quat2_a() * 2.0).raw(),
+                    &[2.0, 4.0, 6.0, 8.0, 4.0, 10.0, 12.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn scale_add() {
+                assert_eq!(
+                    (*quat2_a() + *quat2_b() * 0.5).raw(),
+                    &[3.5, 5.0, 6.5, 8.0, 6.5, 9.0, 9.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn rotate_by_quat_append() {
+                let quat2_rotation = Quat2::<$t>::from_values(2.0, 5.0, 2.0, -10.0, 0.0, 0.0, 0.0, 0.0);
+
+                assert_eq!(
+                    quat2_a().rotate_by_quat_append(&Quat::<$t>::from_values(2.0, 5.0, 2.0, -10.0)).raw(),
+                    (*quat2_a() * quat2_rotation).raw()
+                );
+            }
+
+            #[test]
+            fn rotate_by_quat_prepend() {
+                let quat2_rotation = Quat2::<$t>::from_values(2.0, 5.0, 2.0, -10.0, 0.0, 0.0, 0.0, 0.0);
+
+                assert_eq!(
+                    quat2_a().rotate_by_quat_prepend(&quat2_rotation.real()).raw(),
+                    (quat2_rotation * *quat2_a()).raw()
+                );
+            }
+
+            #[test]
+            fn squared_length() {
+                assert_eq!(
+                    quat2_a().squared_length(),
+                    30.0
+                );
+            }
+
+            #[test]
+            fn length() {
+                assert_eq!(
+                    quat2_a().length(),
+                    5.477225575051661
+                );
+            }
+
+            #[test]
+            fn dot() {
+                assert_eq!(
+                    quat2_a().dot(quat2_b()),
+                    70.0
+                );
+            }
+            
+            #[test]
+            fn conjugate() {
+                assert_eq!(
+                    quat2_a().conjugate().raw(),
+                    &[-1.0, -2.0, -3.0, 4.0, -2.0, -5.0, -6.0, -2.0]
+                );
+            }
+            
+            #[test]
+            fn real() {
+                assert_eq!(
+                    quat2_a().real().raw(),
+                    &[1.0, 2.0, 3.0, 4.0]
+                );
+            }
+
+            
+            #[test]
+            fn dual() {
+                assert_eq!(
+                    quat2_a().dual().raw(),
+                    &[2.0, 5.0, 6.0, -2.0]
+                );
+            }
+
+            #[test]
+            fn set() {
+                let mut quat = Quat::<$t>::new();
+                quat.set(3.0, 4.0, 5.0, 6.0);
+
+                assert_eq!(
+                    quat.raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn set_slice() {
+                let mut quat = Quat::<$t>::new();
+                quat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
+
+                assert_eq!(
+                    quat.raw(),
+                    &[3.0, 4.0, 5.0, 6.0]
+                );
+            }
+
+            #[test]
+            fn set_real() {
+                assert_eq!(
+                    quat2_a().clone().set_real(&Quat::<$t>::from_values(4.0, 6.0, 8.0, -100.0)).raw(),
+                    &[4.0, 6.0, 8.0, -100.0, 2.0, 5.0, 6.0, -2.0]
+                );
+            }
+
+            #[test]
+            fn set_dual() {
+                let mut quat = Quat::<$t>::new();
+                quat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
+
+                assert_eq!(
+                    quat2_a().clone().set_dual(&Quat::<$t>::from_values(4.3, 6.0, 8.0, -100.0)).raw(),
+                    &[1.0, 2.0, 3.0, 4.0, 4.3, 6.0, 8.0, -100.0]
+                );
+            }
+
+            #[test]
+            fn add() {
+                assert_eq!(
+                    (*quat2_a() + *quat2_b()).raw(),
+                    &[6.0, 8.0, 10.0, 12.0, 11.0, 13.0, 12.0, -6.0]
+                );
+            }
+
+            #[test]
+            fn mul() {
+                assert_eq!(
+                    (*quat2_a() * *quat2_b()).raw(),
+                    &[24.0, 48.0, 48.0, -6.0,  25.0, 89.0, 23.0, -157.0]
+                );
+            }
+
+            #[test]
+            fn mul_scalar() {
+                assert_eq!(
+                    (*quat2_a() * 2.0).raw(),
+                    &[2.0, 4.0, 6.0, 8.0, 4.0, 10.0, 12.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn mul_scalar_add() {
+                assert_eq!(
+                    (*quat2_a() + *quat2_b() * 0.5).raw(),
+                    &[3.5, 5.0, 6.5, 8.0, 6.5, 9.0, 9.0, -4.0]
+                );
+            }
+
+            #[test]
+            fn approximate_eq() {
+                let quat2_a = Quat2::<$t>::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0);
+                let quat2_b = Quat2::<$t>::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0);
+                let quat2_c = Quat2::<$t>::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+                let quat2_d = Quat2::<$t>::from_values(1e-16, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0);
+
+                assert_eq!(
+                    true,
+                    quat2_a.approximate_eq(&quat2_b)
+                );
+                assert_eq!(
+                    false,
+                    quat2_a.approximate_eq(&quat2_c)
+                );
+                assert_eq!(
+                    true,
+                    quat2_a.approximate_eq(&quat2_d)
+                );
+            }
+
+            #[test]
+            fn display() {
+                let out = quat2_a().to_string();
+                assert_eq!(
+                    out,
+                    "quat2(1, 2, 3, 4, 2, 5, 6, -2)"
+                );
+            }
+        };
+    }
+
+    mod f32 {
+        float_test!(
+            f32,
+            crate::EPSILON_F32,
+            std::f32::consts::PI,
+            std::f32::consts::E,
+            std::f32::consts::SQRT_2
+        );
+
+        #[test]
+        fn from_mat4() {
+            let quat_rotation = Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0).normalize();
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &quat_rotation,
+                &Vec3::<f32>::from_values(1.0, -5.0, 3.0)
+            ).normalize();
+
+            assert_eq!(
+                quat2_a.raw(),
+                &[0.18257418, 0.36514837, 0.5477226, 0.73029673, -1.5518806, -1.8257418, 1.7344548, -1.1487366e-7],
+            );
+        }
+
+        #[test]
+        fn invert() {
+            assert_eq!(
+                quat2_a().invert().raw(),
+                &[-0.0333333333, -0.06666666666, -0.1, 0.13333333333, -2.0/30.0, -5.0/30.0, -6.0/30.0, -2.0/30.0]
+            );
+            assert_eq!(
+                quat2_a().invert().real().raw(),
+                &[-0.033333335, -0.06666667, -0.1, 0.13333334],
+            );
+        }
+
+        #[test]
+        fn lerp() {
+            assert_eq!(
+                quat2_a().lerp(quat2_b(), 0.7).raw(),
+                &[3.8, 4.7999997, 5.8, 6.8, 6.8999996, 7.1, 6.0, -3.4]
+            );
+        }
+
+        #[test]
+        fn normalize() {
+            assert_eq!(
+                Quat2::<f32>::from_values(1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0).normalize().raw(),
+                &[0.18257418, 0.36514837, 0.5477225, 0.73029673, 0.23126063, 0.6450954, 0.6937819, -0.9006993]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_values(5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).normalize().raw(),
+                &[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_values(5.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 5.0).normalize().raw(),
+                &[1.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 1.0]
+            );
+        }
+
+        #[test]
+        fn rotate_around_axis() -> Result<(), Error> {
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_around_axis(&Vec3::<f32>::from_values(1.0, 4.0, 2.0), 5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.2416429, 0.11280663, -0.20036738, -0.942728, 1.3920522, -3.5945892, -4.512371, 0.17211652]
+            );
+
+            Ok(())
+        }
+
+        #[test]
+        fn rotate_x() {
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_x(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[0.2907941, 0.03526041, -0.6573355, -0.6943381, 0.24487177, -1.5780439, -4.1414294, 3.943142]
+            );
+        }
+
+        #[test]
+        fn rotate_y() {
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_y(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.4740648, 0.14452597, -0.32953882, -0.80360365, 0.6273011, -4.801378, -3.4312036, 0.17348075]
+            );
+        }
+
+        #[test]
+        fn rotate_z() {
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_y(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.4740648, 0.14452597, -0.32953882, -0.80360365, 0.6273011, -4.801378, -3.4312036, 0.17348075]
+            );
+        }
+
+        #[test]
+        fn translation() {
+            assert_eq!(
+                Quat2::<f32>::from_translation(&Vec3::<f32>::from_values(1.0, 2.0, 3.0)).translation().raw(),
+                &[1.0, 2.0, 3.0]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_translation(&Vec3::<f32>::from_values(1.0, 2.0, 3.0)).translation().normalize().raw(),
+                &[0.26726124, 0.5345225, 0.8017837]
+            );
+            assert_ne!(
+                Quat2::<f32>::from_rotation_translation(
+                    &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                    &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                ).translation().raw(),
+                &[1.0, 2.0, 3.0]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_rotation_translation(
+                    &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                    &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                ).normalize().translation().raw(),
+                &[0.9999999, 1.9999999, 2.9999998]
+            );
+        }
+
+        #[test]
+        fn translate() {
+            let quat2_a = Quat2::<f32>::from_rotation_translation(
+                &Quat::<f32>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f32>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.translate(&Vec3::<f32>::from_values(1.0, 1.0, -1.0));
+
+            assert_eq!(
+                result.raw(),
+                &[0.18257418, 0.36514837, 0.5477225, 0.73029673, -2.6473258, 4.4730673, 1.9170291, -3.012474]
+            );
+        }
+    }
+
+    mod f64 {
+        float_test!(
+            f64,
+            crate::EPSILON_F64,
+            std::f64::consts::PI,
+            std::f64::consts::E,
+            std::f64::consts::SQRT_2
+        );
+
+        #[test]
+        fn from_mat4() {
+            let quat_rotation = Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0).normalize();
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &quat_rotation,
+                &Vec3::<f64>::from_values(1.0, -5.0, 3.0)
+            ).normalize();
+
+            assert_eq!(
+                quat2_a.raw(),
+                &[0.18257418583505539, 0.36514837167011077, 0.5477225575051662, 0.7302967433402215, -1.5518805795979707, -1.8257418583505538, 1.734454765433026, 0.0],
+            );
+        }
+
+        #[test]
+        fn invert() {
+            assert_eq!(
+                quat2_a().invert().raw(),
+                &[-0.03333333333333333, -0.06666666666666667, -0.1, 0.13333333333333333, -0.06666666666666667, -0.16666666666666666, -0.2, -0.06666666666666667]
+            );
+            assert_eq!(
+                quat2_a().invert().real().raw(),
+                Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0).invert().raw(),
+            );
+        }
+
+        #[test]
+        fn lerp() {
+            assert_eq!(
+                quat2_a().lerp(quat2_b(), 0.7).raw(),
+                &[3.8, 4.799999999999999, 5.8, 6.8, 6.9, 7.1, 6.0, -3.4]
+            );
+        }
+
+        #[test]
+        fn normalize() {
+            assert_eq!(
+                Quat2::<f64>::from_values(1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0).normalize().raw(),
+                &[0.18257418583505536, 0.3651483716701107, 0.5477225575051661, 0.7302967433402214, 0.23126063539107017, 0.6450954566171957, 0.6937819061732106, -0.900699316786273]
+            );
+            assert_eq!(
+                Quat2::<f64>::from_values(5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).normalize().raw(),
+                &[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            );
+            assert_eq!(
+                Quat2::<f64>::from_values(5.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 5.0).normalize().raw(),
+                &[1.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 1.0]
+            );
+        }
+
+        #[test]
+        fn rotate_around_axis() -> Result<(), Error> {
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f64>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_around_axis(&Vec3::<f64>::from_values(1.0, 4.0, 2.0), 5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.24164294714846665, 0.11280662947202075, -0.20036742052872042, -0.9427280876431084, 1.3920522306902268, -3.594589462350351, -4.512371117598661, 0.17211647582839384]
+            );
+
+            Ok(())
+        }
+
+        #[test]
+        fn rotate_x() {
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f64>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_x(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[0.2907941144735252, 0.0352604066733514, -0.6573355589457817, -0.6943381378364758, 0.2448721933328691, -1.5780446006697788, -4.141429934812809, 3.943142267566019]
+            );
+        }
+
+        #[test]
+        fn rotate_y() {
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f64>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_y(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.4740648367096534, 0.14452597112809118, -0.32953886558156226, -0.8036037022912156, 0.6273016689244582, -4.801378752084603, -3.431203765857, 0.17348029387749575]
+            );
+        }
+
+        #[test]
+        fn rotate_z() {
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f64>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.rotate_y(5.0);
+
+            assert_eq!(
+                result.raw(),
+                &[-0.4740648367096534, 0.14452597112809118, -0.32953886558156226, -0.8036037022912156, 0.6273016689244582, -4.801378752084603, -3.431203765857, 0.17348029387749575]
+            );
+        }
+
+        #[test]
+        fn translation() {
+            assert_eq!(
+                Quat2::<f32>::from_translation(&Vec3::<f32>::from_values(1.0, 2.0, 3.0)).translation().raw(),
+                &[1.0, 2.0, 3.0]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_translation(&Vec3::<f32>::from_values(1.0, 2.0, 3.0)).translation().normalize().raw(),
+                &[0.26726124, 0.5345225, 0.8017837]
+            );
+            assert_ne!(
+                Quat2::<f32>::from_rotation_translation(
+                    &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                    &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                ).translation().raw(),
+                &[1.0, 2.0, 3.0]
+            );
+            assert_eq!(
+                Quat2::<f32>::from_rotation_translation(
+                    &Quat::<f32>::from_values(2.0, 4.0, 6.0, 2.0),
+                    &Vec3::<f32>::from_values(1.0, 2.0, 3.0)
+                ).normalize().translation().raw(),
+                &[0.9999999, 1.9999999, 2.9999998]
+            );
+        }
+
+        #[test]
+        fn translate() {
+            let quat2_a = Quat2::<f64>::from_rotation_translation(
+                &Quat::<f64>::from_values(1.0, 2.0, 3.0, 4.0),
+                &Vec3::<f64>::from_values(-5.0, 4.0, 10.0),
+            ).normalize();
+            
+            let result = quat2_a.translate(&Vec3::<f64>::from_values(1.0, 1.0, -1.0));
+
+            assert_eq!(
+                result.raw(),
+                &[0.18257418583505536, 0.3651483716701107, 0.5477225575051661, 0.7302967433402214, -2.647325694608303, 4.473067552958856, 1.9170289512680818, -3.0124740662784135]
+            );
+        }
+    }
 }
