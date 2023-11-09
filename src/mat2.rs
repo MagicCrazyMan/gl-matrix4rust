@@ -265,343 +265,171 @@ impl<T: Display> Display for Mat2<T> {
     }
 }
 
-// #[cfg(test)]
-// #[rustfmt::skip]
-// mod tests {
-//     macro_rules! float_test {
-//         (T:tt, epsilon::<T>():expr) => {
-//             use std::sync::OnceLock;
+/// tests only for f32
+#[cfg(test)]
+mod tests {
+    use std::sync::OnceLock;
 
-//             use crate::error::Error;
-//             use crate::mat2::Mat2;
-//             use crate::vec2::Vec2;
+    use crate::{error::Error, vec2::Vec2};
 
-//             static MAT_A_RAW: [T; 4] = [
-//                 T::one(), 2.0,
-//                 3.0, 4.0
-//             ];
-//             static MAT_B_RAW: [T; 4] = [
-//                 5.0, 6.0,
-//                 7.0, 8.0
-//             ];
+    use super::Mat2;
 
-//             static MAT_A: OnceLock<Mat2<T>> = OnceLock::new();
-//             static MAT_B: OnceLock<Mat2<T>> = OnceLock::new();
+    static MAT_A_RAW: [f32; 4] = [1.0, 2.0, 3.0, 4.0];
+    static MAT_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
 
-//             fn mat_a() -> &'static Mat2<T> {
-//                 MAT_A.get_or_init(|| {
-//                     Mat2::<T>::from_slice(&MAT_A_RAW)
-//                 })
-//             }
+    static MAT_A: OnceLock<Mat2> = OnceLock::new();
+    static MAT_B: OnceLock<Mat2> = OnceLock::new();
 
-//             fn mat_b() -> &'static Mat2<T> {
-//                 MAT_B.get_or_init(|| {
-//                     Mat2::<T>::from_slice(&MAT_B_RAW)
-//                 })
-//             }
+    fn mat_a() -> &'static Mat2 {
+        MAT_A.get_or_init(|| Mat2::from_slice(&MAT_A_RAW))
+    }
 
-//             #[test]
-//             fn new() {
-//                 assert_eq!(
-//                     Mat2::<T>::new().raw(),
-//                     &[
-//                         T::zero(), T::zero(),
-//                         T::zero(), T::zero()
-//                     ]
-//                 );
-//             }
+    fn mat_b() -> &'static Mat2 {
+        MAT_B.get_or_init(|| Mat2::from_slice(&MAT_B_RAW))
+    }
 
-//             #[test]
-//             fn new_identity() {
-//                 assert_eq!(
-//                     Mat2::<T>::new_identity().raw(),
-//                     &[
-//                         T::one(), T::zero(),
-//                         T::zero(), T::one()
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new() {
+        assert_eq!(Mat2::<f32>::new().raw(), &[0.0, 0.0, 0.0, 0.0]);
+    }
 
-//             #[test]
-//             fn from_slice() {
-//                 assert_eq!(
-//                     Mat2::<T>::from_slice(&[
-//                         T::one(), 2.0,
-//                         3.0, 4.0
-//                     ]).raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new_identity() {
+        assert_eq!(Mat2::<f32>::new_identity().raw(), &[1.0, 0.0, 0.0, 1.0]);
+    }
 
-//             #[test]
-//             fn from_values() {
-//                 assert_eq!(
-//                     Mat2::<T>::from_values(
-//                         T::one(), 2.0,
-//                         3.0, 4.0
-//                     )
-//                     .raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn from_slice() {
+        assert_eq!(
+            Mat2::from_slice(&[1.0, 2.0, 3.0, 4.0]).raw(),
+            &[1.0, 2.0, 3.0, 4.0,]
+        );
+    }
 
-//             #[test]
-//             fn transpose() {
-//                 assert_eq!(
-//                     mat_a().transpose().raw(),
-//                     &[
-//                         T::one(), 3.0,
-//                         2.0, 4.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn from_values() {
+        assert_eq!(
+            Mat2::from_values(1.0, 2.0, 3.0, 4.0).raw(),
+            &[1.0, 2.0, 3.0, 4.0]
+        );
+    }
 
-//             #[test]
-//             fn invert() -> Result<(), Error> {
-//                 assert_eq!(
-//                     mat_a().invert()?.raw(),
-//                     &[
-//                         -2.0,  T::one(),
-//                          1.5, -0.5
-//                     ]
-//                 );
+    #[test]
+    fn transpose() {
+        assert_eq!(mat_a().transpose().raw(), &[1.0, 3.0, 2.0, 4.0]);
+    }
 
-//                 Ok(())
-//             }
+    #[test]
+    fn invert() -> Result<(), Error> {
+        assert_eq!(mat_a().invert()?.raw(), &[-2.0, 1.0, 1.5, -0.5]);
+        Ok(())
+    }
 
-//             #[test]
-//             fn adjoint() {
-//                 assert_eq!(
-//                     mat_a().adjoint().raw(),
-//                     &[
-//                          4.0, -2.0,
-//                         -3.0,  T::one()
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn adjoint() {
+        assert_eq!(mat_a().adjoint().raw(), &[4.0, -2.0, -3.0, 1.0]);
+    }
 
-//             #[test]
-//             fn determinant() {
-//                 assert_eq!(
-//                     mat_a().determinant(),
-//                     -2.0
-//                 );
-//             }
+    #[test]
+    fn determinant() {
+        assert_eq!(mat_a().determinant(), -2.0);
+    }
 
-//             #[test]
-//             fn scale() {
-//                 assert_eq!(
-//                     mat_a().scale(&Vec2::<T>::from_values(2.0, 3.0)).raw(),
-//                     &[
-//                         2.0,  4.0,
-//                         9.0, 12.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn scale() {
+        assert_eq!(
+            mat_a().scale(&Vec2::from_values(2.0, 3.0)).raw(),
+            &[2.0, 4.0, 9.0, 12.0]
+        );
+    }
 
-//             #[test]
-//             fn frob() {
-//                 assert_eq!(
-//                     mat_a().frob(),
-//                     (
-//                         (T::one() as T).powi(2) +
-//                         (2.0 as T).powi(2) +
-//                         (3.0 as T).powi(2) +
-//                         (4.0 as T).powi(2)
-//                     ).sqrt()
-//                 );
-//             }
+    #[test]
+    fn frob() {
+        assert_eq!(
+            mat_a().frob(),
+            (1.0f32.powi(2) + 2.0f32.powi(2) + 3.0f32.powi(2) + 4.0f32.powi(2)).sqrt()
+        );
+    }
 
-//             #[test]
-//             fn ldu() {
-//                 let l = Mat2::<T>::new_identity();
-//                 let d = Mat2::<T>::new_identity();
-//                 let u = Mat2::<T>::new_identity();
-//                 let mat = Mat2::<T>::from_values(4.0, 3.0, 6.0, 3.0);
+    #[test]
+    fn ldu() {
+        let l = Mat2::new_identity();
+        let d = Mat2::new_identity();
+        let u = Mat2::new_identity();
+        let mat = Mat2::from_values(4.0, 3.0, 6.0, 3.0);
 
-//                 let (l, d, u) = mat.ldu(&l, &d, &u);
+        let (l, d, u) = mat.ldu(&l, &d, &u);
 
-//                 assert_eq!(
-//                     l.raw(),
-//                     &[T::one(), T::zero(), 1.5, T::one()]
-//                 );
-//                 assert_eq!(
-//                     d.raw(),
-//                     &[T::one(), T::zero(), T::zero(), T::one()]
-//                 );
-//                 assert_eq!(
-//                     u.raw(),
-//                     &[4.0, 3.0, T::zero(), -1.5]
-//                 );
-//             }
+        assert_eq!(l.raw(), &[1.0, 0.0, 1.5, 1.0]);
+        assert_eq!(d.raw(), &[1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(u.raw(), &[4.0, 3.0, 0.0, -1.5]);
+    }
 
-//             #[test]
-//             fn set() {
-//                 let mut mat = Mat2::<T>::new();
-//                 mat.set(
-//                     T::one(), 2.0,
-//                     3.0, 4.0
-//                 );
+    #[test]
+    fn set() {
+        let mut mat = Mat2::new();
+        mat.set(1.0, 2.0, 3.0, 4.0);
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0
-//                     ]
-//                 );
-//             }
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0]);
+    }
 
-//             #[test]
-//             fn set_slice() {
-//                 let mut mat = Mat2::<T>::new();
-//                 mat.set_slice(&[
-//                     T::one(), 2.0,
-//                     3.0, 4.0
-//                 ]);
+    #[test]
+    fn set_slice() {
+        let mut mat = Mat2::new();
+        mat.set_slice(&[1.0, 2.0, 3.0, 4.0]);
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0
-//                     ]
-//                 );
-//             }
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0]);
+    }
 
-//             #[test]
-//             fn add() {
-//                 assert_eq!(
-//                     (*mat_a() + *mat_b()).raw(),
-//                     &[
-//                         6.0,  8.0,
-//                        1T::zero(), 12.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn add() {
+        assert_eq!((*mat_a() + *mat_b()).raw(), &[6.0, 8.0, 10.0, 12.0]);
+    }
 
-//             #[test]
-//             fn sub() {
-//                 assert_eq!(
-//                     (*mat_a() - *mat_b()).raw(),
-//                     &[
-//                         -4.0, -4.0,
-//                         -4.0, -4.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn sub() {
+        assert_eq!((*mat_a() - *mat_b()).raw(), &[-4.0, -4.0, -4.0, -4.0]);
+    }
 
-//             #[test]
-//             fn mul() {
-//                 let out = *mat_a() * *mat_b();
-//                 assert_eq!(
-//                     out.raw(),
-//                     &[
-//                         23.0, 34.0,
-//                         3T::one(), 46.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul() {
+        let out = *mat_a() * *mat_b();
+        assert_eq!(out.raw(), &[23.0, 34.0, 31.0, 46.0]);
+    }
 
-//             #[test]
-//             fn mul_scalar() {
-//                 assert_eq!(
-//                     (*mat_a() * 2.0).raw(),
-//                     &[
-//                          2.0, 4.0,
-//                          6.0, 8.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar() {
+        assert_eq!((*mat_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+    }
 
-//             #[test]
-//             fn mul_scalar_add() {
-//                 assert_eq!(
-//                     (*mat_a() + *mat_b() * 0.5).raw(),
-//                     &[
-//                         3.5, 5.0,
-//                         6.5, 8.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar_add() {
+        assert_eq!((*mat_a() + *mat_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+    }
 
-//             #[test]
-//             fn approximate_eq() {
-//                 let mat_a = Mat2::<T>::from_values(
-//                     T::zero(),  T::one(),
-//                     2.0,  3.0
-//                 );
-//                 let mat_b = Mat2::<T>::from_values(
-//                     T::zero(),  T::one(),
-//                     2.0,  3.0
-//                 );
-//                 let mat_c = Mat2::<T>::from_values(
-//                     T::one(),  2.0,
-//                     3.0,  4.0
-//                 );
-//                 let mat_d = Mat2::<T>::from_values(
-//                     1e-16,  T::one(),
-//                     2.0,  3.0
-//                 );
+    #[test]
+    fn approximate_eq() {
+        let mat_a = Mat2::from_values(0.0, 1.0, 2.0, 3.0);
+        let mat_b = Mat2::from_values(0.0, 1.0, 2.0, 3.0);
+        let mat_c = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
+        let mat_d = Mat2::from_values(1e-16, 1.0, 2.0, 3.0);
 
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_b)
-//                 );
-//                 assert_eq!(
-//                     false,
-//                     mat_a.approximate_eq(&mat_c)
-//                 );
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_d)
-//                 );
-//             }
+        assert_eq!(true, mat_a.approximate_eq(&mat_b));
+        assert_eq!(false, mat_a.approximate_eq(&mat_c));
+        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+    }
 
-//             #[test]
-//             fn display() {
-//                 let out = mat_a().to_string();
-//                 assert_eq!(
-//                     out,
-//                     "mat2(1, 2, 3, 4)"
-//                 );
-//             }
-//         };
-//     }
+    #[test]
+    fn display() {
+        let out = mat_a().to_string();
+        assert_eq!(out, "mat2(1, 2, 3, 4)");
+    }
 
-//     mod f32 {
-//         float_test!(f32, crate::EPSILON_F32);
-
-//         #[test]
-//         fn rotate() {
-//             assert_eq!(
-//                 mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
-//                 &[
-//                      3.0,  4.0,
-//                      -T::one()000001, -2.0000002
-//                 ]
-//             );
-//         }
-//     }
-
-//     mod f64 {
-//         float_test!(f64, crate::EPSILON_F64);
-
-//         #[test]
-//         fn rotate() {
-//             assert_eq!(
-//                 mat_a().rotate(std::f64::consts::PI * 0.5).raw(),
-//                 &[
-//                      3.0,  4.0,
-//                      -0.9999999999999998, -1.9999999999999998
-//                 ]
-//             );
-//         }
-//     }
-// }
+    #[test]
+    fn rotate() {
+        assert_eq!(
+            mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
+            &[3.0, 4.0, -1.0000001, -2.0000002]
+        );
+    }
+}

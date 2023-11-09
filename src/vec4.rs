@@ -66,7 +66,7 @@ impl<T: Float> Vec4<T> {
             self.0[0].ceil(),
             self.0[1].ceil(),
             self.0[2].ceil(),
-            self.0[3].ceil()
+            self.0[3].ceil(),
         ])
     }
 
@@ -76,7 +76,7 @@ impl<T: Float> Vec4<T> {
             self.0[0].floor(),
             self.0[1].floor(),
             self.0[2].floor(),
-            self.0[3].floor()
+            self.0[3].floor(),
         ])
     }
 
@@ -86,7 +86,7 @@ impl<T: Float> Vec4<T> {
             self.0[0].min(b.0[0]),
             self.0[1].min(b.0[1]),
             self.0[2].min(b.0[2]),
-            self.0[3].min(b.0[3])
+            self.0[3].min(b.0[3]),
         ])
     }
 
@@ -96,7 +96,7 @@ impl<T: Float> Vec4<T> {
             self.0[0].max(b.0[0]),
             self.0[1].max(b.0[1]),
             self.0[2].max(b.0[2]),
-            self.0[3].max(b.0[3])
+            self.0[3].max(b.0[3]),
         ])
     }
 
@@ -106,7 +106,7 @@ impl<T: Float> Vec4<T> {
             self.0[0].round(),
             self.0[1].round(),
             self.0[2].round(),
-            self.0[3].round()
+            self.0[3].round(),
         ])
     }
 
@@ -145,12 +145,7 @@ impl<T: Float> Vec4<T> {
 
     #[inline(always)]
     pub fn negate(&self) -> Self {
-        Self([
-            -self.0[0],
-            -self.0[1],
-            -self.0[2],
-            -self.0[3]
-        ])
+        Self([-self.0[0], -self.0[1], -self.0[2], -self.0[3]])
     }
 
     #[inline(always)]
@@ -159,7 +154,7 @@ impl<T: Float> Vec4<T> {
             T::one() / self.0[0],
             T::one() / self.0[1],
             T::one() / self.0[2],
-            T::one() / self.0[3]
+            T::one() / self.0[3],
         ])
     }
 
@@ -285,7 +280,7 @@ impl<T: Float> Add<Vec4<T>> for Vec4<T> {
             self.0[0] + b.0[0],
             self.0[1] + b.0[1],
             self.0[2] + b.0[2],
-            self.0[3] + b.0[3]
+            self.0[3] + b.0[3],
         ])
     }
 }
@@ -295,12 +290,7 @@ impl<T: Float> Add<T> for Vec4<T> {
 
     #[inline(always)]
     fn add(self, b: T) -> Self {
-        Self([
-            self.0[0] + b,
-            self.0[1] + b,
-            self.0[2] + b,
-            self.0[3] + b
-        ])
+        Self([self.0[0] + b, self.0[1] + b, self.0[2] + b, self.0[3] + b])
     }
 }
 
@@ -313,7 +303,7 @@ impl<T: Float> Sub<Vec4<T>> for Vec4<T> {
             self.0[0] - b.0[0],
             self.0[1] - b.0[1],
             self.0[2] - b.0[2],
-            self.0[3] - b.0[3]
+            self.0[3] - b.0[3],
         ])
     }
 }
@@ -323,12 +313,7 @@ impl<T: Float> Sub<T> for Vec4<T> {
 
     #[inline(always)]
     fn sub(self, b: T) -> Self {
-        Self([
-            self.0[0] - b,
-            self.0[1] - b,
-            self.0[2] - b,
-            self.0[3] - b
-        ])
+        Self([self.0[0] - b, self.0[1] - b, self.0[2] - b, self.0[3] - b])
     }
 }
 
@@ -341,7 +326,7 @@ impl<T: Float> Mul<Vec4<T>> for Vec4<T> {
             self.0[0] * b.0[0],
             self.0[1] * b.0[1],
             self.0[2] * b.0[2],
-            self.0[3] * b.0[3]
+            self.0[3] * b.0[3],
         ])
     }
 }
@@ -351,12 +336,7 @@ impl<T: Float> Mul<T> for Vec4<T> {
 
     #[inline(always)]
     fn mul(self, b: T) -> Self {
-        Self([
-            self.0[0] * b,
-            self.0[1] * b,
-            self.0[2] * b,
-            self.0[3] * b
-        ])
+        Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
     }
 }
 
@@ -369,7 +349,7 @@ impl<T: Float> Div<Vec4<T>> for Vec4<T> {
             self.0[0] / b.0[0],
             self.0[1] / b.0[1],
             self.0[2] / b.0[2],
-            self.0[3] / b.0[3]
+            self.0[3] / b.0[3],
         ])
     }
 }
@@ -379,12 +359,7 @@ impl<T: Float> Div<T> for Vec4<T> {
 
     #[inline(always)]
     fn div(self, b: T) -> Self {
-        Self([
-            self.0[0] / b,
-            self.0[1] / b,
-            self.0[2] / b,
-            self.0[3] / b
-        ])
+        Self([self.0[0] / b, self.0[1] / b, self.0[2] / b, self.0[3] / b])
     }
 }
 
@@ -470,328 +445,238 @@ impl Vec4<f64> {
     }
 }
 
-// #[cfg(test)]
-// #[rustfmt::skip]
-// mod tests {
-//     macro_rules! float_test {
-//         (T:tt, epsilon::<T>():expr, $pi:expr, $e:expr, $sqrt2:expr) => {
-//             use std::sync::OnceLock;
+/// tests only for f32
+#[cfg(test)]
+mod tests {
+    use std::sync::OnceLock;
 
-//             use crate::vec4::Vec4;
+    use super::Vec4;
 
-//             static VEC_A_RAW: [T; 4] = [T::one(), 2.0, 3.0, 4.0];
-//             static VEC_B_RAW: [T; 4] = [5.0, 6.0, 7.0, 8.0];
+    static VEC_A_RAW: [f32; 4] = [1.0, 2.0, 3.0, 4.0];
+    static VEC_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
 
-//             static VEC_A: OnceLock<Vec4<T>> = OnceLock::new();
-//             static VEC_B: OnceLock<Vec4<T>> = OnceLock::new();
+    static VEC_A: OnceLock<Vec4> = OnceLock::new();
+    static VEC_B: OnceLock<Vec4> = OnceLock::new();
 
-//             fn vec_a() -> &'static Vec4<T> {
-//                 VEC_A.get_or_init(|| {
-//                     Vec4::<T>::from_slice(&VEC_A_RAW)
-//                 })
-//             }
+    fn vec_a() -> &'static Vec4 {
+        VEC_A.get_or_init(|| Vec4::from_slice(&VEC_A_RAW))
+    }
 
-//             fn vec_b() -> &'static Vec4<T> {
-//                 VEC_B.get_or_init(|| {
-//                     Vec4::<T>::from_slice(&VEC_B_RAW)
-//                 })
-//             }
+    fn vec_b() -> &'static Vec4 {
+        VEC_B.get_or_init(|| Vec4::from_slice(&VEC_B_RAW))
+    }
 
-//             #[test]
-//             fn new() {
-//                 assert_eq!(
-//                     Vec4::<T>::new().raw(),
-//                     &[T::zero(), T::zero(), T::zero(), T::zero()]
-//                 );
-//             }
+    #[test]
+    fn new() {
+        assert_eq!(Vec4::<f32>::new().raw(), &[0.0, 0.0, 0.0, 0.0]);
+    }
 
-//             #[test]
-//             fn from_slice() {
-//                 assert_eq!(
-//                     Vec4::<T>::from_slice(&[3.0, 4.0, 5.0, 6.0]).raw(),
-//                     &[3.0, 4.0, 5.0, 6.0]
-//                 );
-//             }
+    #[test]
+    fn from_slice() {
+        assert_eq!(
+            Vec4::from_slice(&[3.0, 4.0, 5.0, 6.0]).raw(),
+            &[3.0, 4.0, 5.0, 6.0]
+        );
+    }
 
-//             #[test]
-//             fn from_values() {
-//                 assert_eq!(
-//                     Vec4::<T>::from_values(3.0, 4.0, 5.0, 6.0).raw(),
-//                     &[3.0, 4.0, 5.0, 6.0]
-//                 );
-//             }
+    #[test]
+    fn from_values() {
+        assert_eq!(
+            Vec4::from_values(3.0, 4.0, 5.0, 6.0).raw(),
+            &[3.0, 4.0, 5.0, 6.0]
+        );
+    }
 
-//             #[test]
-//             fn ceil() {
-//                 assert_eq!(
-//                     Vec4::<T>::from_values($e, $pi, $sqrt2, (0.5 as T).sqrt()).ceil().raw(),
-//                     &[3.0, 4.0, 2.0, T::one()]
-//                 );
-//             }
+    #[test]
+    fn ceil() {
+        assert_eq!(
+            Vec4::from_values(
+                std::f32::consts::E,
+                std::f32::consts::PI,
+                std::f32::consts::SQRT_2,
+                0.5f32.sqrt()
+            )
+            .ceil()
+            .raw(),
+            &[3.0, 4.0, 2.0, 1.0]
+        );
+    }
 
-//             #[test]
-//             fn floor() {
-//                 assert_eq!(
-//                     Vec4::<T>::from_values($e, $pi, $sqrt2, (0.5 as T).sqrt()).floor().raw(),
-//                     &[2.0, 3.0, T::one(), T::zero()]
-//                 );
-//             }
+    #[test]
+    fn floor() {
+        assert_eq!(
+            Vec4::from_values(
+                std::f32::consts::E,
+                std::f32::consts::PI,
+                std::f32::consts::SQRT_2,
+                0.5f32.sqrt()
+            )
+            .floor()
+            .raw(),
+            &[2.0, 3.0, 1.0, 0.0]
+        );
+    }
 
-//             #[test]
-//             fn min() {
-//                 let vec_a = Vec4::<T>::from_values(T::one(), 3.0, T::one(), 3.0);
-//                 let vec_b = Vec4::<T>::from_values(3.0, T::one(), 3.0, T::one());
-//                 assert_eq!(
-//                     vec_a.min(&vec_b).raw(),
-//                     &[T::one(), T::one(), T::one(), T::one()]
-//                 );
-//             }
+    #[test]
+    fn min() {
+        let vec_a = Vec4::from_values(1.0, 3.0, 1.0, 3.0);
+        let vec_b = Vec4::from_values(3.0, 1.0, 3.0, 1.0);
+        assert_eq!(vec_a.min(&vec_b).raw(), &[1.0, 1.0, 1.0, 1.0]);
+    }
 
-//             #[test]
-//             fn max() {
-//                 let vec_a = Vec4::<T>::from_values(T::one(), 3.0, T::one(), 3.0);
-//                 let vec_b = Vec4::<T>::from_values(3.0, T::one(), 3.0, T::one());
-//                 assert_eq!(
-//                     vec_a.max(&vec_b).raw(),
-//                     &[3.0, 3.0, 3.0, 3.0]
-//                 );
-//             }
+    #[test]
+    fn max() {
+        let vec_a = Vec4::from_values(1.0, 3.0, 1.0, 3.0);
+        let vec_b = Vec4::from_values(3.0, 1.0, 3.0, 1.0);
+        assert_eq!(vec_a.max(&vec_b).raw(), &[3.0, 3.0, 3.0, 3.0]);
+    }
 
-//             #[test]
-//             fn round() {
-//                 let vec = Vec4::<T>::from_values($e, $pi, $sqrt2, (0.5 as T).sqrt());
-//                 assert_eq!(
-//                     vec.round().raw(),
-//                     &[3.0, 3.0, T::one(), T::one()]
-//                 );
-//             }
+    #[test]
+    fn round() {
+        let vec = Vec4::from_values(
+            std::f32::consts::E,
+            std::f32::consts::PI,
+            std::f32::consts::SQRT_2,
+            0.5f32.sqrt(),
+        );
+        assert_eq!(vec.round().raw(), &[3.0, 3.0, 1.0, 1.0]);
+    }
 
-//             #[test]
-//             fn scale() {
-//                 assert_eq!(
-//                     (*vec_a() * 2.0).raw(),
-//                     &[2.0, 4.0, 6.0, 8.0]
-//                 );
-//             }
+    #[test]
+    fn scale() {
+        assert_eq!((*vec_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+    }
 
-//             #[test]
-//             fn scale_add() {
-//                 assert_eq!(
-//                     (*vec_a() + *vec_b() * 0.5).raw(),
-//                     &[3.5, 5.0, 6.5, 8.0]
-//                 );
-//             }
+    #[test]
+    fn scale_add() {
+        assert_eq!((*vec_a() + *vec_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+    }
 
-//             #[test]
-//             fn squared_distance() {
-//                 assert_eq!(
-//                     vec_a().squared_distance(vec_b()),
-//                     64.0
-//                 );
-//             }
+    #[test]
+    fn squared_distance() {
+        assert_eq!(vec_a().squared_distance(vec_b()), 64.0);
+    }
 
-//             #[test]
-//             fn distance() {
-//                 assert_eq!(
-//                     vec_a().distance(vec_b()),
-//                     8.0
-//                 );
-//             }
+    #[test]
+    fn distance() {
+        assert_eq!(vec_a().distance(vec_b()), 8.0);
+    }
 
-//             #[test]
-//             fn squared_length() {
-//                 assert_eq!(
-//                     vec_a().squared_length(),
-//                     3T::zero()
-//                 );
-//             }
+    #[test]
+    fn squared_length() {
+        assert_eq!(vec_a().squared_length(), 30.0);
+    }
 
-//             #[test]
-//             fn length() {
-//                 assert_eq!(
-//                     vec_a().length(),
-//                     5.477225575051661
-//                 );
-//             }
+    #[test]
+    fn length() {
+        assert_eq!(vec_a().length(), 5.477225575051661);
+    }
 
-//             #[test]
-//             fn negate() {
-//                 assert_eq!(
-//                     vec_a().negate().raw(),
-//                     &[-T::one() ,-2.0, -3.0, -4.0]
-//                 );
-//             }
+    #[test]
+    fn negate() {
+        assert_eq!(vec_a().negate().raw(), &[-1.0, -2.0, -3.0, -4.0]);
+    }
 
-//             #[test]
-//             fn normalize() {
-//                 assert_eq!(
-//                     Vec4::<T>::from_values(5.0, T::zero(), T::zero(), T::zero()).normalize().raw(),
-//                     &[T::one() ,T::zero(), T::zero(), T::zero()]
-//                 );
-//             }
+    #[test]
+    fn normalize() {
+        assert_eq!(
+            Vec4::from_values(5.0, 0.0, 0.0, 0.0).normalize().raw(),
+            &[1.0, 0.0, 0.0, 0.0]
+        );
+    }
 
-//             #[test]
-//             fn dot() {
-//                 assert_eq!(
-//                     vec_a().dot(vec_b()),
-//                     7T::zero()
-//                 );
-//             }
+    #[test]
+    fn dot() {
+        assert_eq!(vec_a().dot(vec_b()), 70.0);
+    }
 
-//             #[test]
-//             fn cross() {
-//                 let vec_a = Vec4::<T>::from_values(T::one(), T::zero(), T::zero(), T::zero());
-//                 let vec_b = Vec4::<T>::from_values(T::zero(), T::one(), T::zero(), T::zero());
-//                 let vec_c = Vec4::<T>::from_values(T::zero(), T::one(), T::one(), T::zero());
-//                 assert_eq!(
-//                     vec_a.cross(&vec_b, &vec_c).raw(),
-//                     &[T::zero(), T::zero(), T::zero(), -T::one()]
-//                 );
-//             }
+    #[test]
+    fn cross() {
+        let vec_a = Vec4::from_values(1.0, 0.0, 0.0, 0.0);
+        let vec_b = Vec4::from_values(0.0, 1.0, 0.0, 0.0);
+        let vec_c = Vec4::from_values(0.0, 1.0, 1.0, 0.0);
+        assert_eq!(vec_a.cross(&vec_b, &vec_c).raw(), &[0.0, 0.0, 0.0, -1.0]);
+    }
 
-//             #[test]
-//             fn lerp() {
-//                 assert_eq!(
-//                     vec_a().lerp(vec_b(), 0.5).raw(),
-//                     &[3.0, 4.0, 5.0, 6.0]
-//                 );
-//             }
+    #[test]
+    fn lerp() {
+        assert_eq!(vec_a().lerp(vec_b(), 0.5).raw(), &[3.0, 4.0, 5.0, 6.0]);
+    }
 
-//             #[test]
-//             fn set() {
-//                 let mut mat = Vec4::<T>::new();
-//                 mat.set(3.0, 4.0, 5.0, 6.0);
+    #[test]
+    fn set() {
+        let mut mat = Vec4::new();
+        mat.set(3.0, 4.0, 5.0, 6.0);
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[3.0, 4.0, 5.0, 6.0]
-//                 );
-//             }
+        assert_eq!(mat.raw(), &[3.0, 4.0, 5.0, 6.0]);
+    }
 
-//             #[test]
-//             fn set_slice() {
-//                 let mut mat = Vec4::<T>::new();
-//                 mat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
+    #[test]
+    fn set_slice() {
+        let mut mat = Vec4::new();
+        mat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[3.0, 4.0, 5.0, 6.0]
-//                 );
-//             }
+        assert_eq!(mat.raw(), &[3.0, 4.0, 5.0, 6.0]);
+    }
 
-//             #[test]
-//             fn add() {
-//                 assert_eq!(
-//                     (*vec_a() + *vec_b()).raw(),
-//                     &[6.0, 8.0, 1T::zero(), 12.0]
-//                 );
-//             }
+    #[test]
+    fn add() {
+        assert_eq!((*vec_a() + *vec_b()).raw(), &[6.0, 8.0, 10.0, 12.0]);
+    }
 
-//             #[test]
-//             fn sub() {
-//                 assert_eq!(
-//                     (*vec_a() - *vec_b()).raw(),
-//                     &[-4.0, -4.0, -4.0, -4.0]
-//                 );
-//             }
+    #[test]
+    fn sub() {
+        assert_eq!((*vec_a() - *vec_b()).raw(), &[-4.0, -4.0, -4.0, -4.0]);
+    }
 
-//             #[test]
-//             fn mul() {
-//                 assert_eq!(
-//                     (*vec_a() * *vec_b()).raw(),
-//                     &[5.0, 12.0, 2T::one(), 32.0]
-//                 );
-//             }
+    #[test]
+    fn mul() {
+        assert_eq!((*vec_a() * *vec_b()).raw(), &[5.0, 12.0, 21.0, 32.0]);
+    }
 
-//             #[test]
-//             fn mul_scalar() {
-//                 assert_eq!(
-//                     (*vec_a() * 2.0).raw(),
-//                     &[2.0, 4.0, 6.0, 8.0]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar() {
+        assert_eq!((*vec_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+    }
 
-//             #[test]
-//             fn mul_scalar_add() {
-//                 assert_eq!(
-//                     (*vec_a() + *vec_b() * 0.5).raw(),
-//                     &[3.5, 5.0, 6.5, 8.0]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar_add() {
+        assert_eq!((*vec_a() + *vec_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+    }
 
-//             #[test]
-//             fn div() {
-//                 assert_eq!(
-//                     (*vec_a() / *vec_b()).raw(),
-//                     &[0.2, 0.3333333333333333, 0.42857142857142855, 0.5]
-//                 );
-//             }
+    #[test]
+    fn div() {
+        assert_eq!(
+            (*vec_a() / *vec_b()).raw(),
+            &[0.2, 0.3333333333333333, 0.42857142857142855, 0.5]
+        );
+    }
 
-//             #[test]
-//             fn div_scalar() {
-//                 assert_eq!(
-//                     (*vec_a() / 2.0).raw(),
-//                     &[0.5, T::one(), 1.5, 2.0]
-//                 );
-//             }
+    #[test]
+    fn div_scalar() {
+        assert_eq!((*vec_a() / 2.0).raw(), &[0.5, 1.0, 1.5, 2.0]);
+    }
 
-//             #[test]
-//             fn div_scalar_add() {
-//                 assert_eq!(
-//                     (*vec_a() + *vec_b() / 0.5).raw(),
-//                     &[1T::one(), 14.0, 17.0, 2T::zero()]
-//                 );
-//             }
+    #[test]
+    fn div_scalar_add() {
+        assert_eq!((*vec_a() + *vec_b() / 0.5).raw(), &[11.0, 14.0, 17.0, 20.0]);
+    }
 
-//             #[test]
-//             fn approximate_eq() {
-//                 let vec_a = Vec4::<T>::from_values(T::zero(),  T::one(), 2.0, 3.0);
-//                 let vec_b = Vec4::<T>::from_values(T::zero(),  T::one(), 2.0, 3.0);
-//                 let vec_c = Vec4::<T>::from_values(T::one(),  2.0, 3.0, 4.0);
-//                 let vec_d = Vec4::<T>::from_values(1e-16,  T::one(), 2.0, 3.0);
+    #[test]
+    fn approximate_eq() {
+        let vec_a = Vec4::from_values(0.0, 1.0, 2.0, 3.0);
+        let vec_b = Vec4::from_values(0.0, 1.0, 2.0, 3.0);
+        let vec_c = Vec4::from_values(1.0, 2.0, 3.0, 4.0);
+        let vec_d = Vec4::from_values(1e-16, 1.0, 2.0, 3.0);
 
-//                 assert_eq!(
-//                     true,
-//                     vec_a.approximate_eq(&vec_b)
-//                 );
-//                 assert_eq!(
-//                     false,
-//                     vec_a.approximate_eq(&vec_c)
-//                 );
-//                 assert_eq!(
-//                     true,
-//                     vec_a.approximate_eq(&vec_d)
-//                 );
-//             }
+        assert_eq!(true, vec_a.approximate_eq(&vec_b));
+        assert_eq!(false, vec_a.approximate_eq(&vec_c));
+        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+    }
 
-//             #[test]
-//             fn display() {
-//                 let out = vec_a().to_string();
-//                 assert_eq!(
-//                     out,
-//                     "vec4(1, 2, 3, 4)"
-//                 );
-//             }
-//         };
-//     }
-
-//     mod f32 {
-//         float_test!(
-//             f32,
-//             crate::EPSILON_F32,
-//             std::f32::consts::PI,
-//             std::f32::consts::E,
-//             std::f32::consts::SQRT_2
-//         );
-//     }
-
-//     mod f64 {
-//         float_test!(
-//             f64,
-//             crate::EPSILON_F64,
-//             std::f64::consts::PI,
-//             std::f64::consts::E,
-//             std::f64::consts::SQRT_2
-//         );
-//     }
-// }
+    #[test]
+    fn display() {
+        let out = vec_a().to_string();
+        assert_eq!(out, "vec4(1, 2, 3, 4)");
+    }
+}

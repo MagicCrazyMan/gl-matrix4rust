@@ -318,337 +318,177 @@ impl<T: Display> Display for Mat2d<T> {
     }
 }
 
-// #[cfg(test)]
-// #[rustfmt::skip]
-// mod tests {
-//     macro_rules! float_test {
-//         (T:tt, epsilon::<T>():expr) => {
-//             use std::sync::OnceLock;
+/// tests only for f32
+#[cfg(test)]
+mod tests {
+    use std::sync::OnceLock;
 
-//             use crate::error::Error;
-//             use crate::mat2d::Mat2d;
-//             use crate::vec2::Vec2;
+    use crate::{error::Error, vec2::Vec2};
 
-//             static MAT_A_RAW: [T; 6] = [
-//                 T::one(), 2.0,
-//                 3.0, 4.0,
-//                 5.0, 6.0
-//             ];
-//             static MAT_B_RAW: [T; 6] = [
-//                  7.0,  8.0,
-//                  9.0, 1T::zero(),
-//                 1T::one(), 12.0
-//             ];
+    use super::Mat2d;
 
-//             static MAT_A: OnceLock<Mat2d<T>> = OnceLock::new();
-//             static MAT_B: OnceLock<Mat2d<T>> = OnceLock::new();
+    static MAT_A_RAW: [f32; 6] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+    static MAT_B_RAW: [f32; 6] = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
 
-//             fn mat_a() -> &'static Mat2d<T> {
-//                 MAT_A.get_or_init(|| {
-//                     Mat2d::<T>::from_slice(&MAT_A_RAW)
-//                 })
-//             }
+    static MAT_A: OnceLock<Mat2d> = OnceLock::new();
+    static MAT_B: OnceLock<Mat2d> = OnceLock::new();
 
-//             fn mat_b() -> &'static Mat2d<T> {
-//                 MAT_B.get_or_init(|| {
-//                     Mat2d::<T>::from_slice(&MAT_B_RAW)
-//                 })
-//             }
+    fn mat_a() -> &'static Mat2d {
+        MAT_A.get_or_init(|| Mat2d::from_slice(&MAT_A_RAW))
+    }
 
-//             #[test]
-//             fn new() {
-//                 assert_eq!(
-//                     Mat2d::<T>::new().raw(),
-//                     &[
-//                         T::zero(), T::zero(),
-//                         T::zero(), T::zero(),
-//                         T::zero(), T::zero()
-//                     ]
-//                 );
-//             }
+    fn mat_b() -> &'static Mat2d {
+        MAT_B.get_or_init(|| Mat2d::from_slice(&MAT_B_RAW))
+    }
 
-//             #[test]
-//             fn new_identity() {
-//                 assert_eq!(
-//                     Mat2d::<T>::new_identity().raw(),
-//                     &[
-//                         T::one(), T::zero(),
-//                         T::zero(), T::one(),
-//                         T::zero(), T::zero()
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new() {
+        assert_eq!(Mat2d::<f32>::new().raw(), &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    }
 
-//             #[test]
-//             fn from_slice() {
-//                 assert_eq!(
-//                     Mat2d::<T>::from_slice(&[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     ]).raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new_identity() {
+        assert_eq!(
+            Mat2d::<f32>::new_identity().raw(),
+            &[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+        );
+    }
 
-//             #[test]
-//             fn from_values() {
-//                 assert_eq!(
-//                     Mat2d::<T>::from_values(
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     )
-//                     .raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn from_slice() {
+        assert_eq!(
+            Mat2d::from_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).raw(),
+            &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+        );
+    }
 
-//             #[test]
-//             fn invert() -> Result<(), Error> {
-//                 assert_eq!(
-//                     mat_a().invert()?.raw(),
-//                     &[
-//                         -2.0,  T::one(),
-//                          1.5, -0.5,
-//                          T::one(), -2.0
-//                     ]
-//                 );
+    #[test]
+    fn from_values() {
+        assert_eq!(
+            Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0).raw(),
+            &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+        );
+    }
 
-//                 Ok(())
-//             }
+    #[test]
+    fn invert() -> Result<(), Error> {
+        assert_eq!(mat_a().invert()?.raw(), &[-2.0, 1.0, 1.5, -0.5, 1.0, -2.0]);
 
-//             #[test]
-//             fn determinant() {
-//                 assert_eq!(
-//                     mat_a().determinant(),
-//                     -2.0
-//                 );
-//             }
+        Ok(())
+    }
 
-//             #[test]
-//             fn scale() {
-//                 assert_eq!(
-//                     mat_a().scale(&Vec2::<T>::from_values(2.0, 3.0)).raw(),
-//                     &[
-//                         2.0,  4.0,
-//                         9.0, 12.0,
-//                         5.0,  6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn determinant() {
+        assert_eq!(mat_a().determinant(), -2.0);
+    }
 
-//             #[test]
-//             fn translate() {
-//                 assert_eq!(
-//                     mat_a().translate(&Vec2::<T>::from_values(2.0, 3.0)).raw(),
-//                     &[
-//                          T::one(),  2.0,
-//                          3.0,  4.0,
-//                         16.0, 22.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn scale() {
+        assert_eq!(
+            mat_a().scale(&Vec2::from_values(2.0, 3.0)).raw(),
+            &[2.0, 4.0, 9.0, 12.0, 5.0, 6.0]
+        );
+    }
 
-//             #[test]
-//             fn frob() {
-//                 assert_eq!(
-//                     mat_a().frob(),
-//                     (
-//                         (T::one() as T).powi(2) +
-//                         (2.0 as T).powi(2) +
-//                         (3.0 as T).powi(2) +
-//                         (4.0 as T).powi(2) +
-//                         (5.0 as T).powi(2) +
-//                         (6.0 as T).powi(2) +
-//                         T::one()
-//                     ).sqrt()
-//                 );
-//             }
+    #[test]
+    fn translate() {
+        assert_eq!(
+            mat_a().translate(&Vec2::from_values(2.0, 3.0)).raw(),
+            &[1.0, 2.0, 3.0, 4.0, 16.0, 22.0]
+        );
+    }
 
-//             #[test]
-//             fn set() {
-//                 let mut mat = Mat2d::<T>::new();
-//                 mat.set(
-//                     T::one(), 2.0,
-//                     3.0, 4.0,
-//                     5.0, 6.0
-//                 );
+    #[test]
+    fn frob() {
+        assert_eq!(
+            mat_a().frob(),
+            (1.0f32.powi(2)
+                + 2.0f32.powi(2)
+                + 3.0f32.powi(2)
+                + 4.0f32.powi(2)
+                + 5.0f32.powi(2)
+                + 6.0f32.powi(2)
+                + 1.0)
+                .sqrt()
+        );
+    }
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn set() {
+        let mut mat = Mat2d::new();
+        mat.set(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 
-//             #[test]
-//             fn set_slice() {
-//                 let mut mat = Mat2d::<T>::new();
-//                 mat.set_slice(&[
-//                     T::one(), 2.0,
-//                     3.0, 4.0,
-//                     5.0, 6.0
-//                 ]);
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    }
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0,
-//                         3.0, 4.0,
-//                         5.0, 6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn set_slice() {
+        let mut mat = Mat2d::new();
+        mat.set_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
 
-//             #[test]
-//             fn add() {
-//                 assert_eq!(
-//                     (*mat_a() + *mat_b()).raw(),
-//                     &[
-//                          8.0, 1T::zero(),
-//                         12.0, 14.0,
-//                         16.0, 18.0
-//                     ]
-//                 );
-//             }
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    }
 
-//             #[test]
-//             fn sub() {
-//                 assert_eq!(
-//                     (*mat_a() - *mat_b()).raw(),
-//                     &[
-//                         -6.0, -6.0,
-//                         -6.0, -6.0,
-//                         -6.0, -6.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn add() {
+        assert_eq!(
+            (*mat_a() + *mat_b()).raw(),
+            &[8.0, 10.0, 12.0, 14.0, 16.0, 18.0]
+        );
+    }
 
-//             #[test]
-//             fn mul() {
-//                 assert_eq!(
-//                     (*mat_a() * *mat_b()).raw(),
-//                     &[
-//                         3T::one(), 46.0,
-//                         39.0, 58.0,
-//                         52.0, 76.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn sub() {
+        assert_eq!(
+            (*mat_a() - *mat_b()).raw(),
+            &[-6.0, -6.0, -6.0, -6.0, -6.0, -6.0]
+        );
+    }
 
-//             #[test]
-//             fn mul_scalar() {
-//                 assert_eq!(
-//                     (*mat_a() * 2.0).raw(),
-//                     &[
-//                          2.0,  4.0,
-//                          6.0,  8.0,
-//                         1T::zero(), 12.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul() {
+        assert_eq!(
+            (*mat_a() * *mat_b()).raw(),
+            &[31.0, 46.0, 39.0, 58.0, 52.0, 76.0]
+        );
+    }
 
-//             #[test]
-//             fn mul_scalar_add() {
-//                 assert_eq!(
-//                     (*mat_a() + *mat_b() * 0.5).raw(),
-//                     &[
-//                          4.5,  6.0,
-//                          7.5,  9.0,
-//                         10.5, 12.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar() {
+        assert_eq!((*mat_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0, 10.0, 12.0]);
+    }
 
-//             #[test]
-//             fn approximate_eq() {
-//                 let mat_a = Mat2d::<T>::from_values(
-//                     T::zero(),  T::one(),
-//                     2.0,  3.0,
-//                     4.0,  5.0
-//                 );
-//                 let mat_b = Mat2d::<T>::from_values(
-//                     T::zero(),  T::one(),
-//                     2.0,  3.0,
-//                     4.0,  5.0
-//                 );
-//                 let mat_c = Mat2d::<T>::from_values(
-//                     T::one(),  2.0,
-//                     3.0,  4.0,
-//                     5.0,  6.0
-//                 );
-//                 let mat_d = Mat2d::<T>::from_values(
-//                     1e-16,  T::one(),
-//                     2.0,  3.0,
-//                     4.0,  5.0
-//                 );
+    #[test]
+    fn mul_scalar_add() {
+        assert_eq!(
+            (*mat_a() + *mat_b() * 0.5).raw(),
+            &[4.5, 6.0, 7.5, 9.0, 10.5, 12.0]
+        );
+    }
 
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_b)
-//                 );
-//                 assert_eq!(
-//                     false,
-//                     mat_a.approximate_eq(&mat_c)
-//                 );
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_d)
-//                 );
-//             }
+    #[test]
+    fn approximate_eq() {
+        let mat_a = Mat2d::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+        let mat_b = Mat2d::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
+        let mat_c = Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        let mat_d = Mat2d::from_values(1e-16, 1.0, 2.0, 3.0, 4.0, 5.0);
 
-//             #[test]
-//             fn display() {
-//                 let out = mat_a().to_string();
-//                 assert_eq!(
-//                     out,
-//                     "mat2d(1, 2, 3, 4, 5, 6)"
-//                 );
-//             }
-//         };
-//     }
+        assert_eq!(true, mat_a.approximate_eq(&mat_b));
+        assert_eq!(false, mat_a.approximate_eq(&mat_c));
+        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+    }
 
-//     mod f32 {
-//         float_test!(f32, crate::EPSILON_F32);
+    #[test]
+    fn display() {
+        let out = mat_a().to_string();
+        assert_eq!(out, "mat2d(1, 2, 3, 4, 5, 6)");
+    }
 
-//         #[test]
-//         fn rotate() {
-//             assert_eq!(
-//                 mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
-//                 &[
-//                      3.0,  4.0,
-//                      -T::one()000001, -2.0000002,
-//                      5.0, 6.0
-//                 ]
-//             );
-//         }
-//     }
-
-//     mod f64 {
-//         float_test!(f64, crate::EPSILON_F64);
-
-//         #[test]
-//         fn rotate() {
-//             assert_eq!(
-//                 mat_a().rotate(std::f64::consts::PI * 0.5).raw(),
-//                 &[
-//                      3.0,  4.0,
-//                      -0.9999999999999998, -1.9999999999999998,
-//                      5.0, 6.0
-//                 ]
-//             );
-//         }
-//     }
-// }
+    #[test]
+    fn rotate() {
+        assert_eq!(
+            mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
+            &[3.0, 4.0, -1.0000001, -2.0000002, 5.0, 6.0]
+        );
+    }
+}

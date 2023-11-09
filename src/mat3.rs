@@ -609,460 +609,264 @@ impl<T: Display> Display for Mat3<T> {
     }
 }
 
-// #[cfg(test)]
-// #[rustfmt::skip]
-// mod tests {
-//     macro_rules! float_test {
-//         (T:tt, epsilon():expr) => {
-//             use std::sync::OnceLock;
+/// tests only for f32
+#[cfg(test)]
+mod tests {
+    use std::sync::OnceLock;
 
-//             use crate::error::Error;
-//             use crate::mat3::Mat3;
-//             use crate::mat4::Mat4;
-//             use crate::vec3::Vec3;
+    use crate::{error::Error, mat4::Mat4, vec3::Vec3};
 
-//             static MAT_A_RAW: [T; 9] = [
-//                 T::one(), T::zero(), T::zero(),
-//                 T::zero(), T::one(), T::zero(),
-//                 T::one(), 2.0, T::one(),
-//             ];
-//             static MAT_B_RAW: [T; 9] = [
-//                 T::one(), T::zero(), T::zero(),
-//                 T::zero(), T::one(), T::zero(),
-//                 3.0, 4.0, T::one()
-//             ];
+    use super::Mat3;
 
-//             static MAT_A: OnceLock<Mat3<T>> = OnceLock::new();
-//             static MAT_B: OnceLock<Mat3<T>> = OnceLock::new();
+    static MAT_A_RAW: [f32; 9] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 1.0];
+    static MAT_B_RAW: [f32; 9] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 3.0, 4.0, 1.0];
 
-//             fn mat_a() -> &'static Mat3<T> {
-//                 MAT_A.get_or_init(|| {
-//                     Mat3::<T>::from_slice(&MAT_A_RAW)
-//                 })
-//             }
+    static MAT_A: OnceLock<Mat3> = OnceLock::new();
+    static MAT_B: OnceLock<Mat3> = OnceLock::new();
 
-//             fn mat_b() -> &'static Mat3<T> {
-//                 MAT_B.get_or_init(|| {
-//                     Mat3::<T>::from_slice(&MAT_B_RAW)
-//                 })
-//             }
+    fn mat_a() -> &'static Mat3 {
+        MAT_A.get_or_init(|| Mat3::from_slice(&MAT_A_RAW))
+    }
 
-//             #[test]
-//             fn new() {
-//                 assert_eq!(
-//                     Mat3::<T>::new().raw(),
-//                     &[
-//                         T::zero(), T::zero(), T::zero(),
-//                         T::zero(), T::zero(), T::zero(),
-//                         T::zero(), T::zero(), T::zero()
-//                     ]
-//                 );
-//             }
+    fn mat_b() -> &'static Mat3 {
+        MAT_B.get_or_init(|| Mat3::from_slice(&MAT_B_RAW))
+    }
 
-//             #[test]
-//             fn new_identity() {
-//                 assert_eq!(
-//                     Mat3::<T>::new_identity().raw(),
-//                     &[
-//                         T::one(), T::zero(), T::zero(),
-//                         T::zero(), T::one(), T::zero(),
-//                         T::zero(), T::zero(), T::one()
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new() {
+        assert_eq!(
+            Mat3::<f32>::new().raw(),
+            &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        );
+    }
 
-//             #[test]
-//             fn from_slice() {
-//                 assert_eq!(
-//                     Mat3::<T>::from_slice(&[
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0,
-//                     ]).raw(),
-//                     &[
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0,
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn new_identity() {
+        assert_eq!(
+            Mat3::<f32>::new_identity().raw(),
+            &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        );
+    }
 
-//             #[test]
-//             fn from_values() {
-//                 assert_eq!(
-//                     Mat3::<T>::from_values(
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0,
-//                     )
-//                     .raw(),
-//                     &[
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0,
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn from_slice() {
+        assert_eq!(
+            Mat3::from_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]).raw(),
+            &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]
+        );
+    }
 
-//             // #[test]
-//             // fn from_quat() {
-//             //     let q = Quat::<T>::from_values(T::zero(), -0.7071067811865475, T::zero(), 0.7071067811865475);
+    #[test]
+    fn from_values() {
+        assert_eq!(
+            Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,).raw(),
+            &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]
+        );
+    }
 
-//             //     assert_eq!(
-//             //         Mat3::<T>::from_quat(&q).raw(),
-//             //         &[
-//             //             T::one(), 2.0, 3.0,
-//             //             4.0, 5.0, 6.0,
-//             //             7.0, 8.0, 9.0,
-//             //         ]
-//             //     );
-//             // }
+    // #[test]
+    // fn from_quat() {
+    //     let q = Quat::<T>::from_values(0.0, -0.7071067811865475, 0.0, 0.7071067811865475);
 
-//             #[test]
-//             fn from_mat4() {
-//                 let mat4 = Mat4::<T>::from_values(
-//                     T::one(),  2.0,  3.0,  4.0,
-//                     5.0,  6.0,  7.0,  8.0,
-//                     9.0, 1T::zero(), 1T::one(), 12.0,
-//                    13.0, 14.0, 15.0, 16.0
-//                 );
+    //     assert_eq!(
+    //         Mat3::from_quat(&q).raw(),
+    //         &[
+    //             1.0, 2.0, 3.0,
+    //             4.0, 5.0, 6.0,
+    //             7.0, 8.0, 9.0,
+    //         ]
+    //     );
+    // }
 
-//                 assert_eq!(
-//                     Mat3::<T>::from_mat4(&mat4).raw(),
-//                     &[
-//                         T::one(),  2.0,  3.0,
-//                         5.0,  6.0,  7.0,
-//                         9.0, 1T::zero(), 1T::one(),
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn from_mat4() {
+        let mat4 = Mat4::from_values(
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
+        );
 
-//             #[test]
-//             fn transpose() {
-//                 assert_eq!(
-//                     mat_a().transpose().raw(),
-//                     &[
-//                         T::one(), T::zero(), T::one(),
-//                         T::zero(), T::one(), 2.0,
-//                         T::zero(), T::zero(), T::one()
-//                     ]
-//                 );
-//             }
+        assert_eq!(
+            Mat3::from_mat4(&mat4).raw(),
+            &[1.0, 2.0, 3.0, 5.0, 6.0, 7.0, 9.0, 10.0, 11.0,]
+        );
+    }
 
-//             #[test]
-//             fn invert() -> Result<(), Error> {
-//                 assert_eq!(
-//                     mat_a().invert()?.raw(),
-//                     &[
-//                          T::one(),  T::zero(),  T::zero(),
-//                          T::zero(),  T::one(),  T::zero(),
-//                         -T::one(), -2.0,  T::one()
-//                     ]
-//                 );
+    #[test]
+    fn transpose() {
+        assert_eq!(
+            mat_a().transpose().raw(),
+            &[1.0, 0.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 1.0]
+        );
+    }
 
-//                 Ok(())
-//             }
+    #[test]
+    fn invert() -> Result<(), Error> {
+        assert_eq!(
+            mat_a().invert()?.raw(),
+            &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -2.0, 1.0]
+        );
 
-//             #[test]
-//             fn adjoint() {
-//                 assert_eq!(
-//                     mat_a().adjoint().raw(),
-//                     &[
-//                          T::one(),  T::zero(),  T::zero(),
-//                          T::zero(),  T::one(),  T::zero(),
-//                         -T::one(), -2.0,  T::one()
-//                     ]
-//                 );
-//             }
+        Ok(())
+    }
 
-//             #[test]
-//             fn determinant() {
-//                 assert_eq!(
-//                     mat_a().determinant(),
-//                     T::one()
-//                 );
-//             }
+    #[test]
+    fn adjoint() {
+        assert_eq!(
+            mat_a().adjoint().raw(),
+            &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -2.0, 1.0]
+        );
+    }
 
-//             #[test]
-//             fn frob() {
-//                 assert_eq!(
-//                     mat_a().frob(),
-//                     (
-//                         (T::one() as T).powi(2) +
-//                         (T::zero() as T).powi(2) +
-//                         (T::zero() as T).powi(2) +
-//                         (T::zero() as T).powi(2) +
-//                         (T::zero() as T).powi(2) +
-//                         (T::one() as T).powi(2) +
-//                         (T::zero() as T).powi(2) +
-//                         (T::one() as T).powi(2) +
-//                         (2.0 as T).powi(2) +
-//                         (T::one() as T).powi(2)
-//                     ).sqrt()
-//                 );
-//             }
+    #[test]
+    fn determinant() {
+        assert_eq!(mat_a().determinant(), 1.0);
+    }
 
-//             #[test]
-//             fn from_projection() {
-//                 assert_eq!(
-//                     Mat3::<T>::from_projection(10T::zero(), 20T::zero()).raw(),
-//                     &[
-//                         T::zero()2,  T::zero(),  T::zero(),
-//                          T::zero(), -T::zero()1, T::zero(),
-//                         -T::one(),  T::one(),  T::one(),
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn frob() {
+        assert_eq!(
+            mat_a().frob(),
+            (1.0f32.powi(2)
+                + 0.0f32.powi(2)
+                + 0.0f32.powi(2)
+                + 0.0f32.powi(2)
+                + 0.0f32.powi(2)
+                + 1.0f32.powi(2)
+                + 0.0f32.powi(2)
+                + 1.0f32.powi(2)
+                + 2.0f32.powi(2)
+                + 1.0f32.powi(2))
+            .sqrt()
+        );
+    }
 
-//             #[test]
-//             fn set() {
-//                 let mut mat = Mat3::<T>::new();
-//                 mat.set(
-//                      T::one(), 2.0, 3.0,
-//                      4.0, 5.0, 6.0,
-//                      7.0, 8.0, 9.0
-//                 );
+    #[test]
+    fn from_projection() {
+        assert_eq!(
+            Mat3::from_projection(100.0, 200.0).raw(),
+            &[0.02, 0.0, 0.0, 0.0, -0.01, 0.0, -1.0, 1.0, 1.0,]
+        );
+    }
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn set() {
+        let mut mat = Mat3::new();
+        mat.set(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 
-//             #[test]
-//             fn set_slice() {
-//                 let mut mat = Mat3::<T>::new();
-//                 mat.set_slice(&[
-//                     T::one(), 2.0, 3.0,
-//                     4.0, 5.0, 6.0,
-//                     7.0, 8.0, 9.0
-//                 ]);
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    }
 
-//                 assert_eq!(
-//                     mat.raw(),
-//                     &[
-//                         T::one(), 2.0, 3.0,
-//                         4.0, 5.0, 6.0,
-//                         7.0, 8.0, 9.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn set_slice() {
+        let mut mat = Mat3::new();
+        mat.set_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
 
-//             #[test]
-//             fn add() {
-//                 let mat_a = Mat3::<T>::from_values(
-//                     T::one(), 2.0, 3.0,
-//                     4.0, 5.0, 6.0,
-//                     7.0, 8.0, 9.0
-//                 );
-//                 let mat_b = Mat3::<T>::from_values(
-//                     1T::zero(), 1T::one(), 12.0,
-//                     13.0, 14.0, 15.0,
-//                     16.0, 17.0, 18.0
-//                 );
+        assert_eq!(mat.raw(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    }
 
-//                 assert_eq!(
-//                     (mat_a + mat_b).raw(),
-//                     &[
-//                         1T::one(), 13.0, 15.0,
-//                         17.0, 19.0, 2T::one(),
-//                         23.0, 25.0, 27.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn add() {
+        let mat_a = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+        let mat_b = Mat3::from_values(10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0);
 
-//             #[test]
-//             fn sub() {
-//                 let mat_a = Mat3::<T>::from_values(
-//                     T::one(), 2.0, 3.0,
-//                     4.0, 5.0, 6.0,
-//                     7.0, 8.0, 9.0
-//                 );
-//                 let mat_b = Mat3::<T>::from_values(
-//                     1T::zero(), 1T::one(), 12.0,
-//                     13.0, 14.0, 15.0,
-//                     16.0, 17.0, 18.0
-//                 );
+        assert_eq!(
+            (mat_a + mat_b).raw(),
+            &[11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0, 25.0, 27.0]
+        );
+    }
 
-//                 assert_eq!(
-//                     (mat_a - mat_b).raw(),
-//                     &[
-//                         -9.0, -9.0, -9.0,
-//                         -9.0, -9.0, -9.0,
-//                         -9.0, -9.0, -9.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn sub() {
+        let mat_a = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+        let mat_b = Mat3::from_values(10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0);
 
-//             #[test]
-//             fn mul() {
-//                 let out = *mat_a() * *mat_b();
-//                 assert_eq!(
-//                     out.raw(),
-//                     &[
-//                         T::one(), T::zero(), T::zero(),
-//                         T::zero(), T::one(), T::zero(),
-//                         4.0, 6.0, T::one()
-//                     ]
-//                 );
-//             }
+        assert_eq!(
+            (mat_a - mat_b).raw(),
+            &[-9.0, -9.0, -9.0, -9.0, -9.0, -9.0, -9.0, -9.0, -9.0]
+        );
+    }
 
-//             #[test]
-//             fn mul_scalar() {
-//                 let mat = Mat3::<T>::from_values(
-//                     T::one(), 2.0, 3.0,
-//                     4.0, 5.0, 6.0,
-//                     7.0, 8.0, 9.0
-//                 );
+    #[test]
+    fn mul() {
+        let out = *mat_a() * *mat_b();
+        assert_eq!(out.raw(), &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 4.0, 6.0, 1.0]);
+    }
 
-//                 assert_eq!(
-//                     (mat * 2.0).raw(),
-//                     &[
-//                          2.0,  4.0,  6.0,
-//                          8.0, 1T::zero(), 12.0,
-//                         14.0, 16.0, 18.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar() {
+        let mat = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 
-//             #[test]
-//             fn mul_scalar_add() {
-//                 let mat_a = Mat3::<T>::from_values(
-//                     T::one(), 2.0, 3.0,
-//                     4.0, 5.0, 6.0,
-//                     7.0, 8.0, 9.0
-//                 );
-//                 let mat_b = Mat3::<T>::from_values(
-//                     1T::zero(), 1T::one(), 12.0,
-//                     13.0, 14.0, 15.0,
-//                     16.0, 17.0, 18.0
-//                 );
+        assert_eq!(
+            (mat * 2.0).raw(),
+            &[2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0]
+        );
+    }
 
-//                 assert_eq!(
-//                     (mat_a + mat_b * 0.5).raw(),
-//                     &[
-//                          6.0,  7.5,  9.0,
-//                         10.5, 12.0, 13.5,
-//                         15.0, 16.5, 18.0
-//                     ]
-//                 );
-//             }
+    #[test]
+    fn mul_scalar_add() {
+        let mat_a = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+        let mat_b = Mat3::from_values(10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0);
 
-//             #[test]
-//             fn approximate_eq() {
-//                 let mat_a = Mat3::<T>::from_values(
-//                     T::zero(),  T::one(), 2.0,
-//                     3.0,  4.0, 5.0,
-//                     6.0,  7.0, 8.0
-//                 );
-//                 let mat_b = Mat3::<T>::from_values(
-//                     T::zero(),  T::one(), 2.0,
-//                     3.0,  4.0, 5.0,
-//                     6.0,  7.0, 8.0
-//                 );
-//                 let mat_c = Mat3::<T>::from_values(
-//                     T::one(),  2.0, 3.0,
-//                     4.0,  5.0, 6.0,
-//                     7.0,  8.0, 9.0
-//                 );
-//                 let mat_d = Mat3::<T>::from_values(
-//                     1e-16, T::one(), 2.0,
-//                       3.0, 4.0, 5.0,
-//                       6.0, 7.0, 8.0
-//                 );
+        assert_eq!(
+            (mat_a + mat_b * 0.5).raw(),
+            &[6.0, 7.5, 9.0, 10.5, 12.0, 13.5, 15.0, 16.5, 18.0]
+        );
+    }
 
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_b)
-//                 );
-//                 assert_eq!(
-//                     false,
-//                     mat_a.approximate_eq(&mat_c)
-//                 );
-//                 assert_eq!(
-//                     true,
-//                     mat_a.approximate_eq(&mat_d)
-//                 );
-//             }
+    #[test]
+    fn approximate_eq() {
+        let mat_a = Mat3::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+        let mat_b = Mat3::from_values(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+        let mat_c = Mat3::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+        let mat_d = Mat3::from_values(1e-16, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
 
-//             #[test]
-//             fn display() {
-//                 let out = mat_a().to_string();
-//                 assert_eq!(
-//                     out,
-//                     "mat3(1, 0, 0, 0, 1, 0, 1, 2, 1)"
-//                 );
-//             }
-//         };
-//     }
+        assert_eq!(true, mat_a.approximate_eq(&mat_b));
+        assert_eq!(false, mat_a.approximate_eq(&mat_c));
+        assert_eq!(true, mat_a.approximate_eq(&mat_d));
+    }
 
-//     mod f32 {
-//         float_test!(f32, crate::EPSILON_F32);
+    #[test]
+    fn display() {
+        let out = mat_a().to_string();
+        assert_eq!(out, "mat3(1, 0, 0, 0, 1, 0, 1, 2, 1)");
+    }
+    #[test]
+    fn normal_matrix_from_mat4() -> Result<(), Error> {
+        let mut mat4 = Mat4::new_identity();
+        mat4 = mat4.translate(&Vec3::from_values(2.0, 4.0, 6.0));
+        mat4 = mat4.rotate_x(std::f32::consts::PI / 2.0);
 
-//         #[test]
-//         fn normal_matrix_from_mat4() -> Result<(), Error> {
-//             let mut mat4 = Mat4::<f32>::new_identity();
-//             mat4 = mat4.translate(&Vec3::<f32>::from_values(2.0, 4.0, 6.0));
-//             mat4 = mat4.rotate_x(std::f32::consts::PI / 2.0);
+        assert_eq!(
+            Mat3::normal_matrix_from_mat4(&mat4)?.raw(),
+            &[
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                -4.371139e-8,
+                1.0,
+                0.0,
+                -1.0,
+                -4.371139e-8,
+            ]
+        );
 
-//             assert_eq!(
-//                 Mat3::<f32>::normal_matrix_from_mat4(&mat4)?.raw(),
-//                 &[
-//                     T::one(),  T::zero(), T::zero(),
-//                     T::zero(),  -4.371139e-8, T::one(),
-//                     T::zero(), -T::one(), -4.371139e-8,
-//                 ]
-//             );
+        mat4 = mat4.scale(&Vec3::from_values(2.0, 3.0, 4.0));
 
-//             mat4 = mat4.scale(&Vec3::<f32>::from_values(2.0, 3.0, 4.0));
+        assert_eq!(
+            Mat3::normal_matrix_from_mat4(&mat4)?.raw(),
+            &[
+                0.5,
+                0.0,
+                0.0,
+                0.0,
+                -1.4570463e-8,
+                0.33333334,
+                0.0,
+                -0.25,
+                -1.0927847e-8,
+            ]
+        );
 
-//             assert_eq!(
-//                 Mat3::<f32>::normal_matrix_from_mat4(&mat4)?.raw(),
-//                 &[
-//                     0.5,   T::zero(), T::zero(),
-//                     T::zero(), -1.4570463e-8, 0.33333334,
-//                     T::zero(), -0.25, -T::one()927847e-8,
-//                 ]
-//             );
-
-//             Ok(())
-//         }
-//     }
-
-//     mod f64 {
-//         float_test!(f64, crate::EPSILON_F64);
-
-//         #[test]
-//         fn normal_matrix_from_mat4() -> Result<(), Error> {
-//             let mut mat4 = Mat4::<f64>::new_identity();
-//             mat4 = mat4.translate(&Vec3::<f64>::from_values(2.0, 4.0, 6.0));
-//             mat4 = mat4.rotate_x(std::f64::consts::PI / 2.0);
-
-//             assert_eq!(
-//                 Mat3::<f64>::normal_matrix_from_mat4(&mat4)?.raw(),
-//                 &[
-//                     T::one(),  T::zero(), T::zero(),
-//                     T::zero(),  6.123233995736766e-17, T::one(),
-//                     T::zero(), -T::one(), 6.123233995736766e-17,
-//                 ]
-//             );
-
-//             mat4 = mat4.scale(&Vec3::<f64>::from_values(2.0, 3.0, 4.0));
-
-//             assert_eq!(
-//                 Mat3::<f64>::normal_matrix_from_mat4(&mat4)?.raw(),
-//                 &[
-//                     0.5,   T::zero(), T::zero(),
-//                     T::zero(),  2.041077998578922e-17, 0.3333333333333333,
-//                     T::zero(), -0.25, 1.5308084989341912e-17,
-//                 ]
-//             );
-
-//             Ok(())
-//         }
-//     }
-// }
+        Ok(())
+    }
+}
