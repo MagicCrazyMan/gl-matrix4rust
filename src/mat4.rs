@@ -16,6 +16,12 @@ impl<T> AsRef<Mat4<T>> for Mat4<T> {
     }
 }
 
+impl<T: Float> Default for Mat4<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn new() -> Self {
@@ -321,7 +327,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotation_translation_scale(q: impl AsRef<Quat2<T>>, v: impl AsRef<Vec3<T>>, s: impl AsRef<Vec3<T>>) -> Self {
+    pub fn from_rotation_translation_scale(
+        q: impl AsRef<Quat2<T>>,
+        v: impl AsRef<Vec3<T>>,
+        s: impl AsRef<Vec3<T>>,
+    ) -> Self {
         let q = q.as_ref();
         let v = v.as_ref();
         let s = s.as_ref();
@@ -651,7 +661,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_look_at(eye: impl AsRef<Vec3<T>>, center: impl AsRef<Vec3<T>>, up: impl AsRef<Vec3<T>>) -> Self {
+    pub fn from_look_at(
+        eye: impl AsRef<Vec3<T>>,
+        center: impl AsRef<Vec3<T>>,
+        up: impl AsRef<Vec3<T>>,
+    ) -> Self {
         let eye = eye.as_ref();
         let center = center.as_ref();
         let up = up.as_ref();
@@ -734,7 +748,11 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_target_to(eye: impl AsRef<Vec3<T>>, target: impl AsRef<Vec3<T>>, up: impl AsRef<Vec3<T>>) -> Self {
+    pub fn from_target_to(
+        eye: impl AsRef<Vec3<T>>,
+        target: impl AsRef<Vec3<T>>,
+        up: impl AsRef<Vec3<T>>,
+    ) -> Self {
         let eye = eye.as_ref();
         let target = target.as_ref();
         let up = up.as_ref();
@@ -1096,7 +1114,7 @@ impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn scale(&self, v: impl AsRef<Vec3<T>>) -> Self {
         let v = v.as_ref();
-        
+
         let x = v.0[0];
         let y = v.0[1];
         let z = v.0[2];
@@ -1124,7 +1142,7 @@ impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn rotate(&self, axis: impl AsRef<Vec3<T>>, rad: T) -> Result<Self, Error> {
         let axis = axis.as_ref();
-        
+
         let mut x = axis.0[0];
         let mut y = axis.0[1];
         let mut z = axis.0[2];
@@ -1498,7 +1516,7 @@ impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
         let b = b.as_ref();
-        
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];

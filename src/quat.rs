@@ -26,6 +26,12 @@ impl<T> AsRef<Quat<T>> for Quat<T> {
     }
 }
 
+impl<T: Float> Default for Quat<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float> Quat<T> {
     #[inline(always)]
     pub fn new() -> Self {

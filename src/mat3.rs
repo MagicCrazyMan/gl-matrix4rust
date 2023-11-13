@@ -16,6 +16,12 @@ impl<T> AsRef<Mat3<T>> for Mat3<T> {
     }
 }
 
+impl<T: Float> Default for Mat3<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float> Mat3<T> {
     #[inline(always)]
     pub fn new() -> Self {

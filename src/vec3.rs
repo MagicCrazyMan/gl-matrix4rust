@@ -16,6 +16,12 @@ impl<T> AsRef<Vec3<T>> for Vec3<T> {
     }
 }
 
+impl<T: Float> Default for Vec3<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn new() -> Self {
