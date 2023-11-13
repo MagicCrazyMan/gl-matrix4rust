@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, mat4::Mat4, quat::Quat};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec4<T = f32>(pub [T; 4]);
-
-impl<T> AsRef<Vec4<T>> for Vec4<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Vec4<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl<T: Float> Vec4<T> {
     #[inline(always)]
@@ -304,6 +293,113 @@ impl<T: Float> Vec4<T> {
     }
 }
 
+impl Vec4<f64> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f64>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        // Marsaglia, George. Choosing a Point from the Surface of a
+        // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
+        // http://projecteuclid.org/euclid.aoms/1177692644;
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rand::random::<f64>();
+        v1 = rand * 2.0 - 1.0;
+        v2 = (4.0 * rand::random::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rand::random::<f64>();
+        v3 = rand * 2.0 - 1.0;
+        v4 = (4.0 * rand::random::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((1.0 - s1) / s2).sqrt();
+
+        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
+    }
+}
+
+impl Vec4<f32> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f32>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        // Marsaglia, George. Choosing a Point from the Surface of a
+        // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
+        // http://projecteuclid.org/euclid.aoms/1177692644;
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rand::random::<f32>();
+        v1 = rand * 2.0 - 1.0;
+        v2 = (4.0 * rand::random::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rand::random::<f32>();
+        v3 = rand * 2.0 - 1.0;
+        v4 = (4.0 * rand::random::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((1.0 - s1) / s2).sqrt();
+
+        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
+    }
+}
+
+impl Vec4<f16> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f16>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => f16::from_f32_const(1.0),
+        };
+
+        // Marsaglia, George. Choosing a Point from the Surface of a
+        // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
+        // http://projecteuclid.org/euclid.aoms/1177692644;
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rand::random::<f16>();
+        v1 = rand * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        v2 = (f16::from_f32_const(4.0) * rand::random::<f16>() - f16::from_f32_const(2.0))
+            * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rand::random::<f16>();
+        v3 = rand * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        v4 = (f16::from_f32_const(4.0) * rand::random::<f16>() - f16::from_f32_const(2.0))
+            * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((f16::from_f32_const(1.0) - s1) / s2).sqrt();
+
+        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
+    }
+}
+
 impl<T: Float> Add<Vec4<T>> for Vec4<T> {
     type Output = Self;
 
@@ -396,6 +492,36 @@ impl<T: Float> Div<T> for Vec4<T> {
     }
 }
 
+impl<T> AsRef<Vec4<T>> for Vec4<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Vec4<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Vec4<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 4], &[u8; 16]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Vec4<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 4], &[u8; 8]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Vec4<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Display> Display for Vec4<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -405,76 +531,6 @@ impl<T: Display> Display for Vec4<T> {
             .collect::<Vec<_>>()
             .join(", ");
         f.write_fmt(format_args!("vec4({})", value))
-    }
-}
-
-impl Vec4<f32> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f32>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        // Marsaglia, George. Choosing a Point from the Surface of a
-        // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
-        // http://projecteuclid.org/euclid.aoms/1177692644;
-        let v1;
-        let v2;
-        let v3;
-        let v4;
-        let s1;
-        let s2;
-        let mut rand;
-
-        rand = rand::random::<f32>();
-        v1 = rand * 2.0 - 1.0;
-        v2 = (4.0 * rand::random::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
-        s1 = v1 * v1 + v2 * v2;
-
-        rand = rand::random::<f32>();
-        v3 = rand * 2.0 - 1.0;
-        v4 = (4.0 * rand::random::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
-        s2 = v3 * v3 + v4 * v4;
-
-        let d = ((1.0 - s1) / s2).sqrt();
-
-        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
-    }
-}
-
-impl Vec4<f64> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f64>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        // Marsaglia, George. Choosing a Point from the Surface of a
-        // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
-        // http://projecteuclid.org/euclid.aoms/1177692644;
-        let v1;
-        let v2;
-        let v3;
-        let v4;
-        let s1;
-        let s2;
-        let mut rand;
-
-        rand = rand::random::<f64>();
-        v1 = rand * 2.0 - 1.0;
-        v2 = (4.0 * rand::random::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
-        s1 = v1 * v1 + v2 * v2;
-
-        rand = rand::random::<f64>();
-        v3 = rand * 2.0 - 1.0;
-        v4 = (4.0 * rand::random::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
-        s2 = v3 * v3 + v4 * v4;
-
-        let d = ((1.0 - s1) / s2).sqrt();
-
-        Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
     }
 }
 
@@ -711,5 +767,14 @@ mod tests {
     fn display() {
         let out = vec_a().to_string();
         assert_eq!(out, "vec4(1, 2, 3, 4)");
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = vec_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(vec_a().0[index], value);
+        });
     }
 }

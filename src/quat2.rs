@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Mul},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, mat4::Mat4, quat::Quat, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat2<T = f32>(pub [T; 8]);
-
-impl<T> AsRef<Quat2<T>> for Quat2<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Quat2<T> {
-    fn default() -> Self {
-        Self::new_identity()
-    }
-}
 
 impl<T: Float> Quat2<T> {
     #[inline(always)]
@@ -678,6 +667,36 @@ impl<T: Float> Mul<T> for Quat2<T> {
     }
 }
 
+impl<T> AsRef<Quat2<T>> for Quat2<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Quat2<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 8], &[u8; 64]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Quat2<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 8], &[u8; 32]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Quat2<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 8], &[u8; 16]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Quat2<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Display> Display for Quat2<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -1164,5 +1183,14 @@ mod tests {
                 -3.012474
             ]
         );
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = quat2_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(quat2_a().0[index], value);
+        });
     }
 }

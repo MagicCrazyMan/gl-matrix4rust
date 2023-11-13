@@ -3,6 +3,7 @@ use std::{
     ops::{Add, Mul},
 };
 
+use half::f16;
 use num_traits::{Float, FloatConst};
 
 use crate::{epsilon, mat3::Mat3, vec3::Vec3};
@@ -19,18 +20,6 @@ pub enum EulerOrder {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat<T = f32>(pub [T; 4]);
-
-impl<T> AsRef<Quat<T>> for Quat<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Quat<T> {
-    fn default() -> Self {
-        Self::new_identity()
-    }
-}
 
 impl<T: Float> Quat<T> {
     #[inline(always)]
@@ -476,7 +465,7 @@ impl<T: Float> Quat<T> {
         let b = b.as_ref();
         let c = c.as_ref();
         let d = d.as_ref();
-        
+
         let tmp1 = self.slerp(d, t);
         let tmp2 = b.slerp(c, t);
         tmp1.slerp(&tmp2, T::from(2.0).unwrap() * t * (T::one() - t))
@@ -539,6 +528,57 @@ impl<T: Float> Quat<T> {
     }
 }
 
+impl Quat<f64> {
+    #[inline(always)]
+    pub fn random(&self) -> Self {
+        let u1 = rand::random::<f64>();
+        let u2 = rand::random::<f64>();
+        let u3 = rand::random::<f64>();
+        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Self([
+            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).sin(),
+            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).cos(),
+            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).sin(),
+            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).cos(),
+        ])
+    }
+}
+
+impl Quat<f32> {
+    #[inline(always)]
+    pub fn random(&self) -> Self {
+        let u1 = rand::random::<f32>();
+        let u2 = rand::random::<f32>();
+        let u3 = rand::random::<f32>();
+        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Self([
+            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).sin(),
+            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).cos(),
+            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).sin(),
+            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).cos(),
+        ])
+    }
+}
+
+impl Quat<f16> {
+    #[inline(always)]
+    pub fn random(&self) -> Self {
+        let u1 = rand::random::<f16>();
+        let u2 = rand::random::<f16>();
+        let u3 = rand::random::<f16>();
+        let sqrt1_minus_u1 = (f16::from_f32_const(1.0) - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Self([
+            sqrt1_minus_u1 * (f16::from_f32_const(2.0) * f16::PI * u2).sin(),
+            sqrt1_minus_u1 * (f16::from_f32_const(2.0) * f16::PI * u2).cos(),
+            sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).sin(),
+            sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).cos(),
+        ])
+    }
+}
+
 impl<T: Float> Add<Quat<T>> for Quat<T> {
     type Output = Self;
 
@@ -585,6 +625,36 @@ impl<T: Float> Mul<T> for Quat<T> {
     }
 }
 
+impl<T> AsRef<Quat<T>> for Quat<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Quat<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Quat<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 4], &[u8; 16]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Quat<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 4], &[u8; 8]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Quat<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Display> Display for Quat<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -594,40 +664,6 @@ impl<T: Display> Display for Quat<T> {
             .collect::<Vec<_>>()
             .join(", ");
         f.write_fmt(format_args!("quat({})", value))
-    }
-}
-
-impl Quat<f32> {
-    #[inline(always)]
-    pub fn random(&self) -> Self {
-        let u1 = rand::random::<f32>();
-        let u2 = rand::random::<f32>();
-        let u3 = rand::random::<f32>();
-        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
-        let sqrt_u1 = u1.sqrt();
-        Self([
-            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).sin(),
-            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).cos(),
-            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).sin(),
-            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).cos(),
-        ])
-    }
-}
-
-impl Quat<f64> {
-    #[inline(always)]
-    pub fn random(&self) -> Self {
-        let u1 = rand::random::<f64>();
-        let u2 = rand::random::<f64>();
-        let u3 = rand::random::<f64>();
-        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
-        let sqrt_u1 = u1.sqrt();
-        Self([
-            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).sin(),
-            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).cos(),
-            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).sin(),
-            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).cos(),
-        ])
     }
 }
 
@@ -805,7 +841,7 @@ mod tests {
         );
 
         let mat = Mat3::from_mat4(Mat4::from_look_at(
-        Vec3::from_values(0.0, 0.0, 0.0),
+            Vec3::from_values(0.0, 0.0, 0.0),
             Vec3::from_values(0.0, 0.0, 1.0),
             Vec3::from_values(0.0, 1.0, 0.0),
         ))
@@ -1071,12 +1107,18 @@ mod tests {
     #[test]
     fn from_axis_angle() {
         assert_eq!(
-            Quat::from_axis_angle(
-                Vec3::from_values(1.0, 0.0, 0.0),
-                std::f32::consts::PI * 0.5,
-            )
-            .raw(),
+            Quat::from_axis_angle(Vec3::from_values(1.0, 0.0, 0.0), std::f32::consts::PI * 0.5,)
+                .raw(),
             &[0.70710677, 0.0, 0.0, 0.70710677]
         );
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = quat_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(quat_a().0[index], value);
+        });
     }
 }

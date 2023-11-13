@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, error::Error, vec2::Vec2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat2d<T = f32>(pub [T; 6]);
-
-impl<T> AsRef<Mat2d<T>> for Mat2d<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Mat2d<T> {
-    fn default() -> Self {
-        Self::new_identity()
-    }
-}
 
 impl<T: Float> Mat2d<T> {
     #[inline(always)]
@@ -326,6 +315,36 @@ impl<T: Float> Mul<T> for Mat2d<T> {
     }
 }
 
+impl<T> AsRef<Mat2d<T>> for Mat2d<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Mat2d<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 6], &[u8; 48]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Mat2d<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 6], &[u8; 24]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Mat2d<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 6], &[u8; 12]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Mat2d<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Display> Display for Mat2d<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -510,5 +529,14 @@ mod tests {
             mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
             &[3.0, 4.0, -1.0000001, -2.0000002, 5.0, 6.0]
         );
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = mat_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(mat_a().0[index], value);
+        });
     }
 }

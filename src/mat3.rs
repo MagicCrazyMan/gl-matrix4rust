@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, error::Error, mat2d::Mat2d, mat4::Mat4, quat::Quat, vec2::Vec2, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat3<T = f32>(pub [T; 9]);
-
-impl<T> AsRef<Mat3<T>> for Mat3<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Mat3<T> {
-    fn default() -> Self {
-        Self::new_identity()
-    }
-}
 
 impl<T: Float> Mat3<T> {
     #[inline(always)]
@@ -622,6 +611,36 @@ impl<T: Float> Mul<T> for Mat3<T> {
     }
 }
 
+impl<T> AsRef<Mat3<T>> for Mat3<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Mat3<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 9], &[u8; 64]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Mat3<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 9], &[u8; 36]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Mat3<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 9], &[u8; 18]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Mat3<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Display> Display for Mat3<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -893,5 +912,14 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = mat_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(mat_a().0[index], value);
+        });
     }
 }

@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, mat2::Mat2, mat2d::Mat2d, mat3::Mat3, mat4::Mat4, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec2<T = f32>(pub [T; 2]);
-
-impl<T> AsRef<Vec2<T>> for Vec2<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Vec2<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl<T: Float> Vec2<T> {
     #[inline(always)]
@@ -257,6 +246,48 @@ impl<T: Float> Vec2<T> {
     }
 }
 
+impl Vec2<f64> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f64>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
+
+        Self([r.cos() * scale, r.sin() * scale])
+    }
+}
+
+impl Vec2<f32> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f32>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+
+        Self([r.cos() * scale, r.sin() * scale])
+    }
+}
+
+impl Vec2<f16> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f16>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => f16::from_f32_const(1.0),
+        };
+
+        let r = rand::random::<f16>() * f16::from_f32_const(2.0) * f16::PI;
+
+        Self([r.cos() * scale, r.sin() * scale])
+    }
+}
+
 impl<T: Float> Add<Self> for Vec2<T> {
     type Output = Self;
 
@@ -329,6 +360,36 @@ impl<T: Float> Div<T> for Vec2<T> {
     }
 }
 
+impl<T> AsRef<Vec2<T>> for Vec2<T> {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Vec2<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 2], &[u8; 16]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Vec2<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 2], &[u8; 8]>(&self.0) }
+    }
+}
+
+impl AsRef<[u8]> for Vec2<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 2], &[u8; 4]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Vec2<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Display> Display for Vec2<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = self
@@ -341,33 +402,6 @@ impl<T: Display> Display for Vec2<T> {
     }
 }
 
-impl Vec2<f32> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f32>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-
-        Self([r.cos() * scale, r.sin() * scale])
-    }
-}
-
-impl Vec2<f64> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f64>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-
-        Self([r.cos() * scale, r.sin() * scale])
-    }
-}
 #[cfg(test)]
 mod tests {
     use std::sync::OnceLock;
@@ -620,5 +654,14 @@ mod tests {
             vec_a.rotate(vec_b, std::f32::consts::PI).raw(),
             &[-6.0, -5.0000005]
         );
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = vec_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(vec_a().0[index], value);
+        });
     }
 }

@@ -3,24 +3,13 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, mat3::Mat3, mat4::Mat4, quat::Quat};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec3<T = f32>(pub [T; 3]);
-
-impl<T> AsRef<Vec3<T>> for Vec3<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T: Float> Default for Vec3<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl<T: Float> Vec3<T> {
     #[inline(always)]
@@ -416,6 +405,54 @@ impl<T: Float> Vec3<T> {
     }
 }
 
+impl Vec3<f64> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f64>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
+        let z = rand::random::<f64>() * 2.0 - 1.0;
+        let z_scale = (1.0 - z * z).sqrt() * scale;
+
+        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+    }
+}
+
+impl Vec3<f32> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f32>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => 1.0,
+        };
+
+        let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
+        let z = rand::random::<f32>() * 2.0 - 1.0;
+        let z_scale = (1.0 - z * z).sqrt() * scale;
+
+        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+    }
+}
+
+impl Vec3<f16> {
+    #[inline(always)]
+    pub fn random(&self, scale: Option<f16>) -> Self {
+        let scale = match scale {
+            Some(scale) => scale,
+            None => f16::from_f32_const(1.0),
+        };
+
+        let r = rand::random::<f16>() * f16::from_f32_const(2.0) * f16::PI;
+        let z = rand::random::<f16>() * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
+
+        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+    }
+}
+
 impl<T: Float> Add<Vec3<T>> for Vec3<T> {
     type Output = Self;
 
@@ -500,35 +537,33 @@ impl<T: Display> Display for Vec3<T> {
     }
 }
 
-impl Vec3<f32> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f32>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-        let z = rand::random::<f32>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
-
-        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+impl<T> AsRef<Vec3<T>> for Vec3<T> {
+    fn as_ref(&self) -> &Self {
+        self
     }
 }
 
-impl Vec3<f64> {
-    #[inline(always)]
-    pub fn random(&self, scale: Option<f64>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
+impl AsRef<[u8]> for Vec3<f64> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f64; 3], &[u8; 24]>(&self.0) }
+    }
+}
 
-        let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-        let z = rand::random::<f64>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
+impl AsRef<[u8]> for Vec3<f32> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f32; 3], &[u8; 12]>(&self.0) }
+    }
+}
 
-        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+impl AsRef<[u8]> for Vec3<f16> {
+    fn as_ref(&self) -> &[u8] {
+        unsafe { std::mem::transmute::<&[f16; 3], &[u8; 6]>(&self.0) }
+    }
+}
+
+impl<T: Float> Default for Vec3<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -851,5 +886,14 @@ mod tests {
             vec_a.rotate_z(vec_b, std::f32::consts::PI).raw(),
             &[5.2453663e-7, -6.0, -5.0]
         );
+    }
+
+    #[test]
+    fn test_u8_slice() {
+        let bin: &[u8] = vec_a().as_ref();
+        bin.chunks(4).enumerate().for_each(|(index, bin)| {
+            let value = f32::from_ne_bytes(bin.try_into().unwrap());
+            assert_eq!(vec_a().0[index], value);
+        });
     }
 }
