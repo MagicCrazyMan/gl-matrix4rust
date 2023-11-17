@@ -631,6 +631,12 @@ impl<T> AsRef<Quat<T>> for Quat<T> {
     }
 }
 
+impl<T> AsRef<[T]> for Quat<T> {
+    fn as_ref(&self) -> &[T] {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for Quat<f64> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }

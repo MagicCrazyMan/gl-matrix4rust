@@ -543,6 +543,12 @@ impl<T> AsRef<Vec3<T>> for Vec3<T> {
     }
 }
 
+impl<T> AsRef<[T]> for Vec3<T> {
+    fn as_ref(&self) -> &[T] {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for Vec3<f64> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::mem::transmute::<&[f64; 3], &[u8; 24]>(&self.0) }

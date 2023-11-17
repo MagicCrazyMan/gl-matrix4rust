@@ -273,6 +273,12 @@ impl<T> AsRef<Mat2<T>> for Mat2<T> {
     }
 }
 
+impl<T> AsRef<[T]> for Mat2<T> {
+    fn as_ref(&self) -> &[T] {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for Mat2<f64> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }
