@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
 use half::f16;
@@ -489,6 +489,78 @@ impl<T: Float> Div<T> for Vec4<T> {
     #[inline(always)]
     fn div(self, b: T) -> Self {
         Self([self.0[0] / b, self.0[1] / b, self.0[2] / b, self.0[3] / b])
+    }
+}
+
+impl<T: Float> AddAssign<Self> for Vec4<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] + rhs.0[0];
+        self.0[1] = self.0[1] + rhs.0[1];
+        self.0[2] = self.0[2] + rhs.0[2];
+        self.0[3] = self.0[3] + rhs.0[3];
+    }
+}
+
+impl<T: Float> AddAssign<T> for Vec4<T> {
+    fn add_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] + rhs;
+        self.0[1] = self.0[1] + rhs;
+        self.0[2] = self.0[2] + rhs;
+        self.0[3] = self.0[3] + rhs;
+    }
+}
+
+impl<T: Float> SubAssign<Self> for Vec4<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] - rhs.0[0];
+        self.0[1] = self.0[1] - rhs.0[1];
+        self.0[2] = self.0[2] - rhs.0[2];
+        self.0[3] = self.0[3] - rhs.0[2];
+    }
+}
+
+impl<T: Float> SubAssign<T> for Vec4<T> {
+    fn sub_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] - rhs;
+        self.0[1] = self.0[1] - rhs;
+        self.0[2] = self.0[2] - rhs;
+        self.0[3] = self.0[3] - rhs;
+    }
+}
+
+impl<T: Float> MulAssign<Self> for Vec4<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] * rhs.0[0];
+        self.0[1] = self.0[1] * rhs.0[1];
+        self.0[2] = self.0[2] * rhs.0[2];
+        self.0[3] = self.0[3] * rhs.0[3];
+    }
+}
+
+impl<T: Float> MulAssign<T> for Vec4<T> {
+    fn mul_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] * rhs;
+        self.0[1] = self.0[1] * rhs;
+        self.0[2] = self.0[2] * rhs;
+        self.0[3] = self.0[3] * rhs;
+    }
+}
+
+impl<T: Float> DivAssign<Self> for Vec4<T> {
+    fn div_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] / rhs.0[0];
+        self.0[1] = self.0[1] / rhs.0[1];
+        self.0[2] = self.0[2] / rhs.0[2];
+        self.0[3] = self.0[3] / rhs.0[3];
+    }
+}
+
+impl<T: Float> DivAssign<T> for Vec4<T> {
+    fn div_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] / rhs;
+        self.0[1] = self.0[1] / rhs;
+        self.0[2] = self.0[2] / rhs;
+        self.0[3] = self.0[3] / rhs;
     }
 }
 

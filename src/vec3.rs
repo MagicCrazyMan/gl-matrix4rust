@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
 use half::f16;
@@ -71,7 +71,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn min(&self, b: impl AsRef<Self>) -> Self {
         let b = b.as_ref();
-        
+
         Self([
             self.0[0].min(b.0[0]),
             self.0[1].min(b.0[1]),
@@ -82,7 +82,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn max(&self, b: impl AsRef<Self>) -> Self {
         let b = b.as_ref();
-        
+
         Self([
             self.0[0].max(b.0[0]),
             self.0[1].max(b.0[1]),
@@ -103,7 +103,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn squared_distance(&self, b: impl AsRef<Self>) -> T {
         let b = b.as_ref();
-        
+
         let x = b.0[0] - self.0[0];
         let y = b.0[1] - self.0[1];
         let z = b.0[2] - self.0[2];
@@ -155,14 +155,14 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn dot(&self, b: impl AsRef<Self>) -> T {
         let b = b.as_ref();
-        
+
         self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2]
     }
 
     #[inline(always)]
     pub fn cross(&self, b: impl AsRef<Self>) -> Self {
         let b = b.as_ref();
-        
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -204,11 +204,17 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn hermite(&self, b: impl AsRef<Self>, c: impl AsRef<Self>, d: impl AsRef<Self>, t: T) -> Self {
+    pub fn hermite(
+        &self,
+        b: impl AsRef<Self>,
+        c: impl AsRef<Self>,
+        d: impl AsRef<Self>,
+        t: T,
+    ) -> Self {
         let b = b.as_ref();
         let c = c.as_ref();
         let d = d.as_ref();
-        
+
         let factor_times2 = t * t;
         let factor1 =
             factor_times2 * (T::from(2.0).unwrap() * t - T::from(3.0).unwrap()) + T::one();
@@ -224,11 +230,17 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn bezier(&self, b: impl AsRef<Self>, c: impl AsRef<Self>, d: impl AsRef<Self>, t: T) -> Self {
+    pub fn bezier(
+        &self,
+        b: impl AsRef<Self>,
+        c: impl AsRef<Self>,
+        d: impl AsRef<Self>,
+        t: T,
+    ) -> Self {
         let b = b.as_ref();
         let c = c.as_ref();
         let d = d.as_ref();
-        
+
         let inverse_factor = T::one() - t;
         let inverse_factor_times_two = inverse_factor * inverse_factor;
         let factor_times2 = t * t;
@@ -247,7 +259,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn transform_mat3(&self, m: impl AsRef<Mat3<T>>) -> Self {
         let m = m.as_ref();
-        
+
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -262,7 +274,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn transform_quat(&self, q: impl AsRef<Quat<T>>) -> Self {
         let q = q.as_ref();
-        
+
         // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
         let qx = q.0[0];
         let qy = q.0[1];
@@ -297,7 +309,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn transform_mat4(&self, m: impl AsRef<Mat4<T>>) -> Self {
         let m = m.as_ref();
-        
+
         let x = self.0[0];
         let y = self.0[1];
         let z = self.0[2];
@@ -314,7 +326,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn rotate_x(&self, b: impl AsRef<Self>, rad: T) -> Self {
         let b = b.as_ref();
-        
+
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -333,7 +345,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn rotate_y(&self, b: impl AsRef<Self>, rad: T) -> Self {
         let b = b.as_ref();
-        
+
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -352,7 +364,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn rotate_z(&self, b: impl AsRef<Self>, rad: T) -> Self {
         let b = b.as_ref();
-        
+
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
         //Translate point to the origin
@@ -371,7 +383,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn angle(&self, b: impl AsRef<Self>) -> T {
         let b = b.as_ref();
-        
+
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
@@ -391,7 +403,7 @@ impl<T: Float> Vec3<T> {
     #[inline(always)]
     pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
         let b = b.as_ref();
-        
+
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
@@ -450,6 +462,12 @@ impl Vec3<f16> {
         let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
 
         Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+    }
+}
+
+impl<T: Float> Default for Vec3<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -525,15 +543,67 @@ impl<T: Float> Div<T> for Vec3<T> {
     }
 }
 
-impl<T: Display> Display for Vec3<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = self
-            .0
-            .iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        f.write_fmt(format_args!("vec3({})", value))
+impl<T: Float> AddAssign<Self> for Vec3<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] + rhs.0[0];
+        self.0[1] = self.0[1] + rhs.0[1];
+        self.0[2] = self.0[2] + rhs.0[2];
+    }
+}
+
+impl<T: Float> AddAssign<T> for Vec3<T> {
+    fn add_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] + rhs;
+        self.0[1] = self.0[1] + rhs;
+        self.0[2] = self.0[2] + rhs;
+    }
+}
+
+impl<T: Float> SubAssign<Self> for Vec3<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] - rhs.0[0];
+        self.0[1] = self.0[1] - rhs.0[1];
+        self.0[2] = self.0[2] - rhs.0[2];
+    }
+}
+
+impl<T: Float> SubAssign<T> for Vec3<T> {
+    fn sub_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] - rhs;
+        self.0[1] = self.0[1] - rhs;
+        self.0[2] = self.0[2] - rhs;
+    }
+}
+
+impl<T: Float> MulAssign<Self> for Vec3<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] * rhs.0[0];
+        self.0[1] = self.0[1] * rhs.0[1];
+        self.0[2] = self.0[2] * rhs.0[2];
+    }
+}
+
+impl<T: Float> MulAssign<T> for Vec3<T> {
+    fn mul_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] * rhs;
+        self.0[1] = self.0[1] * rhs;
+        self.0[2] = self.0[2] * rhs;
+    }
+}
+
+impl<T: Float> DivAssign<Self> for Vec3<T> {
+    fn div_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] / rhs.0[0];
+        self.0[1] = self.0[1] / rhs.0[1];
+        self.0[2] = self.0[2] / rhs.0[2];
+    }
+}
+
+impl<T: Float> DivAssign<T> for Vec3<T> {
+    fn div_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] / rhs;
+        self.0[1] = self.0[1] / rhs;
+        self.0[2] = self.0[2] / rhs;
     }
 }
 
@@ -567,9 +637,15 @@ impl AsRef<[u8]> for Vec3<f16> {
     }
 }
 
-impl<T: Float> Default for Vec3<T> {
-    fn default() -> Self {
-        Self::new()
+impl<T: Display> Display for Vec3<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = self
+            .0
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        f.write_fmt(format_args!("vec3({})", value))
     }
 }
 

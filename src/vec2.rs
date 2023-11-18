@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
 use half::f16;
@@ -288,6 +288,12 @@ impl Vec2<f16> {
     }
 }
 
+impl<T: Float> Default for Vec2<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Float> Add<Self> for Vec2<T> {
     type Output = Self;
 
@@ -360,6 +366,62 @@ impl<T: Float> Div<T> for Vec2<T> {
     }
 }
 
+impl<T: Float> AddAssign<Self> for Vec2<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] + rhs.0[0];
+        self.0[1] = self.0[1] + rhs.0[1];
+    }
+}
+
+impl<T: Float> AddAssign<T> for Vec2<T> {
+    fn add_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] + rhs;
+        self.0[1] = self.0[1] + rhs;
+    }
+}
+
+impl<T: Float> SubAssign<Self> for Vec2<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] - rhs.0[0];
+        self.0[1] = self.0[1] - rhs.0[1];
+    }
+}
+
+impl<T: Float> SubAssign<T> for Vec2<T> {
+    fn sub_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] - rhs;
+        self.0[1] = self.0[1] - rhs;
+    }
+}
+
+impl<T: Float> MulAssign<Self> for Vec2<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] * rhs.0[0];
+        self.0[1] = self.0[1] * rhs.0[1];
+    }
+}
+
+impl<T: Float> MulAssign<T> for Vec2<T> {
+    fn mul_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] * rhs;
+        self.0[1] = self.0[1] * rhs;
+    }
+}
+
+impl<T: Float> DivAssign<Self> for Vec2<T> {
+    fn div_assign(&mut self, rhs: Self) {
+        self.0[0] = self.0[0] / rhs.0[0];
+        self.0[1] = self.0[1] / rhs.0[1];
+    }
+}
+
+impl<T: Float> DivAssign<T> for Vec2<T> {
+    fn div_assign(&mut self, rhs: T) {
+        self.0[0] = self.0[0] / rhs;
+        self.0[1] = self.0[1] / rhs;
+    }
+}
+
 impl<T> AsRef<Vec2<T>> for Vec2<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -387,12 +449,6 @@ impl AsRef<[u8]> for Vec2<f32> {
 impl AsRef<[u8]> for Vec2<f16> {
     fn as_ref(&self) -> &[u8] {
         unsafe { std::mem::transmute::<&[f16; 2], &[u8; 4]>(&self.0) }
-    }
-}
-
-impl<T: Float> Default for Vec2<T> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
