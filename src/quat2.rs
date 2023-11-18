@@ -9,7 +9,7 @@ use num_traits::Float;
 use crate::{epsilon, mat4::Mat4, quat::Quat, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Quat2<T = f32>(pub [T; 8]);
+pub struct Quat2<T = f64>(pub [T; 8]);
 
 impl<T: Float> Quat2<T> {
     #[inline(always)]
@@ -727,14 +727,14 @@ mod tests {
     static QUAT2_A_RAW: [f32; 8] = [1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0];
     static QUAT2_B_RAW: [f32; 8] = [5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 6.0, -4.0];
 
-    static QUAT2_A: OnceLock<Quat2> = OnceLock::new();
-    static QUAT2_B: OnceLock<Quat2> = OnceLock::new();
+    static QUAT2_A: OnceLock<Quat2<f32>> = OnceLock::new();
+    static QUAT2_B: OnceLock<Quat2<f32>> = OnceLock::new();
 
-    fn quat2_a() -> &'static Quat2 {
+    fn quat2_a() -> &'static Quat2<f32> {
         QUAT2_A.get_or_init(|| Quat2::from_slice(&QUAT2_A_RAW))
     }
 
-    fn quat2_b() -> &'static Quat2 {
+    fn quat2_b() -> &'static Quat2<f32> {
         QUAT2_B.get_or_init(|| Quat2::from_slice(&QUAT2_B_RAW))
     }
 

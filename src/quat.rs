@@ -19,7 +19,7 @@ pub enum EulerOrder {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Quat<T = f32>(pub [T; 4]);
+pub struct Quat<T = f64>(pub [T; 4]);
 
 impl<T: Float> Quat<T> {
     #[inline(always)]
@@ -686,19 +686,19 @@ mod tests {
     static QUAT_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
     static QUAT_IDENTITY_RAW: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
-    static QUAT_A: OnceLock<Quat> = OnceLock::new();
-    static QUAT_B: OnceLock<Quat> = OnceLock::new();
-    static QUAT_IDENTITY: OnceLock<Quat> = OnceLock::new();
+    static QUAT_A: OnceLock<Quat<f32>> = OnceLock::new();
+    static QUAT_B: OnceLock<Quat<f32>> = OnceLock::new();
+    static QUAT_IDENTITY: OnceLock<Quat<f32>> = OnceLock::new();
 
-    fn quat_a() -> &'static Quat {
+    fn quat_a() -> &'static Quat<f32> {
         QUAT_A.get_or_init(|| Quat::from_slice(&QUAT_A_RAW))
     }
 
-    fn quat_b() -> &'static Quat {
+    fn quat_b() -> &'static Quat<f32> {
         QUAT_B.get_or_init(|| Quat::from_slice(&QUAT_B_RAW))
     }
 
-    fn quat_identity() -> &'static Quat {
+    fn quat_identity() -> &'static Quat<f32> {
         QUAT_IDENTITY.get_or_init(|| Quat::from_slice(&QUAT_IDENTITY_RAW))
     }
 

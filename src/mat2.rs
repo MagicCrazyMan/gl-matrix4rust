@@ -9,7 +9,7 @@ use num_traits::Float;
 use crate::{epsilon, error::Error, vec2::Vec2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mat2<T = f32>(pub [T; 4]);
+pub struct Mat2<T = f64>(pub [T; 4]);
 
 impl<T: Float> Mat2<T> {
     #[inline(always)]
@@ -327,14 +327,14 @@ mod tests {
     static MAT_A_RAW: [f32; 4] = [1.0, 2.0, 3.0, 4.0];
     static MAT_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
 
-    static MAT_A: OnceLock<Mat2> = OnceLock::new();
-    static MAT_B: OnceLock<Mat2> = OnceLock::new();
+    static MAT_A: OnceLock<Mat2<f32>> = OnceLock::new();
+    static MAT_B: OnceLock<Mat2<f32>> = OnceLock::new();
 
-    fn mat_a() -> &'static Mat2 {
+    fn mat_a() -> &'static Mat2<f32> {
         MAT_A.get_or_init(|| Mat2::from_slice(&MAT_A_RAW))
     }
 
-    fn mat_b() -> &'static Mat2 {
+    fn mat_b() -> &'static Mat2<f32> {
         MAT_B.get_or_init(|| Mat2::from_slice(&MAT_B_RAW))
     }
 

@@ -9,7 +9,7 @@ use num_traits::{Float, FloatConst};
 use crate::{error::Error, quat::Quat, quat2::Quat2, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mat4<T = f32>(pub [T; 16]);
+pub struct Mat4<T = f64>(pub [T; 16]);
 
 impl<T: Float> Mat4<T> {
     #[inline(always)]
@@ -1811,19 +1811,19 @@ mod tests {
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     ];
 
-    static MAT_A: OnceLock<Mat4> = OnceLock::new();
-    static MAT_B: OnceLock<Mat4> = OnceLock::new();
-    static MAT_IDENTITY: OnceLock<Mat4> = OnceLock::new();
+    static MAT_A: OnceLock<Mat4<f32>> = OnceLock::new();
+    static MAT_B: OnceLock<Mat4<f32>> = OnceLock::new();
+    static MAT_IDENTITY: OnceLock<Mat4<f32>> = OnceLock::new();
 
-    fn mat_a() -> &'static Mat4 {
+    fn mat_a() -> &'static Mat4<f32> {
         MAT_A.get_or_init(|| Mat4::from_slice(&MAT_A_RAW))
     }
 
-    fn mat_b() -> &'static Mat4 {
+    fn mat_b() -> &'static Mat4<f32> {
         MAT_B.get_or_init(|| Mat4::from_slice(&MAT_B_RAW))
     }
 
-    fn mat_identity() -> &'static Mat4 {
+    fn mat_identity() -> &'static Mat4<f32> {
         MAT_IDENTITY.get_or_init(|| Mat4::from_slice(&MAT_IDENTITY_RAW))
     }
 
