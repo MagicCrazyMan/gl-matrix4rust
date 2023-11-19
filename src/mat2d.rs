@@ -61,6 +61,23 @@ impl<T: Float> Mat2d<T> {
 
 impl<T: Float> Mat2d<T> {
     #[inline(always)]
+    pub fn to_gl(&self) -> [f32; 6] {
+        [
+            T::to_f32(&self.0[0]).unwrap(),
+            T::to_f32(&self.0[1]).unwrap(),
+            T::to_f32(&self.0[2]).unwrap(),
+            T::to_f32(&self.0[3]).unwrap(),
+            T::to_f32(&self.0[4]).unwrap(),
+            T::to_f32(&self.0[5]).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    pub fn into_gl_binary(&self) -> [u8; 24] {
+        unsafe { std::mem::transmute_copy::<[f32; 6], [u8; 24]>(&self.to_gl()) }
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 6] {
         &self.0
     }

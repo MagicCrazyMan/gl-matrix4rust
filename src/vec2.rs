@@ -30,6 +30,19 @@ impl<T: Float> Vec2<T> {
 
 impl<T: Float> Vec2<T> {
     #[inline(always)]
+    pub fn into_gl(&self) -> [f32; 2] {
+        [
+            T::to_f32(&self.0[0]).unwrap(),
+            T::to_f32(&self.0[1]).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    pub fn into_gl_binary(&self) -> [u8; 8] {
+        unsafe { std::mem::transmute_copy::<[f32; 2], [u8; 8]>(&self.into_gl()) }
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 2] {
         &self.0
     }

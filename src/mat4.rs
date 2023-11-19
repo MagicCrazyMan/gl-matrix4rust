@@ -800,6 +800,33 @@ impl<T: Float> Mat4<T> {
 
 impl<T: Float> Mat4<T> {
     #[inline(always)]
+    pub fn into_gl(&self) -> [f32; 16] {
+        [
+            T::to_f32(&self.0[0]).unwrap(),
+            T::to_f32(&self.0[1]).unwrap(),
+            T::to_f32(&self.0[2]).unwrap(),
+            T::to_f32(&self.0[3]).unwrap(),
+            T::to_f32(&self.0[4]).unwrap(),
+            T::to_f32(&self.0[5]).unwrap(),
+            T::to_f32(&self.0[6]).unwrap(),
+            T::to_f32(&self.0[7]).unwrap(),
+            T::to_f32(&self.0[8]).unwrap(),
+            T::to_f32(&self.0[9]).unwrap(),
+            T::to_f32(&self.0[10]).unwrap(),
+            T::to_f32(&self.0[11]).unwrap(),
+            T::to_f32(&self.0[12]).unwrap(),
+            T::to_f32(&self.0[13]).unwrap(),
+            T::to_f32(&self.0[14]).unwrap(),
+            T::to_f32(&self.0[15]).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    pub fn into_gl_binary(&self) -> [u8; 64] {
+        unsafe { std::mem::transmute_copy::<[f32; 16], [u8; 64]>(&self.into_gl()) }
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 16] {
         &self.0
     }

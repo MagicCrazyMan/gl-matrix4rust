@@ -233,6 +233,28 @@ impl<T: Float> Mat3<T> {
 
 impl<T: Float> Mat3<T> {
     #[inline(always)]
+    pub fn to_gl(&self) -> [f32; 9] {
+        [
+            T::to_f32(&self.0[0]).unwrap(),
+            T::to_f32(&self.0[1]).unwrap(),
+            T::to_f32(&self.0[2]).unwrap(),
+            T::to_f32(&self.0[3]).unwrap(),
+            T::to_f32(&self.0[4]).unwrap(),
+            T::to_f32(&self.0[5]).unwrap(),
+            T::to_f32(&self.0[6]).unwrap(),
+            T::to_f32(&self.0[7]).unwrap(),
+            T::to_f32(&self.0[8]).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    pub fn into_gl(&self) -> [u8; 36] {
+        unsafe {
+            std::mem::transmute_copy::<[f32; 9], [u8; 36]>(&self.to_gl())
+        }
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 9] {
         &self.0
     }
