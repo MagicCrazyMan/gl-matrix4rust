@@ -3,10 +3,306 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
-use half::f16;
 use num_traits::Float;
 
-use crate::{epsilon, error::Error, vec2::Vec2};
+use crate::{epsilon, error::Error, vec2::AsVec2};
+
+pub trait AsMat2<T: Float> {
+    fn m00(&self) -> T;
+
+    fn m01(&self) -> T;
+
+    fn m10(&self) -> T;
+
+    fn m11(&self) -> T;
+
+    fn set_m00(&mut self, m00: T) -> &mut Self;
+
+    fn set_m01(&mut self, m01: T) -> &mut Self;
+
+    fn set_m10(&mut self, m10: T) -> &mut Self;
+
+    fn set_m11(&mut self, m11: T) -> &mut Self;
+
+    #[inline(always)]
+    fn to_raw(&self) -> [T; 4] {
+        [self.m00(), self.m01(), self.m10(), self.m11()]
+    }
+
+    #[inline(always)]
+    fn to_gl(&self) -> [f32; 4] {
+        [
+            T::to_f32(&self.m00()).unwrap(),
+            T::to_f32(&self.m01()).unwrap(),
+            T::to_f32(&self.m10()).unwrap(),
+            T::to_f32(&self.m11()).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    fn to_gl_binary(&self) -> [u8; 16] {
+        unsafe { std::mem::transmute_copy::<[f32; 4], [u8; 16]>(&self.to_gl()) }
+    }
+
+    #[inline(always)]
+    fn copy<M: AsMat2<T> + ?Sized>(&mut self, b: &M) -> &mut Self {
+        self.set_m00(b.m00())
+            .set_m01(b.m01())
+            .set_m10(b.m10())
+            .set_m11(b.m11())
+    }
+
+    #[inline(always)]
+    fn set(&mut self, m00: T, m01: T, m10: T, m11: T) -> &mut Self {
+        self.set_m00(m00).set_m01(m01).set_m10(m10).set_m11(m11)
+    }
+
+    #[inline(always)]
+    fn set_slice(&mut self, [m00, m01, m10, m11]: &[T; 4]) -> &mut Self {
+        self.set_m00(*m00).set_m01(*m01).set_m10(*m10).set_m11(*m11)
+    }
+
+    #[inline(always)]
+    fn set_zero(&mut self) -> &mut Self {
+        self.set_m00(T::zero())
+            .set_m01(T::zero())
+            .set_m10(T::zero())
+            .set_m11(T::zero())
+    }
+
+    #[inline(always)]
+    fn set_identify(&mut self) -> &mut Self {
+        self.set_m00(T::one())
+            .set_m01(T::zero())
+            .set_m10(T::zero())
+            .set_m11(T::one())
+    }
+
+    #[inline(always)]
+    fn transpose(&mut self) -> &mut Self {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        self.set_m00(a0).set_m01(a2).set_m10(a1).set_m11(a3)
+    }
+
+    #[inline(always)]
+    fn invert(&mut self) -> Result<&mut Self, Error> {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        // Calculate the determinant
+        let mut det = a0 * a3 - a2 * a1;
+
+        if det == T::zero() {
+            return Err(Error::ZeroDeterminant);
+        }
+        det = T::one() / det;
+
+        Ok(self
+            .set_m00(a3 * det)
+            .set_m01(-a1 * det)
+            .set_m10(-a2 * det)
+            .set_m11(a0 * det))
+    }
+
+    #[inline(always)]
+    fn adjoint(&mut self) -> &mut Self {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        self.set_m00(a3).set_m01(-a1).set_m10(-a2).set_m11(a0)
+    }
+
+    #[inline(always)]
+    fn determinant(&self) -> T {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        a0 * a3 - a2 * a1
+    }
+
+    #[inline(always)]
+    fn scale<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        let v0 = v.x();
+        let v1 = v.y();
+
+        self.set_m00(a0 * v0)
+            .set_m01(a1 * v0)
+            .set_m10(a2 * v1)
+            .set_m11(a3 * v1)
+    }
+
+    #[inline(always)]
+    fn rotate(&mut self, rad: T) -> &mut Self {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        let s = rad.sin();
+        let c = rad.cos();
+
+        self.set_m00(a0 * c + a2 * s)
+            .set_m01(a1 * c + a3 * s)
+            .set_m10(a0 * -s + a2 * c)
+            .set_m11(a1 * -s + a3 * c)
+    }
+
+    #[inline(always)]
+    fn frob(&self) -> T {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        (a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3).sqrt()
+    }
+
+    #[inline(always)]
+    fn ldu<M1, M2, M3>(&self, l: &M1, d: &M2, u: &M3) -> (Mat2<T>, Mat2<T>, Mat2<T>)
+    where
+        M1: AsMat2<T> + ?Sized,
+        M2: AsMat2<T> + ?Sized,
+        M3: AsMat2<T> + ?Sized,
+    {
+        let mut l = Mat2::from_values(l.m00(), l.m01(), l.m10(), l.m11());
+        let d = Mat2::from_values(d.m00(), d.m01(), d.m10(), d.m11());
+        let mut u = Mat2::from_values(u.m00(), u.m01(), u.m10(), u.m11());
+
+        l.0[2] = self.m10() / self.m00();
+        u.0[0] = self.m00();
+        u.0[1] = self.m01();
+        u.0[3] = self.m11() - l.0[2] * u.0[1];
+        (l, d, u)
+    }
+
+    /// Returns whether or not the matrices have approximately the same elements in the same position.
+    ///
+    /// Refers to `equals` function in `glMatrix`. `exactEquals` is impl<T: Float>emented with [`PartialEq`] and [`Eq`],
+    #[inline(always)]
+    fn approximate_eq<V: AsMat2<T> + ?Sized>(&self, b: &V) -> bool {
+        let a0 = self.m00();
+        let a1 = self.m01();
+        let a2 = self.m10();
+        let a3 = self.m11();
+
+        let b0 = b.m00();
+        let b1 = b.m01();
+        let b2 = b.m10();
+        let b3 = b.m11();
+
+        (a0 - b0).abs() <= epsilon::<T>() * T::one().max(a0.abs()).max(b0.abs())
+            && (a1 - b1).abs() <= epsilon::<T>() * T::one().max(a1.abs()).max(b1.abs())
+            && (a2 - b2).abs() <= epsilon::<T>() * T::one().max(a2.abs()).max(b2.abs())
+            && (a3 - b3).abs() <= epsilon::<T>() * T::one().max(a3.abs()).max(b3.abs())
+    }
+}
+
+impl<T: Float> AsMat2<T> for [T; 4] {
+    #[inline(always)]
+    fn m00(&self) -> T {
+        self[0]
+    }
+
+    #[inline(always)]
+    fn m01(&self) -> T {
+        self[1]
+    }
+
+    #[inline(always)]
+    fn m10(&self) -> T {
+        self[2]
+    }
+
+    #[inline(always)]
+    fn m11(&self) -> T {
+        self[3]
+    }
+
+    #[inline(always)]
+    fn set_m00(&mut self, m00: T) -> &mut Self {
+        self[0] = m00;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m01(&mut self, m01: T) -> &mut Self {
+        self[1] = m01;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m10(&mut self, m10: T) -> &mut Self {
+        self[2] = m10;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m11(&mut self, m11: T) -> &mut Self {
+        self[3] = m11;
+        self
+    }
+}
+
+impl<T: Float> AsMat2<T> for (T, T, T, T) {
+    #[inline(always)]
+    fn m00(&self) -> T {
+        self.0
+    }
+
+    #[inline(always)]
+    fn m01(&self) -> T {
+        self.1
+    }
+
+    #[inline(always)]
+    fn m10(&self) -> T {
+        self.2
+    }
+
+    #[inline(always)]
+    fn m11(&self) -> T {
+        self.3
+    }
+
+    #[inline(always)]
+    fn set_m00(&mut self, m00: T) -> &mut Self {
+        self.0 = m00;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m01(&mut self, m01: T) -> &mut Self {
+        self.1 = m01;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m10(&mut self, m10: T) -> &mut Self {
+        self.2 = m10;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m11(&mut self, m11: T) -> &mut Self {
+        self.3 = m11;
+        self
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mat2<T = f64>(pub [T; 4]);
@@ -33,9 +329,8 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_scaling(v: impl AsRef<Vec2<T>>) -> Self {
-        let v = v.as_ref();
-        Self([v.0[0], T::zero(), T::zero(), v.0[1]])
+    pub fn from_scaling<V: AsVec2<T> + ?Sized>(v: &V) -> Self {
+        Self([v.x(), T::zero(), T::zero(), v.y()])
     }
 
     #[inline(always)]
@@ -44,180 +339,56 @@ impl<T: Float> Mat2<T> {
         let c = rad.cos();
         Self([c, s, -s, c])
     }
-}
-
-impl<T: Float> Mat2<T> {
-    #[inline(always)]
-    pub fn to_gl(&self) -> [f32; 4] {
-        [
-            T::to_f32(&self.0[0]).unwrap(),
-            T::to_f32(&self.0[1]).unwrap(),
-            T::to_f32(&self.0[2]).unwrap(),
-            T::to_f32(&self.0[3]).unwrap(),
-        ]
-    }
-
-    #[inline(always)]
-    pub fn to_gl_binary(&self) -> [u8; 16] {
-        unsafe { std::mem::transmute_copy::<[f32; 4], [u8; 16]>(&self.to_gl()) }
-    }
 
     #[inline(always)]
     pub fn raw(&self) -> &[T; 4] {
         &self.0
     }
+}
+
+impl<T: Float> AsMat2<T> for Mat2<T> {
+    #[inline(always)]
+    fn m00(&self) -> T {
+        self.0[0]
+    }
 
     #[inline(always)]
-    pub fn set(&mut self, m00: T, m01: T, m10: T, m11: T) -> &mut Self {
+    fn m01(&self) -> T {
+        self.0[1]
+    }
+
+    #[inline(always)]
+    fn m10(&self) -> T {
+        self.0[2]
+    }
+
+    #[inline(always)]
+    fn m11(&self) -> T {
+        self.0[3]
+    }
+
+    #[inline(always)]
+    fn set_m00(&mut self, m00: T) -> &mut Self {
         self.0[0] = m00;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m01(&mut self, m01: T) -> &mut Self {
         self.0[1] = m01;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m10(&mut self, m10: T) -> &mut Self {
         self.0[2] = m10;
+        self
+    }
+
+    #[inline(always)]
+    fn set_m11(&mut self, m11: T) -> &mut Self {
         self.0[3] = m11;
-
         self
-    }
-
-    #[inline(always)]
-    pub fn set_slice(&mut self, slice: &[T; 4]) -> &mut Self {
-        self.0 = slice.clone();
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_zero(&mut self) -> &mut Self {
-        self.0[0] = T::zero();
-        self.0[1] = T::zero();
-        self.0[2] = T::zero();
-        self.0[3] = T::zero();
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_identify(&mut self) -> &mut Self {
-        self.0[0] = T::one();
-        self.0[1] = T::zero();
-        self.0[2] = T::zero();
-        self.0[3] = T::one();
-        self
-    }
-
-    #[inline(always)]
-    pub fn transpose(&self) -> Self {
-        Self([self.0[0], self.0[2], self.0[1], self.0[3]])
-    }
-
-    #[inline(always)]
-    pub fn invert(&self) -> Result<Self, Error> {
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let a2 = self.0[2];
-        let a3 = self.0[3];
-
-        // Calculate the determinant
-        let mut det = a0 * a3 - a2 * a1;
-
-        if det == T::zero() {
-            return Err(Error::ZeroDeterminant);
-        }
-        det = T::one() / det;
-
-        Ok(Self([a3 * det, -a1 * det, -a2 * det, a0 * det]))
-    }
-
-    #[inline(always)]
-    pub fn adjoint(&self) -> Self {
-        let a0 = self.0[0];
-        Self([self.0[3], -self.0[1], -self.0[2], a0])
-    }
-
-    #[inline(always)]
-    pub fn determinant(&self) -> T {
-        self.0[0] * self.0[3] - self.0[2] * self.0[1]
-    }
-
-    #[inline(always)]
-    pub fn scale(&self, v: impl AsRef<Vec2<T>>) -> Self {
-        let v = v.as_ref();
-
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let a2 = self.0[2];
-        let a3 = self.0[3];
-
-        let v0 = v.0[0];
-        let v1 = v.0[1];
-
-        Self([a0 * v0, a1 * v0, a2 * v1, a3 * v1])
-    }
-
-    #[inline(always)]
-    pub fn rotate(&self, rad: T) -> Self {
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let a2 = self.0[2];
-        let a3 = self.0[3];
-
-        let s = rad.sin();
-        let c = rad.cos();
-
-        Self([
-            a0 * c + a2 * s,
-            a1 * c + a3 * s,
-            a0 * -s + a2 * c,
-            a1 * -s + a3 * c,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn frob(&self) -> T {
-        (self.0[0] * self.0[0]
-            + self.0[1] * self.0[1]
-            + self.0[2] * self.0[2]
-            + self.0[3] * self.0[3])
-            .sqrt()
-    }
-
-    #[inline(always)]
-    pub fn ldu(
-        &self,
-        l: impl AsRef<Self>,
-        d: impl AsRef<Self>,
-        u: impl AsRef<Self>,
-    ) -> (Self, Self, Self) {
-        let l = l.as_ref();
-        let d = d.as_ref();
-        let u = u.as_ref();
-
-        let mut l = Self::from_slice(l.raw());
-        let d = Self::from_slice(d.raw());
-        let mut u = Self::from_slice(u.raw());
-        l.0[2] = self.0[2] / self.0[0];
-        u.0[0] = self.0[0];
-        u.0[1] = self.0[1];
-        u.0[3] = self.0[3] - l.0[2] * u.0[1];
-        (l, d, u)
-    }
-
-    /// Returns whether or not the matrices have approximately the same elements in the same position.
-    ///
-    /// Refers to `equals` function in `glMatrix`. `exactEquals` is impl<T: Float>emented with [`PartialEq`] and [`Eq`],
-    #[inline(always)]
-    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
-        let b = b.as_ref();
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let a2 = self.0[2];
-        let a3 = self.0[3];
-
-        let b0 = b.0[0];
-        let b1 = b.0[1];
-        let b2 = b.0[2];
-        let b3 = b.0[3];
-
-        (a0 - b0).abs() <= epsilon::<T>() * T::one().max(a0.abs()).max(b0.abs())
-            && (a1 - b1).abs() <= epsilon::<T>() * T::one().max(a1.abs()).max(b1.abs())
-            && (a2 - b2).abs() <= epsilon::<T>() * T::one().max(a2.abs()).max(b2.abs())
-            && (a3 - b3).abs() <= epsilon::<T>() * T::one().max(a3.abs()).max(b3.abs())
     }
 }
 
@@ -294,24 +465,6 @@ impl<T> AsRef<[T]> for Mat2<T> {
     }
 }
 
-impl AsRef<[u8]> for Mat2<f64> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Mat2<f32> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f32; 4], &[u8; 16]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Mat2<f16> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f16; 4], &[u8; 8]>(&self.0) }
-    }
-}
-
 impl<T: Float> Default for Mat2<T> {
     fn default() -> Self {
         Self::new_identity()
@@ -330,69 +483,68 @@ impl<T: Display> Display for Mat2<T> {
     }
 }
 
-/// tests only for f32
 #[cfg(test)]
 mod tests {
     use std::sync::OnceLock;
 
-    use crate::{error::Error, vec2::Vec2};
+    use crate::{error::Error, mat2::AsMat2};
 
     use super::Mat2;
 
-    static MAT_A_RAW: [f32; 4] = [1.0, 2.0, 3.0, 4.0];
-    static MAT_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
+    static MAT_A_RAW: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
+    static MAT_B_RAW: [f64; 4] = [5.0, 6.0, 7.0, 8.0];
 
-    static MAT_A: OnceLock<Mat2<f32>> = OnceLock::new();
-    static MAT_B: OnceLock<Mat2<f32>> = OnceLock::new();
+    static MAT_A: OnceLock<Mat2> = OnceLock::new();
+    static MAT_B: OnceLock<Mat2> = OnceLock::new();
 
-    fn mat_a() -> &'static Mat2<f32> {
+    fn mat_a() -> &'static Mat2 {
         MAT_A.get_or_init(|| Mat2::from_slice(&MAT_A_RAW))
     }
 
-    fn mat_b() -> &'static Mat2<f32> {
+    fn mat_b() -> &'static Mat2 {
         MAT_B.get_or_init(|| Mat2::from_slice(&MAT_B_RAW))
     }
 
     #[test]
     fn new() {
-        assert_eq!(Mat2::<f32>::new().raw(), &[0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(Mat2::<f64>::new().to_raw(), [0.0, 0.0, 0.0, 0.0]);
     }
 
     #[test]
     fn new_identity() {
-        assert_eq!(Mat2::<f32>::new_identity().raw(), &[1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(Mat2::<f64>::new_identity().to_raw(), [1.0, 0.0, 0.0, 1.0]);
     }
 
     #[test]
     fn from_slice() {
         assert_eq!(
-            Mat2::from_slice(&[1.0, 2.0, 3.0, 4.0]).raw(),
-            &[1.0, 2.0, 3.0, 4.0,]
+            Mat2::from_slice(&[1.0, 2.0, 3.0, 4.0]).to_raw(),
+            [1.0, 2.0, 3.0, 4.0,]
         );
     }
 
     #[test]
     fn from_values() {
         assert_eq!(
-            Mat2::from_values(1.0, 2.0, 3.0, 4.0).raw(),
-            &[1.0, 2.0, 3.0, 4.0]
+            Mat2::from_values(1.0, 2.0, 3.0, 4.0).to_raw(),
+            [1.0, 2.0, 3.0, 4.0]
         );
     }
 
     #[test]
     fn transpose() {
-        assert_eq!(mat_a().transpose().raw(), &[1.0, 3.0, 2.0, 4.0]);
+        assert_eq!(mat_a().clone().transpose().to_raw(), [1.0, 3.0, 2.0, 4.0]);
     }
 
     #[test]
     fn invert() -> Result<(), Error> {
-        assert_eq!(mat_a().invert()?.raw(), &[-2.0, 1.0, 1.5, -0.5]);
+        assert_eq!(mat_a().clone().invert()?.to_raw(), [-2.0, 1.0, 1.5, -0.5]);
         Ok(())
     }
 
     #[test]
     fn adjoint() {
-        assert_eq!(mat_a().adjoint().raw(), &[4.0, -2.0, -3.0, 1.0]);
+        assert_eq!(mat_a().clone().adjoint().to_raw(), [4.0, -2.0, -3.0, 1.0]);
     }
 
     #[test]
@@ -403,8 +555,8 @@ mod tests {
     #[test]
     fn scale() {
         assert_eq!(
-            mat_a().scale(Vec2::from_values(2.0, 3.0)).raw(),
-            &[2.0, 4.0, 9.0, 12.0]
+            mat_a().clone().scale(&(2.0, 3.0)).to_raw(),
+            [2.0, 4.0, 9.0, 12.0]
         );
     }
 
@@ -412,7 +564,7 @@ mod tests {
     fn frob() {
         assert_eq!(
             mat_a().frob(),
-            (1.0f32.powi(2) + 2.0f32.powi(2) + 3.0f32.powi(2) + 4.0f32.powi(2)).sqrt()
+            (1.0f64.powi(2) + 2.0f64.powi(2) + 3.0f64.powi(2) + 4.0f64.powi(2)).sqrt()
         );
     }
 
@@ -423,11 +575,11 @@ mod tests {
         let u = Mat2::new_identity();
         let mat = Mat2::from_values(4.0, 3.0, 6.0, 3.0);
 
-        let (l, d, u) = mat.ldu(l, d, u);
+        let (l, d, u) = mat.ldu(&l, &d, &u);
 
-        assert_eq!(l.raw(), &[1.0, 0.0, 1.5, 1.0]);
-        assert_eq!(d.raw(), &[1.0, 0.0, 0.0, 1.0]);
-        assert_eq!(u.raw(), &[4.0, 3.0, 0.0, -1.5]);
+        assert_eq!(l.to_raw(), [1.0, 0.0, 1.5, 1.0]);
+        assert_eq!(d.to_raw(), [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(u.to_raw(), [4.0, 3.0, 0.0, -1.5]);
     }
 
     #[test]
@@ -448,28 +600,28 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!((*mat_a() + *mat_b()).raw(), &[6.0, 8.0, 10.0, 12.0]);
+        assert_eq!((*mat_a() + *mat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
     }
 
     #[test]
     fn sub() {
-        assert_eq!((*mat_a() - *mat_b()).raw(), &[-4.0, -4.0, -4.0, -4.0]);
+        assert_eq!((*mat_a() - *mat_b()).to_raw(), [-4.0, -4.0, -4.0, -4.0]);
     }
 
     #[test]
     fn mul() {
         let out = *mat_a() * *mat_b();
-        assert_eq!(out.raw(), &[23.0, 34.0, 31.0, 46.0]);
+        assert_eq!(out.to_raw(), [23.0, 34.0, 31.0, 46.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*mat_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((*mat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*mat_a() + *mat_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((*mat_a() + *mat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
@@ -479,9 +631,9 @@ mod tests {
         let mat_c = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
         let mat_d = Mat2::from_values(1e-16, 1.0, 2.0, 3.0);
 
-        assert_eq!(true, mat_a.approximate_eq(mat_b));
-        assert_eq!(false, mat_a.approximate_eq(mat_c));
-        assert_eq!(true, mat_a.approximate_eq(mat_d));
+        assert_eq!(true, mat_a.approximate_eq(&mat_b));
+        assert_eq!(false, mat_a.approximate_eq(&mat_c));
+        assert_eq!(true, mat_a.approximate_eq(&mat_d));
     }
 
     #[test]
@@ -493,17 +645,8 @@ mod tests {
     #[test]
     fn rotate() {
         assert_eq!(
-            mat_a().rotate(std::f32::consts::PI * 0.5).raw(),
-            &[3.0, 4.0, -1.0000001, -2.0000002]
+            mat_a().clone().rotate(std::f64::consts::PI * 0.5).to_raw(),
+            [3.0, 4.0, -0.9999999999999998, -1.9999999999999998]
         );
-    }
-
-    #[test]
-    fn test_u8_slice() {
-        let bin: &[u8] = mat_a().as_ref();
-        bin.chunks(4).enumerate().for_each(|(index, bin)| {
-            let value = f32::from_ne_bytes(bin.try_into().unwrap());
-            assert_eq!(mat_a().0[index], value);
-        });
     }
 }

@@ -6,7 +6,11 @@ use std::{
 use half::f16;
 use num_traits::{Float, FloatConst};
 
-use crate::{epsilon, mat3::Mat3, vec3::Vec3};
+use crate::{
+    epsilon,
+    mat3::AsMat3,
+    vec3::{AsVec3, Vec3},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EulerOrder {
@@ -18,10 +22,477 @@ pub enum EulerOrder {
     ZYX,
 }
 
+pub trait AsQuat<T: Float> {
+    fn x(&self) -> T;
+
+    fn y(&self) -> T;
+
+    fn z(&self) -> T;
+
+    fn w(&self) -> T;
+
+    fn set_x(&mut self, x: T) -> &mut Self;
+
+    fn set_y(&mut self, y: T) -> &mut Self;
+
+    fn set_z(&mut self, z: T) -> &mut Self;
+
+    fn set_w(&mut self, w: T) -> &mut Self;
+
+    #[inline(always)]
+    fn to_raw(&self) -> [T; 4] {
+        [self.x(), self.y(), self.z(), self.w()]
+    }
+
+    #[inline(always)]
+    fn to_gl(&self) -> [f32; 4] {
+        [
+            T::to_f32(&self.x()).unwrap(),
+            T::to_f32(&self.y()).unwrap(),
+            T::to_f32(&self.z()).unwrap(),
+            T::to_f32(&self.w()).unwrap(),
+        ]
+    }
+
+    #[inline(always)]
+    fn to_gl_binary(&self) -> [u8; 16] {
+        unsafe { std::mem::transmute_copy::<[f32; 4], [u8; 16]>(&self.to_gl()) }
+    }
+
+    #[inline(always)]
+    fn copy<Q: AsQuat<T> + ?Sized>(&mut self, b: &Q) -> &mut Self {
+        self.set_x(b.x()).set_y(b.y()).set_z(b.z()).set_w(b.w())
+    }
+
+    #[inline(always)]
+    fn set(&mut self, x: T, y: T, z: T, w: T) -> &mut Self {
+        self.set_x(x).set_y(y).set_z(z).set_w(w)
+    }
+
+    #[inline(always)]
+    fn set_slice(&mut self, [x, y, z, w]: &[T; 4]) -> &mut Self {
+        self.set_x(*x).set_y(*y).set_z(*z).set_w(*w)
+    }
+
+    #[inline(always)]
+    fn set_zero(&mut self) -> &mut Self {
+        self.set_x(T::zero())
+            .set_y(T::zero())
+            .set_z(T::zero())
+            .set_w(T::zero())
+    }
+
+    #[inline(always)]
+    fn set_identify(&mut self) -> &mut Self {
+        self.set_x(T::zero())
+            .set_y(T::zero())
+            .set_z(T::zero())
+            .set_w(T::one())
+    }
+
+    #[inline(always)]
+    fn axis_angle(&self) -> (Vec3<T>, T) {
+        let rad = self.w().acos() * T::from(2.0).unwrap();
+        let s = (rad / T::from(2.0).unwrap()).sin();
+        if s > epsilon() {
+            (
+                Vec3::<T>::from_values(self.x() / s, self.y() / s, self.z() / s),
+                rad,
+            )
+        } else {
+            // If s is zero, return any axis (no rotation - axis does not matter)
+            (Vec3::<T>::from_values(T::one(), T::zero(), T::zero()), rad)
+        }
+    }
+
+    #[inline(always)]
+    fn angle<Q: AsQuat<T> + ?Sized>(&self, b: &Q) -> T {
+        let dotproduct = self.dot(b);
+        (T::from(2.0).unwrap() * dotproduct * dotproduct - T::one()).acos()
+    }
+
+    #[inline(always)]
+    fn rotate_x(&mut self, rad: T) -> &mut Self {
+        let rad = rad * T::from(0.5).unwrap();
+
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let bx = rad.sin();
+        let bw = rad.cos();
+
+        self.set_x(ax * bw + aw * bx)
+            .set_y(ay * bw + az * bx)
+            .set_z(az * bw - ay * bx)
+            .set_w(aw * bw - ax * bx)
+    }
+
+    #[inline(always)]
+    fn rotate_y(&mut self, rad: T) -> &mut Self {
+        let rad = rad * T::from(0.5).unwrap();
+
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let by = rad.sin();
+        let bw = rad.cos();
+
+        self.set_x(ax * bw - az * by)
+            .set_y(ay * bw + aw * by)
+            .set_z(az * bw + ax * by)
+            .set_w(aw * bw - ay * by)
+    }
+
+    #[inline(always)]
+    fn rotate_z(&mut self, rad: T) -> &mut Self {
+        let rad = rad * T::from(0.5).unwrap();
+
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let bz = rad.sin();
+        let bw = rad.cos();
+
+        self.set_x(ax * bw + ay * bz)
+            .set_y(ay * bw - ax * bz)
+            .set_z(az * bw + aw * bz)
+            .set_w(aw * bw - az * bz)
+    }
+
+    #[inline(always)]
+    fn calculate_w(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+
+        self.set_x(x)
+            .set_y(y)
+            .set_z(z)
+            .set_w((T::one() - x * x - y * y - z * z).abs().sqrt())
+    }
+
+    #[inline(always)]
+    fn exp(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        let w = self.w();
+
+        let r = (x * x + y * y + z * z).sqrt();
+        let et = w.exp();
+        let s = if r > T::zero() {
+            (et * r.sin()) / r
+        } else {
+            T::zero()
+        };
+
+        self.set_x(x * s)
+            .set_y(y * s)
+            .set_z(z * s)
+            .set_w(et * r.cos())
+    }
+
+    #[inline(always)]
+    fn ln(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        let w = self.w();
+
+        let r = (x * x + y * y + z * z).sqrt();
+        let t = if r > T::zero() {
+            r.atan2(w) / r
+        } else {
+            T::zero()
+        };
+
+        self.set_x(x * t)
+            .set_y(y * t)
+            .set_z(z * t)
+            .set_w(T::from(0.5).unwrap() * (x * x + y * y + z * z + w * w).ln())
+    }
+
+    #[inline(always)]
+    fn scale(&mut self, scale: T) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        let w = self.w();
+
+        self.set_x(x * scale)
+            .set_y(y * scale)
+            .set_z(z * scale)
+            .set_w(w * scale)
+    }
+
+    #[inline(always)]
+    fn pow(&mut self, b: T) -> &mut Self {
+        self.ln().scale(b).exp()
+    }
+
+    #[inline(always)]
+    fn dot<Q: AsQuat<T> + ?Sized>(&self, b: &Q) -> T {
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let bx = b.x();
+        let by = b.y();
+        let bz = b.z();
+        let bw = b.w();
+
+        ax * bx + ay * by + az * bz + aw * bw
+    }
+
+    #[inline(always)]
+    fn lerp<Q: AsQuat<T> + ?Sized>(&mut self, b: &Q, t: T) -> &mut Self {
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let bx = b.x();
+        let by = b.y();
+        let bz = b.z();
+        let bw = b.w();
+
+        self.set_x(ax + t * (bx - ax))
+            .set_y(ay + t * (by - ay))
+            .set_z(az + t * (bz - az))
+            .set_w(aw + t * (bw - aw))
+    }
+
+    #[inline(always)]
+    fn slerp<Q: AsQuat<T> + ?Sized>(&mut self, b: &Q, t: T) -> &mut Self {
+        let ax = self.x();
+        let ay = self.y();
+        let az = self.z();
+        let aw = self.w();
+        let mut bx = b.x();
+        let mut by = b.y();
+        let mut bz = b.z();
+        let mut bw = b.w();
+
+        let omega;
+        let mut cosom;
+        let sinom;
+        let scale0;
+        let scale1;
+
+        // calc cosine
+        cosom = ax * bx + ay * by + az * bz + aw * bw;
+        // adjust signs (if necessary)
+        if cosom < T::zero() {
+            cosom = -cosom;
+            bx = -bx;
+            by = -by;
+            bz = -bz;
+            bw = -bw;
+        }
+        // calculate coefficients
+        if T::one() - cosom > epsilon() {
+            // standard case (slerp)
+            omega = cosom.acos();
+            sinom = omega.sin();
+            scale0 = (((T::one() - t) * omega) / sinom).sin();
+            scale1 = ((t * omega) / sinom).sin();
+        } else {
+            // "from" and "to" quaternions are very close
+            //  ... so we can do a linear interpolation
+            scale0 = T::one() - t;
+            scale1 = t;
+        }
+
+        self.set_x(scale0 * ax + scale1 * bx)
+            .set_y(scale0 * ay + scale1 * by)
+            .set_z(scale0 * az + scale1 * bz)
+            .set_w(scale0 * aw + scale1 * bw)
+    }
+
+    #[inline(always)]
+    fn sqlerp<Q1, Q2, Q3>(&mut self, b: &Q1, c: &Q2, d: &Q3, t: T) -> &mut Self
+    where
+        Q1: AsQuat<T> + ?Sized,
+        Q2: AsQuat<T> + ?Sized,
+        Q3: AsQuat<T> + ?Sized,
+    {
+        let tmp1 = self.slerp(d, t);
+        let mut tmp2 = [T::zero(); 4];
+        tmp2.copy(b).slerp(c, t);
+        tmp1.slerp(&tmp2, T::from(2.0).unwrap() * t * (T::one() - t))
+    }
+
+    #[inline(always)]
+    fn squared_length(&self) -> T {
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        let w = self.w();
+        x * x + y * y + z * z + w * w
+    }
+
+    #[inline(always)]
+    fn length(&self) -> T {
+        self.squared_length().sqrt()
+    }
+
+    #[inline(always)]
+    fn normalize(&mut self) -> &mut Self {
+        let mut len = self.squared_length();
+        if len > T::zero() {
+            len = T::one() / len.sqrt();
+        }
+
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        let w = self.w();
+
+        self.set_x(x * len)
+            .set_y(y * len)
+            .set_z(z * len)
+            .set_w(w * len)
+    }
+
+    #[inline(always)]
+    fn invert(&mut self) -> &mut Self {
+        let a0 = self.x();
+        let a1 = self.y();
+        let a2 = self.z();
+        let a3 = self.w();
+
+        let dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
+        let inv_dot = if dot != T::zero() {
+            T::one() / dot
+        } else {
+            T::zero()
+        };
+
+        self.set_x(-a0 * inv_dot)
+            .set_y(-a1 * inv_dot)
+            .set_z(-a2 * inv_dot)
+            .set_w(a3 * inv_dot)
+    }
+
+    #[inline(always)]
+    fn conjugate(&mut self) -> &mut Self {
+        let a0 = self.x();
+        let a1 = self.y();
+        let a2 = self.z();
+        let a3 = self.w();
+
+        self.set_x(-a0).set_y(-a1).set_z(-a2).set_w(a3)
+    }
+
+    #[inline(always)]
+    fn approximate_eq<Q: AsQuat<T> + ?Sized>(&self, b: &Q) -> bool {
+        self.dot(b).abs() >= T::one() - epsilon()
+    }
+}
+
+impl<T: Float> AsQuat<T> for [T; 4] {
+    #[inline(always)]
+    fn x(&self) -> T {
+        self[0]
+    }
+
+    #[inline(always)]
+    fn y(&self) -> T {
+        self[1]
+    }
+
+    #[inline(always)]
+    fn z(&self) -> T {
+        self[2]
+    }
+
+    #[inline(always)]
+    fn w(&self) -> T {
+        self[3]
+    }
+
+    #[inline(always)]
+    fn set_x(&mut self, x: T) -> &mut Self {
+        self[0] = x;
+        self
+    }
+
+    #[inline(always)]
+    fn set_y(&mut self, y: T) -> &mut Self {
+        self[1] = y;
+        self
+    }
+
+    #[inline(always)]
+    fn set_z(&mut self, z: T) -> &mut Self {
+        self[2] = z;
+        self
+    }
+
+    #[inline(always)]
+    fn set_w(&mut self, w: T) -> &mut Self {
+        self[3] = w;
+        self
+    }
+}
+
+impl<T: Float> AsQuat<T> for (T, T, T, T) {
+    #[inline(always)]
+    fn x(&self) -> T {
+        self.0
+    }
+
+    #[inline(always)]
+    fn y(&self) -> T {
+        self.1
+    }
+
+    #[inline(always)]
+    fn z(&self) -> T {
+        self.2
+    }
+
+    #[inline(always)]
+    fn w(&self) -> T {
+        self.3
+    }
+
+    #[inline(always)]
+    fn set_x(&mut self, x: T) -> &mut Self {
+        self.0 = x;
+        self
+    }
+
+    #[inline(always)]
+    fn set_y(&mut self, y: T) -> &mut Self {
+        self.1 = y;
+        self
+    }
+
+    #[inline(always)]
+    fn set_z(&mut self, z: T) -> &mut Self {
+        self.2 = z;
+        self
+    }
+
+    #[inline(always)]
+    fn set_w(&mut self, w: T) -> &mut Self {
+        self.3 = w;
+        self
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quat<T = f64>(pub [T; 4]);
 
 impl<T: Float> Quat<T> {
+    #[inline(always)]
+    pub fn raw(&self) -> &[T; 4] {
+        &self.0
+    }
+
     #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 4])
@@ -43,42 +514,46 @@ impl<T: Float> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_axis_angle(axis: impl AsRef<Vec3<T>>, rad: T) -> Self {
-        let axis = axis.as_ref();
-
+    pub fn from_axis_angle<V: AsVec3<T> + ?Sized>(axis: &V, rad: T) -> Self {
         let rad = rad * T::from(0.5).unwrap();
         let s = rad.sin();
 
-        Self([s * axis.0[0], s * axis.0[1], s * axis.0[2], rad.cos()])
+        Self([s * axis.x(), s * axis.y(), s * axis.z(), rad.cos()])
     }
 
     #[inline(always)]
-    pub fn from_axes(
-        view: impl AsRef<Vec3<T>>,
-        right: impl AsRef<Vec3<T>>,
-        up: impl AsRef<Vec3<T>>,
-    ) -> Self {
-        let view = view.as_ref();
-        let right = right.as_ref();
-        let up = up.as_ref();
-
-        let matr = Mat3::<T>::from_values(
-            right.0[0], up.0[0], -view.0[0], right.0[1], up.0[1], -view.0[1], right.0[2], up.0[2],
-            -view.0[2],
+    pub fn from_axes<V1, V2, V3>(view: &V1, right: &V2, up: &V3) -> Self
+    where
+        V1: AsVec3<T> + ?Sized,
+        V2: AsVec3<T> + ?Sized,
+        V3: AsVec3<T> + ?Sized,
+    {
+        let matr = (
+            right.x(),
+            up.x(),
+            -view.x(),
+            right.y(),
+            up.y(),
+            -view.y(),
+            right.z(),
+            up.z(),
+            -view.z(),
         );
 
-        Self::from_mat3(matr).normalize()
+        let mut mat = Self::from_mat3(&matr);
+        mat.normalize();
+        mat
     }
 
     #[inline(always)]
-    pub fn from_mat3(m: impl AsRef<Mat3<T>>) -> Self {
-        let m = m.as_ref();
-
+    pub fn from_mat3<M: AsMat3<T> + ?Sized>(m: &M) -> Self {
         let mut out = Self::new();
+
+        let m = m.to_raw();
 
         // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
         // article "Quaternion Calculus and Fast Animation".
-        let f_trace = m.0[0] + m.0[4] + m.0[8];
+        let f_trace = m[0] + m[4] + m[8];
         let mut f_root;
 
         if f_trace > T::zero() {
@@ -86,27 +561,27 @@ impl<T: Float> Quat<T> {
             f_root = (f_trace + T::one()).sqrt(); // 2w
             out.0[3] = T::from(0.5).unwrap() * f_root;
             f_root = T::from(0.5).unwrap() / f_root; // 1/(4w)
-            out.0[0] = (m.0[5] - m.0[7]) * f_root;
-            out.0[1] = (m.0[6] - m.0[2]) * f_root;
-            out.0[2] = (m.0[1] - m.0[3]) * f_root;
+            out.0[0] = (m[5] - m[7]) * f_root;
+            out.0[1] = (m[6] - m[2]) * f_root;
+            out.0[2] = (m[1] - m[3]) * f_root;
         } else {
             // |w| <= 1/2
             let mut i = 0;
-            if m.0[4] > m.0[0] {
+            if m[4] > m[0] {
                 i = 1
             };
-            if m.0[8] > m.0[i * 3 + i] {
+            if m[8] > m[i * 3 + i] {
                 i = 2
             };
             let j = (i + 1) % 3;
             let k = (i + 2) % 3;
 
-            f_root = (m.0[i * 3 + i] - m.0[j * 3 + j] - m.0[k * 3 + k] + T::one()).sqrt();
+            f_root = (m[i * 3 + i] - m[j * 3 + j] - m[k * 3 + k] + T::one()).sqrt();
             out.0[i] = T::from(0.5).unwrap() * f_root;
             f_root = T::from(0.5).unwrap() / f_root;
-            out.0[3] = (m.0[j * 3 + k] - m.0[k * 3 + j]) * f_root;
-            out.0[j] = (m.0[j * 3 + i] + m.0[i * 3 + j]) * f_root;
-            out.0[k] = (m.0[k * 3 + i] + m.0[i * 3 + k]) * f_root;
+            out.0[3] = (m[j * 3 + k] - m[k * 3 + j]) * f_root;
+            out.0[j] = (m[j * 3 + i] + m[i * 3 + j]) * f_root;
+            out.0[k] = (m[k * 3 + i] + m[i * 3 + k]) * f_root;
         }
 
         out
@@ -174,372 +649,78 @@ impl<T: Float + FloatConst> Quat<T> {
     }
 
     #[inline(always)]
-    pub fn from_rotate_to(a: impl AsRef<Vec3<T>>, b: impl AsRef<Vec3<T>>) -> Self {
-        let a = a.as_ref();
-        let b = b.as_ref();
-
+    pub fn from_rotate_to<V1, V2>(a: &V1, b: &V2) -> Self
+    where
+        V1: AsVec3<T> + ?Sized,
+        V2: AsVec3<T> + ?Sized,
+    {
+        let mut a = a.to_raw();
         let dot = a.dot(b);
         if dot < T::from(-0.999999).unwrap() {
-            let x_unit = Vec3::<T>::from_values(T::one(), T::zero(), T::zero());
-            let y_unit = Vec3::<T>::from_values(T::zero(), T::one(), T::zero());
-            let mut tmp = x_unit.cross(a);
+            let mut tmp = (T::one(), T::zero(), T::zero());
+            tmp.cross(&a);
+
             if tmp.length() < T::from(0.00001).unwrap() {
-                tmp = y_unit.cross(a)
+                tmp = (T::zero(), T::one(), T::zero());
+                tmp.cross(&a);
             };
-            tmp = tmp.normalize();
+
+            tmp.normalize();
             Self::from_axis_angle(&tmp, T::PI())
         } else if dot > T::from(0.999999).unwrap() {
             Self([T::zero(), T::zero(), T::zero(), T::one()])
         } else {
             let tmp = a.cross(b);
-            let out = Self([tmp.0[0], tmp.0[1], tmp.0[2], T::one() + dot]);
-            out.normalize()
+            let mut out = Self([tmp.x(), tmp.y(), tmp.z(), T::one() + dot]);
+            out.normalize();
+            out
         }
     }
 }
 
-impl<T: Float> Quat<T> {
+impl<T: Float> AsQuat<T> for Quat<T> {
     #[inline(always)]
-    pub fn into_gl(&self) -> [f32; 4] {
-        [
-            T::to_f32(&self.0[0]).unwrap(),
-            T::to_f32(&self.0[1]).unwrap(),
-            T::to_f32(&self.0[2]).unwrap(),
-            T::to_f32(&self.0[3]).unwrap(),
-        ]
+    fn x(&self) -> T {
+        self.0[0]
     }
 
     #[inline(always)]
-    pub fn into_gl_binary(&self) -> [u8; 16] {
-        unsafe { std::mem::transmute_copy::<[f32; 4], [u8; 16]>(&self.into_gl()) }
+    fn y(&self) -> T {
+        self.0[1]
     }
 
     #[inline(always)]
-    pub fn raw(&self) -> &[T; 4] {
-        &self.0
+    fn z(&self) -> T {
+        self.0[2]
     }
 
     #[inline(always)]
-    pub fn axis_angle(&self) -> (Vec3<T>, T) {
-        let rad = self.0[3].acos() * T::from(2.0).unwrap();
-        let s = (rad / T::from(2.0).unwrap()).sin();
-        if s > epsilon() {
-            (
-                Vec3::<T>::from_values(self.0[0] / s, self.0[1] / s, self.0[2] / s),
-                rad,
-            )
-        } else {
-            // If s is zero, return any axis (no rotation - axis does not matter)
-            (Vec3::<T>::from_values(T::one(), T::zero(), T::zero()), rad)
-        }
+    fn w(&self) -> T {
+        self.0[3]
     }
 
     #[inline(always)]
-    pub fn angle(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-
-        let dotproduct = self.dot(b);
-        (T::from(2.0).unwrap() * dotproduct * dotproduct - T::one()).acos()
-    }
-
-    #[inline(always)]
-    pub fn set(&mut self, x: T, y: T, z: T, w: T) -> &mut Self {
+    fn set_x(&mut self, x: T) -> &mut Self {
         self.0[0] = x;
+        self
+    }
+
+    #[inline(always)]
+    fn set_y(&mut self, y: T) -> &mut Self {
         self.0[1] = y;
+        self
+    }
+
+    #[inline(always)]
+    fn set_z(&mut self, z: T) -> &mut Self {
         self.0[2] = z;
+        self
+    }
+
+    #[inline(always)]
+    fn set_w(&mut self, w: T) -> &mut Self {
         self.0[3] = w;
         self
-    }
-
-    #[inline(always)]
-    pub fn set_slice(&mut self, [x, y, z, w]: &[T; 4]) -> &mut Self {
-        self.0[0] = *x;
-        self.0[1] = *y;
-        self.0[2] = *z;
-        self.0[3] = *w;
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_zero(&mut self) -> &mut Self {
-        self.0[0] = T::zero();
-        self.0[1] = T::zero();
-        self.0[2] = T::zero();
-        self.0[3] = T::zero();
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_identify(&mut self) -> &mut Self {
-        self.0[0] = T::zero();
-        self.0[1] = T::zero();
-        self.0[2] = T::zero();
-        self.0[3] = T::one();
-        self
-    }
-
-    #[inline(always)]
-    pub fn rotate_x(&self, rad: T) -> Self {
-        let rad = rad * T::from(0.5).unwrap();
-
-        let ax = self.0[0];
-        let ay = self.0[1];
-        let az = self.0[2];
-        let aw = self.0[3];
-        let bx = rad.sin();
-        let bw = rad.cos();
-
-        Self([
-            ax * bw + aw * bx,
-            ay * bw + az * bx,
-            az * bw - ay * bx,
-            aw * bw - ax * bx,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn rotate_y(&self, rad: T) -> Self {
-        let rad = rad * T::from(0.5).unwrap();
-
-        let ax = self.0[0];
-        let ay = self.0[1];
-        let az = self.0[2];
-        let aw = self.0[3];
-        let by = rad.sin();
-        let bw = rad.cos();
-
-        Self([
-            ax * bw - az * by,
-            ay * bw + aw * by,
-            az * bw + ax * by,
-            aw * bw - ay * by,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn rotate_z(&self, rad: T) -> Self {
-        let rad = rad * T::from(0.5).unwrap();
-
-        let ax = self.0[0];
-        let ay = self.0[1];
-        let az = self.0[2];
-        let aw = self.0[3];
-        let bz = rad.sin();
-        let bw = rad.cos();
-
-        Self([
-            ax * bw + ay * bz,
-            ay * bw - ax * bz,
-            az * bw + aw * bz,
-            aw * bw - az * bz,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn calculate_w(&self) -> Self {
-        let x = self.0[0];
-        let y = self.0[1];
-        let z = self.0[2];
-
-        Self([x, y, z, (T::one() - x * x - y * y - z * z).abs().sqrt()])
-    }
-
-    #[inline(always)]
-    pub fn exp(&self) -> Self {
-        let x = self.0[0];
-        let y = self.0[1];
-        let z = self.0[2];
-        let w = self.0[3];
-
-        let r = (x * x + y * y + z * z).sqrt();
-        let et = w.exp();
-        let s = if r > T::zero() {
-            (et * r.sin()) / r
-        } else {
-            T::zero()
-        };
-
-        Self([x * s, y * s, z * s, et * r.cos()])
-    }
-
-    #[inline(always)]
-    pub fn ln(&self) -> Self {
-        let x = self.0[0];
-        let y = self.0[1];
-        let z = self.0[2];
-        let w = self.0[3];
-
-        let r = (x * x + y * y + z * z).sqrt();
-        let t = if r > T::zero() {
-            r.atan2(w) / r
-        } else {
-            T::zero()
-        };
-
-        Self([
-            x * t,
-            y * t,
-            z * t,
-            T::from(0.5).unwrap() * (x * x + y * y + z * z + w * w).ln(),
-        ])
-    }
-
-    #[inline(always)]
-    pub fn scale(&self, scale: T) -> Self {
-        self.mul(scale)
-    }
-
-    #[inline(always)]
-    pub fn pow(&self, b: T) -> Self {
-        self.ln().scale(b).exp()
-    }
-
-    #[inline(always)]
-    pub fn dot(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-
-        self.0[0] * b.0[0] + self.0[1] * b.0[1] + self.0[2] * b.0[2] + self.0[3] * b.0[3]
-    }
-
-    #[inline(always)]
-    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
-        let b = b.as_ref();
-
-        let ax = self.0[0];
-        let ay = self.0[1];
-        let az = self.0[2];
-        let aw = self.0[3];
-
-        Self([
-            ax + t * (b.0[0] - ax),
-            ay + t * (b.0[1] - ay),
-            az + t * (b.0[2] - az),
-            aw + t * (b.0[3] - aw),
-        ])
-    }
-
-    #[inline(always)]
-    pub fn slerp(&self, b: impl AsRef<Self>, t: T) -> Self {
-        let b = b.as_ref();
-
-        let ax = self.0[0];
-        let ay = self.0[1];
-        let az = self.0[2];
-        let aw = self.0[3];
-        let mut bx = b.0[0];
-        let mut by = b.0[1];
-        let mut bz = b.0[2];
-        let mut bw = b.0[3];
-
-        let omega;
-        let mut cosom;
-        let sinom;
-        let scale0;
-        let scale1;
-
-        // calc cosine
-        cosom = ax * bx + ay * by + az * bz + aw * bw;
-        // adjust signs (if necessary)
-        if cosom < T::zero() {
-            cosom = -cosom;
-            bx = -bx;
-            by = -by;
-            bz = -bz;
-            bw = -bw;
-        }
-        // calculate coefficients
-        if T::one() - cosom > epsilon() {
-            // standard case (slerp)
-            omega = cosom.acos();
-            sinom = omega.sin();
-            scale0 = (((T::one() - t) * omega) / sinom).sin();
-            scale1 = ((t * omega) / sinom).sin();
-        } else {
-            // "from" and "to" quaternions are very close
-            //  ... so we can do a linear interpolation
-            scale0 = T::one() - t;
-            scale1 = t;
-        }
-
-        Self([
-            scale0 * ax + scale1 * bx,
-            scale0 * ay + scale1 * by,
-            scale0 * az + scale1 * bz,
-            scale0 * aw + scale1 * bw,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn sqlerp(
-        &self,
-        b: impl AsRef<Self>,
-        c: impl AsRef<Self>,
-        d: impl AsRef<Self>,
-        t: T,
-    ) -> Self {
-        let b = b.as_ref();
-        let c = c.as_ref();
-        let d = d.as_ref();
-
-        let tmp1 = self.slerp(d, t);
-        let tmp2 = b.slerp(c, t);
-        tmp1.slerp(&tmp2, T::from(2.0).unwrap() * t * (T::one() - t))
-    }
-
-    #[inline(always)]
-    pub fn squared_length(&self) -> T {
-        let x = self.0[0];
-        let y = self.0[1];
-        let z = self.0[2];
-        let w = self.0[3];
-        x * x + y * y + z * z + w * w
-    }
-
-    #[inline(always)]
-    pub fn length(&self) -> T {
-        self.squared_length().sqrt()
-    }
-
-    #[inline(always)]
-    pub fn normalize(&self) -> Self {
-        let mut len = self.squared_length();
-        if len > T::zero() {
-            len = T::one() / len.sqrt();
-        }
-
-        Self([
-            self.0[0] * len,
-            self.0[1] * len,
-            self.0[2] * len,
-            self.0[3] * len,
-        ])
-    }
-
-    #[inline(always)]
-    pub fn invert(&self) -> Self {
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let a2 = self.0[2];
-        let a3 = self.0[3];
-
-        let dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
-        let inv_dot = if dot != T::zero() {
-            T::one() / dot
-        } else {
-            T::zero()
-        };
-
-        Self([-a0 * inv_dot, -a1 * inv_dot, -a2 * inv_dot, a3 * inv_dot])
-    }
-
-    #[inline(always)]
-    pub fn conjugate(&self) -> Self {
-        Self([-self.0[0], -self.0[1], -self.0[2], self.0[3]])
-    }
-
-    #[inline(always)]
-    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
-        self.dot(b).abs() >= T::one() - epsilon()
     }
 }
 
@@ -652,24 +833,6 @@ impl<T> AsRef<[T]> for Quat<T> {
     }
 }
 
-impl AsRef<[u8]> for Quat<f64> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f64; 4], &[u8; 32]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Quat<f32> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f32; 4], &[u8; 16]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Quat<f16> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f16; 4], &[u8; 8]>(&self.0) }
-    }
-}
-
 impl<T: Float> Default for Quat<T> {
     fn default() -> Self {
         Self::new_identity()
@@ -688,69 +851,74 @@ impl<T: Display> Display for Quat<T> {
     }
 }
 
-/// tests only for f32
 #[cfg(test)]
 mod tests {
     use std::sync::OnceLock;
 
-    use crate::{error::Error, mat3::Mat3, mat4::Mat4, vec3::Vec3};
+    use crate::{
+        error::Error,
+        mat3::{AsMat3, Mat3},
+        mat4::Mat4,
+        quat::AsQuat,
+        vec3::{AsVec3, Vec3},
+    };
 
     use super::Quat;
 
-    static QUAT_A_RAW: [f32; 4] = [1.0, 2.0, 3.0, 4.0];
-    static QUAT_B_RAW: [f32; 4] = [5.0, 6.0, 7.0, 8.0];
-    static QUAT_IDENTITY_RAW: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+    static QUAT_A_RAW: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
+    static QUAT_B_RAW: [f64; 4] = [5.0, 6.0, 7.0, 8.0];
+    static QUAT_IDENTITY_RAW: [f64; 4] = [0.0, 0.0, 0.0, 1.0];
 
-    static QUAT_A: OnceLock<Quat<f32>> = OnceLock::new();
-    static QUAT_B: OnceLock<Quat<f32>> = OnceLock::new();
-    static QUAT_IDENTITY: OnceLock<Quat<f32>> = OnceLock::new();
+    static QUAT_A: OnceLock<Quat> = OnceLock::new();
+    static QUAT_B: OnceLock<Quat> = OnceLock::new();
+    static QUAT_IDENTITY: OnceLock<Quat> = OnceLock::new();
 
-    fn quat_a() -> &'static Quat<f32> {
+    fn quat_a() -> &'static Quat {
         QUAT_A.get_or_init(|| Quat::from_slice(&QUAT_A_RAW))
     }
 
-    fn quat_b() -> &'static Quat<f32> {
+    fn quat_b() -> &'static Quat {
         QUAT_B.get_or_init(|| Quat::from_slice(&QUAT_B_RAW))
     }
 
-    fn quat_identity() -> &'static Quat<f32> {
+    fn quat_identity() -> &'static Quat {
         QUAT_IDENTITY.get_or_init(|| Quat::from_slice(&QUAT_IDENTITY_RAW))
     }
 
     #[test]
     fn new() {
-        assert_eq!(Quat::<f32>::new().raw(), &[0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(Quat::<f64>::new().to_raw(), [0.0, 0.0, 0.0, 0.0]);
     }
 
     #[test]
     fn new_identity() {
-        assert_eq!(Quat::<f32>::new_identity().raw(), &[0.0, 0.0, 0.0, 1.0]);
+        assert_eq!(Quat::<f64>::new_identity().to_raw(), [0.0, 0.0, 0.0, 1.0]);
     }
 
     #[test]
     fn from_slice() {
         assert_eq!(
-            Quat::from_slice(&[3.0, 4.0, 5.0, 6.0]).raw(),
-            &[3.0, 4.0, 5.0, 6.0]
+            Quat::from_slice(&[3.0, 4.0, 5.0, 6.0]).to_raw(),
+            [3.0, 4.0, 5.0, 6.0]
         );
     }
 
     #[test]
     fn from_values() {
         assert_eq!(
-            Quat::from_values(3.0, 4.0, 5.0, 6.0).raw(),
-            &[3.0, 4.0, 5.0, 6.0]
+            Quat::from_values(3.0, 4.0, 5.0, 6.0).to_raw(),
+            [3.0, 4.0, 5.0, 6.0]
         );
     }
 
     #[test]
     fn scale() {
-        assert_eq!((*quat_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((*quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn scale_add() {
-        assert_eq!((*quat_a() + *quat_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((*quat_a() + *quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
@@ -766,8 +934,8 @@ mod tests {
     #[test]
     fn normalize() {
         assert_eq!(
-            Quat::from_values(5.0, 0.0, 0.0, 0.0).normalize().raw(),
-            &[1.0, 0.0, 0.0, 0.0]
+            Quat::from_values(5.0, 0.0, 0.0, 0.0).normalize().to_raw(),
+            [1.0, 0.0, 0.0, 0.0]
         );
     }
 
@@ -778,17 +946,26 @@ mod tests {
 
     #[test]
     fn lerp() {
-        assert_eq!(quat_a().lerp(quat_b(), 0.5).raw(), &[3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(
+            quat_a().clone().lerp(quat_b(), 0.5).to_raw(),
+            [3.0, 4.0, 5.0, 6.0]
+        );
     }
 
     #[test]
     fn slerp() {
-        assert_eq!(quat_a().slerp(quat_b(), 0.5).raw(), &[3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(
+            quat_a().clone().slerp(quat_b(), 0.5).to_raw(),
+            [3.0, 4.0, 5.0, 6.0]
+        );
     }
 
     #[test]
     fn conjugate() {
-        assert_eq!(quat_a().conjugate().raw(), &[-1.0, -2.0, -3.0, 4.0]);
+        assert_eq!(
+            quat_a().clone().conjugate().to_raw(),
+            [-1.0, -2.0, -3.0, 4.0]
+        );
     }
 
     #[test]
@@ -796,7 +973,7 @@ mod tests {
         let mut mat = Quat::new();
         mat.set(3.0, 4.0, 5.0, 6.0);
 
-        assert_eq!(mat.raw(), &[3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(mat.to_raw(), [3.0, 4.0, 5.0, 6.0]);
     }
 
     #[test]
@@ -804,27 +981,27 @@ mod tests {
         let mut mat = Quat::new();
         mat.set_slice(&[3.0, 4.0, 5.0, 6.0]);
 
-        assert_eq!(mat.raw(), &[3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(mat.to_raw(), [3.0, 4.0, 5.0, 6.0]);
     }
 
     #[test]
     fn add() {
-        assert_eq!((*quat_a() + *quat_b()).raw(), &[6.0, 8.0, 10.0, 12.0]);
+        assert_eq!((*quat_a() + *quat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
     }
 
     #[test]
     fn mul() {
-        assert_eq!((*quat_a() * *quat_b()).raw(), &[24.0, 48.0, 48.0, -6.0]);
+        assert_eq!((*quat_a() * *quat_b()).to_raw(), [24.0, 48.0, 48.0, -6.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*quat_a() * 2.0).raw(), &[2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((*quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*quat_a() + *quat_b() * 0.5).raw(), &[3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((*quat_a() + *quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
@@ -835,10 +1012,10 @@ mod tests {
         let vec_d = Quat::from_values(1e-16, 1.0, 2.0, 3.0);
         let vec_e = Quat::from_values(0.0, -1.0, 0.0, 0.0);
 
-        assert_eq!(true, vec_a.approximate_eq(vec_b));
-        assert_eq!(false, vec_a.approximate_eq(vec_c));
-        assert_eq!(true, vec_a.approximate_eq(vec_d));
-        assert_eq!(true, vec_c.approximate_eq(vec_e));
+        assert_eq!(true, vec_a.approximate_eq(&vec_b));
+        assert_eq!(false, vec_a.approximate_eq(&vec_c));
+        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+        assert_eq!(true, vec_c.approximate_eq(&vec_e));
     }
 
     #[test]
@@ -850,60 +1027,66 @@ mod tests {
     #[test]
     fn from_mat3() -> Result<(), Error> {
         let mat = Mat3::from_values(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0);
-        let quat = Quat::from_mat3(mat);
-        assert_eq!(
-            quat.raw(),
-            &[-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]
-        );
-
-        assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
-            &[0.0, 2.220446049250313e-16, -1.0]
-        );
-
-        let mat = Mat3::from_mat4(Mat4::from_look_at(
-            Vec3::from_values(0.0, 0.0, 0.0),
-            Vec3::from_values(0.0, 0.0, 1.0),
-            Vec3::from_values(0.0, 1.0, 0.0),
-        ))
-        .invert()?
-        .transpose();
-        let quat = Quat::from_mat3(mat);
-        assert_eq!(
-            Vec3::from_values(3.0, 2.0, -1.0)
-                .transform_quat(quat.normalize())
-                .raw(),
-            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(mat).raw()
-        );
-
-        let mat = Mat3::from_mat4(Mat4::from_look_at(
-            Vec3::from_values(0.0, 0.0, 0.0),
-            Vec3::from_values(-1.0, 0.0, 0.0),
-            Vec3::from_values(0.0, -1.0, 0.0),
-        ))
-        .invert()?
-        .transpose();
         let quat = Quat::from_mat3(&mat);
         assert_eq!(
-            Vec3::from_values(3.0, 2.0, -1.0)
-                .transform_quat(&quat.normalize())
-                .raw(),
-            &[-0.9999999999999991, -2.0, 3.0]
+            quat.to_raw(),
+            [-0.7071067811865475, 0.0, 0.0, 0.7071067811865476]
         );
 
-        let mat = Mat3::from_mat4(Mat4::from_look_at(
-            Vec3::from_values(0.0, 0.0, 0.0),
-            Vec3::from_values(0.0, 0.0, -1.0),
-            Vec3::from_values(0.0, -1.0, 0.0),
-        ))
-        .invert()?
-        .transpose();
-        let quat = Quat::from_mat3(mat);
+        assert_eq!(
+            Vec3::from_values(0.0, 1.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [0.0, 2.220446049250313e-16, -1.0]
+        );
+
+        let mut mat = Mat3::from_mat4(&Mat4::from_look_at(
+            &(0.0, 0.0, 0.0),
+            &(0.0, 0.0, 1.0),
+            &(0.0, 1.0, 0.0),
+        ));
+        mat.invert()?.transpose();
+        let mut quat = Quat::from_mat3(&mat);
+        quat.normalize();
         assert_eq!(
             Vec3::from_values(3.0, 2.0, -1.0)
-                .transform_quat(quat.normalize())
-                .raw(),
-            Vec3::from_values(3.0, 2.0, -1.0).transform_mat3(mat).raw()
+                .transform_quat(&quat)
+                .to_raw(),
+            Vec3::from_values(3.0, 2.0, -1.0)
+                .transform_mat3(&mat)
+                .to_raw()
+        );
+
+        let mut mat = Mat3::from_mat4(&Mat4::from_look_at(
+            &(0.0, 0.0, 0.0),
+            &(-1.0, 0.0, 0.0),
+            &(0.0, -1.0, 0.0),
+        ));
+        mat.invert()?.transpose();
+        let mut quat = Quat::from_mat3(&mat);
+        quat.normalize();
+        assert_eq!(
+            Vec3::from_values(3.0, 2.0, -1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-0.9999999999999991, -2.0, 3.0]
+        );
+
+        let mut mat = Mat3::from_mat4(&Mat4::from_look_at(
+            &(0.0, 0.0, 0.0),
+            &(0.0, 0.0, -1.0),
+            &(0.0, -1.0, 0.0),
+        ));
+        mat.invert()?.transpose();
+        let mut quat = Quat::from_mat3(&mat);
+        quat.normalize();
+        assert_eq!(
+            Vec3::from_values(3.0, 2.0, -1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            Vec3::from_values(3.0, 2.0, -1.0)
+                .transform_mat3(&mat)
+                .to_raw()
         );
 
         Ok(())
@@ -912,130 +1095,123 @@ mod tests {
     #[test]
     fn from_rotate_to() {
         assert_eq!(
-            Quat::from_rotate_to(
-                Vec3::from_values(0.0, 1.0, 0.0),
-                Vec3::from_values(1.0, 0.0, 0.0),
-            )
-            .raw(),
-            &[0.0, 0.0, -0.7071067811865475, 0.7071067811865475]
+            Quat::from_rotate_to(&(0.0, 1.0, 0.0), &(1.0, 0.0, 0.0),).to_raw(),
+            [0.0, 0.0, -0.7071067811865475, 0.7071067811865475]
         );
 
-        let quat = Quat::from_rotate_to(
-            Vec3::from_values(0.0, 1.0, 0.0),
-            Vec3::from_values(0.0, 1.0, 0.0),
-        );
+        let quat = Quat::from_rotate_to(&(0.0, 1.0, 0.0), &(0.0, 1.0, 0.0));
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
-            &[0.0, 1.0, 0.0]
+            Vec3::from_values(0.0, 1.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [0.0, 1.0, 0.0]
         );
 
-        let quat = Quat::from_rotate_to(
-            Vec3::from_values(1.0, 0.0, 0.0),
-            Vec3::from_values(-1.0, 0.0, 0.0),
-        );
+        let quat = Quat::from_rotate_to(&(1.0, 0.0, 0.0), &(-1.0, 0.0, 0.0));
         assert_eq!(
-            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(quat).raw(),
-            &[-1.0, -1.2246467991473532e-16, 0.0]
+            Vec3::from_values(1.0, 0.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-1.0, -1.2246467991473532e-16, 0.0]
         );
 
-        let quat = Quat::from_rotate_to(
-            Vec3::from_values(0.0, 1.0, 0.0),
-            Vec3::from_values(0.0, -1.0, 0.0),
-        );
+        let quat = Quat::from_rotate_to(&(0.0, 1.0, 0.0), &(0.0, -1.0, 0.0));
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
-            &[-1.2246467991473532e-16, -1.0, 0.0]
+            Vec3::from_values(0.0, 1.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-1.2246467991473532e-16, -1.0, 0.0]
         );
 
-        let quat = Quat::from_rotate_to(
-            Vec3::from_values(0.0, 0.0, 1.0),
-            Vec3::from_values(0.0, 0.0, -1.0),
-        );
+        let quat = Quat::from_rotate_to(&(0.0, 0.0, 1.0), &(0.0, 0.0, -1.0));
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, 1.0).transform_quat(quat).raw(),
-            &[-1.2246467991473532e-16, 0.0, -1.0]
+            Vec3::from_values(0.0, 0.0, 1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-1.2246467991473532e-16, 0.0, -1.0]
         );
     }
 
     #[test]
     fn from_axes() {
-        let quat = Quat::from_axes(
-            Vec3::from_values(-1.0, 0.0, 0.0),
-            Vec3::from_values(0.0, 0.0, -1.0),
-            Vec3::from_values(0.0, 1.0, 0.0),
+        let quat = Quat::from_axes(&(-1.0, 0.0, 0.0), &(0.0, 0.0, -1.0), &(0.0, 1.0, 0.0));
+        assert_eq!(
+            Vec3::from_values(0.0, 0.0, -1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [1.0, 0.0, -2.220446049250313e-16]
         );
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
-            &[1.0, 0.0, -2.220446049250313e-16]
-        );
-        assert_eq!(
-            Vec3::from_values(1.0, 0.0, 0.0).transform_quat(quat).raw(),
-            &[2.220446049250313e-16, 0.0, 1.0]
+            Vec3::from_values(1.0, 0.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [2.220446049250313e-16, 0.0, 1.0]
         );
 
-        let quat = Quat::from_axes(
-            Vec3::from_values(0.0, 0.0, -1.0),
-            Vec3::from_values(1.0, 0.0, 0.0),
-            Vec3::from_values(0.0, 1.0, 0.0),
-        );
-        assert_eq!(quat.raw(), &[-0.0, 0.0, 0.0, 1.0]);
+        let quat = Quat::from_axes(&(0.0, 0.0, -1.0), &(1.0, 0.0, 0.0), &(0.0, 1.0, 0.0));
+        assert_eq!(quat.to_raw(), [-0.0, 0.0, 0.0, 1.0]);
     }
 
     #[test]
     fn angle() {
-        assert_eq!(quat_a().normalize().angle(quat_a().normalize()), 0.0);
-
-        // precision consider
         assert_eq!(
             quat_a()
+                .clone()
                 .normalize()
-                .angle(quat_a().normalize().rotate_x(std::f32::consts::PI / 4.0)),
-            0.7853986
+                .angle(quat_a().clone().normalize()),
+            4.2146848510894035e-8
         );
 
         // precision consider
-        let quat_a = quat_a().normalize();
-        let quat_b = quat_b().normalize();
-        assert_eq!(quat_a.angle(quat_b), 0.5003915);
+        assert_eq!(
+            quat_a().clone().normalize().angle(
+                quat_a()
+                    .clone()
+                    .normalize()
+                    .rotate_x(std::f64::consts::PI / 4.0)
+            ),
+            0.7853981633974491
+        );
+
+        // precision consider
+        let mut quat_a = *quat_a();
+        quat_a.normalize();
+        let mut quat_b = *quat_b();
+        quat_b.normalize();
+        assert_eq!(quat_a.angle(&quat_b), 0.5003918408450226);
     }
 
     #[test]
     fn axis_angle() {
-        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 1.0, 0.0), 0.0);
+        let quat = Quat::from_axis_angle(&(0.0, 1.0, 0.0), 0.0);
         let (_, rad) = quat.axis_angle();
-        assert_eq!(rad % (std::f32::consts::PI * 2.0), 0.0);
+        assert_eq!(rad % (std::f64::consts::PI * 2.0), 0.0);
 
-        let quat = Quat::from_axis_angle(Vec3::from_values(1.0, 0.0, 0.0), 0.7778);
+        let quat = Quat::from_axis_angle(&(1.0, 0.0, 0.0), 0.7778);
         let (vec3, rad) = quat.axis_angle();
-        assert_eq!(vec3.raw(), &[1.0, 0.0, 0.0]);
+        assert_eq!(vec3.to_raw(), [1.0, 0.0, 0.0]);
         assert_eq!(rad, 0.7778);
 
-        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 1.0, 0.0), 0.879546);
+        let quat = Quat::from_axis_angle(&(0.0, 1.0, 0.0), 0.879546);
         let (vec3, rad) = quat.axis_angle();
-        assert_eq!(vec3.raw(), &[0.0, 1.0000000000000002, 0.0]);
+        assert_eq!(vec3.to_raw(), [0.0, 1.0000000000000002, 0.0]);
         assert_eq!(rad, 0.8795459999999998);
 
-        let quat = Quat::from_axis_angle(Vec3::from_values(0.0, 0.0, 1.0), 0.123456);
+        let quat = Quat::from_axis_angle(&(0.0, 0.0, 1.0), 0.123456);
         let (vec3, rad) = quat.axis_angle();
-        assert_eq!(vec3.raw(), &[0.0, 0.0, 1.0000000000000138]);
+        assert_eq!(vec3.to_raw(), [0.0, 0.0, 1.0000000000000138]);
         assert_eq!(rad, 0.1234559999999983);
 
-        let quat = Quat::from_axis_angle(
-            Vec3::from_values(0.707106, 0.0, 0.707106),
-            std::f32::consts::PI * 0.5,
-        );
+        let quat = Quat::from_axis_angle(&(0.707106, 0.0, 0.707106), std::f64::consts::PI * 0.5);
         let (vec3, rad) = quat.axis_angle();
-        assert_eq!(vec3.raw(), &[0.707106, 0.0, 0.707106]);
-        assert_eq!(rad, std::f32::consts::PI * 0.5);
+        assert_eq!(vec3.to_raw(), [0.707106, 0.0, 0.707106]);
+        assert_eq!(rad, std::f64::consts::PI * 0.5);
 
-        let quat = Quat::from_axis_angle(
-            Vec3::from_values(0.65538555, 0.49153915, 0.57346237),
-            8.8888,
-        );
+        let quat = Quat::from_axis_angle(&(0.65538555, 0.49153915, 0.57346237), 8.8888);
         let (_, rad) = quat.axis_angle();
         assert_eq!(
-            quat.raw(),
-            &[-0.63199174, -0.4739938, -0.55299276, -0.2647929]
+            quat.to_raw(),
+            [-0.63199174, -0.4739938, -0.55299276, -0.2647929]
         );
         assert_eq!(rad > 0.0, true);
         assert_eq!(rad < std::f32::consts::PI * 2.0, true);
@@ -1044,73 +1220,114 @@ mod tests {
     #[test]
     fn invert() {
         assert_eq!(
-            quat_a().invert().raw(),
-            &[-0.033333335, -0.06666667, -0.10000001, 0.13333334]
+            quat_a().clone().invert().to_raw(),
+            [-0.03333333333333333, -0.06666666666666667, -0.1, 0.13333333333333333]
         );
     }
 
     #[test]
     fn pow() {
         // identity quat
-        assert_eq!(quat_identity().pow(2.1).raw(), &QUAT_IDENTITY_RAW);
+        assert_eq!(quat_identity().clone().pow(2.1).to_raw(), QUAT_IDENTITY_RAW);
 
         // power of one
-        assert_eq!(quat_a().normalize().pow(1.0).length(), 1.0);
+        assert_eq!(
+            quat_a().clone().normalize().pow(1.0).length(),
+            0.9999999999999999
+        );
 
         // squared
         assert_eq!(
-            quat_a().normalize().pow(2.0).raw(),
-            &[0.26666668, 0.53333336, 0.8, 0.06666667]
+            quat_a().clone().normalize().pow(2.0).to_raw(),
+            [
+                0.26666666666666666,
+                0.5333333333333333,
+                0.7999999999999999,
+                0.06666666666666689
+            ]
         );
-        assert_eq!(quat_a().normalize().pow(2.0).length(), 1.0);
+        assert_eq!(quat_a().clone().normalize().pow(2.0).length(), 1.0);
 
         // conjugate
         assert_eq!(
-            quat_a().normalize().pow(-1.0).raw(),
-            quat_a().normalize().conjugate().raw()
+            quat_a()
+                .clone()
+                .normalize()
+                .pow(-1.0)
+                .to_raw()
+                .approximate_eq(quat_a().clone().normalize().conjugate().raw()),
+            true
         );
-        assert_eq!(quat_a().normalize().pow(-1.0).length(), 1.0);
+        assert_eq!(
+            quat_a().clone().normalize().pow(-1.0).length(),
+            1.0000000000000002
+        );
 
         // reversible
         assert_eq!(
-            quat_a().normalize().pow(2.1).pow(1.0 / 2.1).raw(),
-            quat_a().normalize().raw()
+            quat_a()
+                .clone()
+                .normalize()
+                .pow(2.1)
+                .pow(1.0 / 2.1)
+                .to_raw(),
+            quat_a().clone().normalize().to_raw()
         );
-        assert_eq!(quat_a().normalize().pow(2.1).pow(1.0 / 2.1).length(), 1.0);
+        assert_eq!(
+            quat_a()
+                .clone()
+                .normalize()
+                .pow(2.1)
+                .pow(1.0 / 2.1)
+                .length(),
+            0.9999999999999999
+        );
     }
 
     #[test]
     fn rotate_x() {
-        let quat = quat_identity().rotate_x((90.0f32).to_radians());
+        let mut quat = *quat_identity();
+        quat.rotate_x(90.0f64.to_radians());
+
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
-            &[0.0, 0.99999994, -5.9604645e-8]
+            Vec3::from_values(0.0, 0.0, -1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [0.0, 1.0, -2.220446049250313e-16]
         );
     }
 
     #[test]
     fn rotate_y() {
-        let quat = quat_identity().rotate_y((90.0f32).to_radians());
+        let mut quat = *quat_identity();
+        quat.rotate_y(90.0f64.to_radians());
+
         assert_eq!(
-            Vec3::from_values(0.0, 0.0, -1.0).transform_quat(quat).raw(),
-            &[-0.99999994, 0.0, -5.9604645e-8]
+            Vec3::from_values(0.0, 0.0, -1.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-1.0, 0.0, -2.220446049250313e-16]
         );
     }
 
     #[test]
     fn rotate_z() {
-        let quat = quat_identity().rotate_z((90.0f32).to_radians());
+        let mut quat = *quat_identity();
+        quat.rotate_z(90.0f64.to_radians());
+
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
-            &[-0.99999994, 5.9604645e-8, 0.0]
+            Vec3::from_values(0.0, 1.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [-1.0, 2.220446049250313e-16, 0.0]
         );
     }
 
     #[test]
     fn from_euler() {
         assert_eq!(
-            Quat::from_euler(-30.0, 30.0, 30.0).raw(),
-            &[
+            Quat::from_euler(-30.0, 30.0, 30.0).to_raw(),
+            [
                 -0.30618621784789724,
                 0.17677669529663687,
                 0.30618621784789724,
@@ -1120,26 +1337,18 @@ mod tests {
 
         let quat = Quat::from_euler(-90.0, 0.0, 0.0);
         assert_eq!(
-            Vec3::from_values(0.0, 1.0, 0.0).transform_quat(quat).raw(),
-            &[0.0, 2.220446049250313e-16, -1.0]
+            Vec3::from_values(0.0, 1.0, 0.0)
+                .transform_quat(&quat)
+                .to_raw(),
+            [0.0, 2.220446049250313e-16, -1.0]
         );
     }
 
     #[test]
     fn from_axis_angle() {
         assert_eq!(
-            Quat::from_axis_angle(Vec3::from_values(1.0, 0.0, 0.0), std::f32::consts::PI * 0.5,)
-                .raw(),
-            &[0.70710677, 0.0, 0.0, 0.70710677]
+            Quat::from_axis_angle(&(1.0, 0.0, 0.0), std::f64::consts::PI * 0.5,).to_raw(),
+            [0.7071067811865475, 0.0, 0.0, 0.7071067811865476]
         );
-    }
-
-    #[test]
-    fn test_u8_slice() {
-        let bin: &[u8] = quat_a().as_ref();
-        bin.chunks(4).enumerate().for_each(|(index, bin)| {
-            let value = f32::from_ne_bytes(bin.try_into().unwrap());
-            assert_eq!(quat_a().0[index], value);
-        });
     }
 }

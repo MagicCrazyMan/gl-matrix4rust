@@ -6,7 +6,304 @@ use std::{
 use half::f16;
 use num_traits::Float;
 
-use crate::{epsilon, mat2::Mat2, mat2d::Mat2d, mat3::Mat3, mat4::Mat4, vec3::Vec3};
+use crate::{epsilon, mat2::AsMat2, mat2d::AsMat2d, mat3::AsMat3, mat4::AsMat4, vec3::Vec3};
+
+pub trait AsVec2<T: Float> {
+    fn x(&self) -> T;
+
+    fn y(&self) -> T;
+
+    fn set_x(&mut self, x: T) -> &mut Self;
+
+    fn set_y(&mut self, y: T) -> &mut Self;
+
+    #[inline(always)]
+    fn to_raw(&self) -> [T; 2] {
+        [self.x(), self.y()]
+    }
+
+    #[inline(always)]
+    fn to_gl(&self) -> [f32; 2] {
+        [T::to_f32(&self.x()).unwrap(), T::to_f32(&self.y()).unwrap()]
+    }
+
+    #[inline(always)]
+    fn to_gl_binary(&self) -> [u8; 8] {
+        unsafe { std::mem::transmute_copy::<[f32; 2], [u8; 8]>(&self.to_gl()) }
+    }
+
+    #[inline(always)]
+    fn copy<V: AsVec2<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+        self.set_x(b.x()).set_y(b.y())
+    }
+
+    #[inline(always)]
+    fn set(&mut self, x: T, y: T) -> &mut Self {
+        self.set_x(x).set_y(y)
+    }
+
+    #[inline(always)]
+    fn set_slice(&mut self, [x, y]: &[T; 2]) -> &mut Self {
+        self.set_x(*x).set_y(*y)
+    }
+
+    #[inline(always)]
+    fn set_zero(&mut self) -> &mut Self {
+        self.set_x(T::zero()).set_y(T::zero())
+    }
+
+    #[inline(always)]
+    fn ceil(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.ceil()).set_y(y.ceil())
+    }
+
+    #[inline(always)]
+    fn floor(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.floor()).set_y(y.floor())
+    }
+
+    #[inline(always)]
+    fn round(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.round()).set_y(y.round())
+    }
+
+    #[inline(always)]
+    fn min<V: AsVec2<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.min(b.x())).set_y(y.min(b.y()))
+    }
+
+    #[inline(always)]
+    fn max<V: AsVec2<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.max(b.x())).set_y(y.max(b.y()))
+    }
+
+    #[inline(always)]
+    fn scale(&mut self, scale: T) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x * scale).set_y(y * scale)
+    }
+
+    #[inline(always)]
+    fn squared_distance<V: AsVec2<T> + ?Sized>(&self, b: &V) -> T {
+        let x = b.x() - self.x();
+        let y = b.y() - self.y();
+        x * x + y * y
+    }
+
+    #[inline(always)]
+    fn distance<V: AsVec2<T> + ?Sized>(&self, b: &V) -> T {
+        self.squared_distance(b).sqrt()
+    }
+
+    #[inline(always)]
+    fn squared_length(&self) -> T {
+        let x = self.x();
+        let y = self.y();
+        x * x + y * y
+    }
+
+    #[inline(always)]
+    fn length(&self) -> T {
+        self.squared_length().sqrt()
+    }
+
+    #[inline(always)]
+    fn negate(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x.neg()).set_y(y.neg())
+    }
+
+    #[inline(always)]
+    fn inverse(&mut self) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(T::one() / x).set_y(T::one() / y)
+    }
+
+    #[inline(always)]
+    fn normalize(&mut self) -> &mut Self {
+        let mut len = self.squared_length();
+        if len > T::zero() {
+            len = T::one() / len.sqrt();
+        }
+
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(x * len).set_y(y * len)
+    }
+
+    #[inline(always)]
+    fn dot<V: AsVec2<T> + ?Sized>(&self, b: &V) -> T {
+        let x = self.x();
+        let y = self.y();
+
+        x * b.x() + y * b.y()
+    }
+
+    #[inline(always)]
+    fn cross<V: AsVec2<T> + ?Sized>(&self, b: &V) -> Vec3<T> {
+        let x = self.x();
+        let y = self.y();
+
+        Vec3::<T>::from_values(T::zero(), T::zero(), x * b.y() - y * b.x())
+    }
+
+    #[inline(always)]
+    fn lerp<V: AsVec2<T> + ?Sized>(&mut self, b: &V, t: T) -> &mut Self {
+        let ax = self.x();
+        let ay = self.y();
+
+        self.set_x(ax + t * (b.x() - ax))
+            .set_y(ay + t * (b.y() - ay))
+    }
+
+    #[inline(always)]
+    fn transform_mat2<M: AsMat2<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(m.m00() * x + m.m10() * y)
+            .set_y(m.m01() * x + m.m11() * y)
+    }
+
+    #[inline(always)]
+    fn transform_mat2d<M: AsMat2d<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(m.a() * x + m.c() * y + m.tx())
+            .set_y(m.b() * x + m.d() * y + m.ty())
+    }
+
+    #[inline(always)]
+    fn transform_mat3<M: AsMat3<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(m.m00() * x + m.m10() * y + m.m20())
+            .set_y(m.m01() * x + m.m11() * y + m.m21())
+    }
+
+    #[inline(always)]
+    fn transform_mat4<M: AsMat4<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+        let x = self.x();
+        let y = self.y();
+
+        self.set_x(m.m00() * x + m.m10() * y + m.m30())
+            .set_y(m.m01() * x + m.m11() * y + m.m31())
+    }
+
+    #[inline(always)]
+    fn rotate<V: AsVec2<T> + ?Sized>(&mut self, b: &V, rad: T) -> &mut Self {
+        //Translate point to the origin
+        let p0 = self.x() - b.x();
+        let p1 = self.y() - b.y();
+        let sin_c = rad.sin();
+        let cos_c = rad.cos();
+
+        //perform rotation and translate to correct position
+        self.set_x(p0 * cos_c - p1 * sin_c + b.x())
+            .set_y(p0 * sin_c + p1 * cos_c + b.y())
+    }
+
+    #[inline(always)]
+    fn angle<V: AsVec2<T> + ?Sized>(&self, b: &V) -> T {
+        let x1 = self.x();
+        let y1 = self.y();
+        let x2 = b.x();
+        let y2 = b.y();
+        // mag is the product of the magnitudes of a and b
+        let mag = ((x1 * x1 + y1 * y1) * (x2 * x2 + y2 * y2)).sqrt();
+        // mag &&.. short circuits if mag == 0
+        let cosine = if mag == T::zero() {
+            mag
+        } else {
+            (x1 * x2 + y1 * y2) / mag
+        };
+        // Math.min(Math.max(cosine, -1), 1) clamps the cosine between -1 and 1
+        cosine.max(-T::one()).min(T::one()).acos()
+    }
+
+    #[inline(always)]
+    fn approximate_eq<V: AsVec2<T> + ?Sized>(&self, b: &V) -> bool {
+        let a0 = self.x();
+        let a1 = self.y();
+        let b0 = b.x();
+        let b1 = b.y();
+
+        (a0 - b0).abs() <= epsilon::<T>() * T::one().max(a0.abs()).max(b0.abs())
+            && (a1 - b1).abs() <= epsilon::<T>() * T::one().max(a1.abs()).max(b1.abs())
+    }
+}
+
+impl<T: Float> AsVec2<T> for [T; 2] {
+    #[inline]
+    fn x(&self) -> T {
+        self[0]
+    }
+
+    #[inline]
+    fn y(&self) -> T {
+        self[1]
+    }
+
+    #[inline]
+    fn set_x(&mut self, x: T) -> &mut Self {
+        self[0] = x;
+        self
+    }
+
+    #[inline]
+    fn set_y(&mut self, y: T) -> &mut Self {
+        self[1] = y;
+        self
+    }
+}
+
+impl<T: Float> AsVec2<T> for (T, T) {
+    #[inline]
+    fn x(&self) -> T {
+        self.0
+    }
+
+    #[inline]
+    fn y(&self) -> T {
+        self.1
+    }
+
+    #[inline]
+    fn set_x(&mut self, x: T) -> &mut Self {
+        self.0 = x;
+        self
+    }
+
+    #[inline]
+    fn set_y(&mut self, y: T) -> &mut Self {
+        self.1 = y;
+        self
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Vec2<T = f64>(pub [T; 2]);
@@ -26,236 +323,34 @@ impl<T: Float> Vec2<T> {
     pub fn from_slice(slice: &[T; 2]) -> Self {
         Self(slice.clone())
     }
-}
-
-impl<T: Float> Vec2<T> {
-    #[inline(always)]
-    pub fn into_gl(&self) -> [f32; 2] {
-        [
-            T::to_f32(&self.0[0]).unwrap(),
-            T::to_f32(&self.0[1]).unwrap(),
-        ]
-    }
-
-    #[inline(always)]
-    pub fn into_gl_binary(&self) -> [u8; 8] {
-        unsafe { std::mem::transmute_copy::<[f32; 2], [u8; 8]>(&self.into_gl()) }
-    }
 
     #[inline(always)]
     pub fn raw(&self) -> &[T; 2] {
         &self.0
     }
+}
 
-    #[inline(always)]
-    pub fn set(&mut self, x: T, y: T) -> &mut Self {
+impl<T: Float> AsVec2<T> for Vec2<T> {
+    #[inline]
+    fn x(&self) -> T {
+        self.0[0]
+    }
+
+    #[inline]
+    fn y(&self) -> T {
+        self.0[1]
+    }
+
+    #[inline]
+    fn set_x(&mut self, x: T) -> &mut Self {
         self.0[0] = x;
+        self
+    }
+
+    #[inline]
+    fn set_y(&mut self, y: T) -> &mut Self {
         self.0[1] = y;
         self
-    }
-
-    #[inline(always)]
-    pub fn set_slice(&mut self, [x, y]: &[T; 2]) -> &mut Self {
-        self.0[0] = *x;
-        self.0[1] = *y;
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_zero(&mut self) -> &mut Self {
-        self.0[0] = T::zero();
-        self.0[1] = T::zero();
-        self
-    }
-
-    #[inline(always)]
-    pub fn ceil(&self) -> Self {
-        Self([self.0[0].ceil(), self.0[1].ceil()])
-    }
-
-    #[inline(always)]
-    pub fn floor(&self) -> Self {
-        Self([self.0[0].floor(), self.0[1].floor()])
-    }
-
-    #[inline(always)]
-    pub fn min(&self, b: impl AsRef<Self>) -> Self {
-        let b = b.as_ref();
-        Self([self.0[0].min(b.0[0]), self.0[1].min(b.0[1])])
-    }
-
-    #[inline(always)]
-    pub fn max(&self, b: impl AsRef<Self>) -> Self {
-        let b = b.as_ref();
-        Self([self.0[0].max(b.0[0]), self.0[1].max(b.0[1])])
-    }
-
-    #[inline(always)]
-    pub fn round(&self) -> Self {
-        Self([self.0[0].round(), self.0[1].round()])
-    }
-
-    #[inline(always)]
-    pub fn scale(&self, scale: T) -> Self {
-        self.mul(scale)
-    }
-
-    #[inline(always)]
-    pub fn squared_distance(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-        let x = b.0[0] - self.0[0];
-        let y = b.0[1] - self.0[1];
-        x * x + y * y
-    }
-
-    #[inline(always)]
-    pub fn distance(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-        self.squared_distance(b).sqrt()
-    }
-
-    #[inline(always)]
-    pub fn squared_length(&self) -> T {
-        let x = self.0[0];
-        let y = self.0[1];
-        x * x + y * y
-    }
-
-    #[inline(always)]
-    pub fn length(&self) -> T {
-        self.squared_length().sqrt()
-    }
-
-    #[inline(always)]
-    pub fn negate(&self) -> Self {
-        Self([-self.0[0], -self.0[1]])
-    }
-
-    #[inline(always)]
-    pub fn inverse(&self) -> Self {
-        Self([T::one() / self.0[0], T::one() / self.0[1]])
-    }
-
-    #[inline(always)]
-    pub fn normalize(&self) -> Self {
-        let mut len = self.squared_length();
-        if len > T::zero() {
-            len = T::one() / len.sqrt();
-        }
-
-        Self([self.0[0] * len, self.0[1] * len])
-    }
-
-    #[inline(always)]
-    pub fn dot(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-        self.0[0] * b.0[0] + self.0[1] * b.0[1]
-    }
-
-    #[inline(always)]
-    pub fn cross(&self, b: impl AsRef<Self>) -> Vec3<T> {
-        let b = b.as_ref();
-        Vec3::<T>::from_values(
-            T::zero(),
-            T::zero(),
-            self.0[0] * b.0[1] - self.0[1] * b.0[0],
-        )
-    }
-
-    #[inline(always)]
-    pub fn lerp(&self, b: impl AsRef<Self>, t: T) -> Self {
-        let b = b.as_ref();
-        let ax = self.0[0];
-        let ay = self.0[1];
-        Self([ax + t * (b.0[0] - ax), ay + t * (b.0[1] - ay)])
-    }
-
-    #[inline(always)]
-    pub fn transform_mat2(&self, m: impl AsRef<Mat2<T>>) -> Self {
-        let m = m.as_ref();
-        let x = self.0[0];
-        let y = self.0[1];
-        Self([m.0[0] * x + m.0[2] * y, m.0[1] * x + m.0[3] * y])
-    }
-
-    #[inline(always)]
-    pub fn transform_mat2d(&self, m: impl AsRef<Mat2d<T>>) -> Self {
-        let m = m.as_ref();
-        let x = self.0[0];
-        let y = self.0[1];
-        Self([
-            m.0[0] * x + m.0[2] * y + m.0[4],
-            m.0[1] * x + m.0[3] * y + m.0[5],
-        ])
-    }
-
-    #[inline(always)]
-    pub fn transform_mat3(&self, m: impl AsRef<Mat3<T>>) -> Self {
-        let m = m.as_ref();
-        let x = self.0[0];
-        let y = self.0[1];
-        Self([
-            m.0[0] * x + m.0[3] * y + m.0[6],
-            m.0[1] * x + m.0[4] * y + m.0[7],
-        ])
-    }
-
-    #[inline(always)]
-    pub fn transform_mat4(&self, m: impl AsRef<Mat4<T>>) -> Self {
-        let m = m.as_ref();
-        let x = self.0[0];
-        let y = self.0[1];
-        Self([
-            m.0[0] * x + m.0[4] * y + m.0[12],
-            m.0[1] * x + m.0[5] * y + m.0[13],
-        ])
-    }
-
-    #[inline(always)]
-    pub fn rotate(&self, b: impl AsRef<Self>, rad: T) -> Self {
-        let b = b.as_ref();
-        //Translate point to the origin
-        let p0 = self.0[0] - b.0[0];
-        let p1 = self.0[1] - b.0[1];
-        let sin_c = rad.sin();
-        let cos_c = rad.cos();
-
-        //perform rotation and translate to correct position
-        Self([
-            p0 * cos_c - p1 * sin_c + b.0[0],
-            p0 * sin_c + p1 * cos_c + b.0[1],
-        ])
-    }
-
-    #[inline(always)]
-    pub fn angle(&self, b: impl AsRef<Self>) -> T {
-        let b = b.as_ref();
-        let x1 = self.0[0];
-        let y1 = self.0[1];
-        let x2 = b.0[0];
-        let y2 = b.0[1];
-        // mag is the product of the magnitudes of a and b
-        let mag = ((x1 * x1 + y1 * y1) * (x2 * x2 + y2 * y2)).sqrt();
-        // mag &&.. short circuits if mag == 0
-        let cosine = if mag == T::zero() {
-            mag
-        } else {
-            (x1 * x2 + y1 * y2) / mag
-        };
-        // Math.min(Math.max(cosine, -1), 1) clamps the cosine between -1 and 1
-        cosine.max(-T::one()).min(T::one()).acos()
-    }
-
-    #[inline(always)]
-    pub fn approximate_eq(&self, b: impl AsRef<Self>) -> bool {
-        let b = b.as_ref();
-        let a0 = self.0[0];
-        let a1 = self.0[1];
-        let b0 = b.0[0];
-        let b1 = b.0[1];
-
-        (a0 - b0).abs() <= epsilon::<T>() * T::one().max(a0.abs()).max(b0.abs())
-            && (a1 - b1).abs() <= epsilon::<T>() * T::one().max(a1.abs()).max(b1.abs())
     }
 }
 
@@ -380,6 +475,7 @@ impl<T: Float> Div<T> for Vec2<T> {
 }
 
 impl<T: Float> AddAssign<Self> for Vec2<T> {
+    #[inline(always)]
     fn add_assign(&mut self, rhs: Self) {
         self.0[0] = self.0[0] + rhs.0[0];
         self.0[1] = self.0[1] + rhs.0[1];
@@ -387,6 +483,7 @@ impl<T: Float> AddAssign<Self> for Vec2<T> {
 }
 
 impl<T: Float> AddAssign<T> for Vec2<T> {
+    #[inline(always)]
     fn add_assign(&mut self, rhs: T) {
         self.0[0] = self.0[0] + rhs;
         self.0[1] = self.0[1] + rhs;
@@ -394,6 +491,7 @@ impl<T: Float> AddAssign<T> for Vec2<T> {
 }
 
 impl<T: Float> SubAssign<Self> for Vec2<T> {
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: Self) {
         self.0[0] = self.0[0] - rhs.0[0];
         self.0[1] = self.0[1] - rhs.0[1];
@@ -401,6 +499,7 @@ impl<T: Float> SubAssign<Self> for Vec2<T> {
 }
 
 impl<T: Float> SubAssign<T> for Vec2<T> {
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: T) {
         self.0[0] = self.0[0] - rhs;
         self.0[1] = self.0[1] - rhs;
@@ -408,6 +507,7 @@ impl<T: Float> SubAssign<T> for Vec2<T> {
 }
 
 impl<T: Float> MulAssign<Self> for Vec2<T> {
+    #[inline(always)]
     fn mul_assign(&mut self, rhs: Self) {
         self.0[0] = self.0[0] * rhs.0[0];
         self.0[1] = self.0[1] * rhs.0[1];
@@ -415,6 +515,7 @@ impl<T: Float> MulAssign<Self> for Vec2<T> {
 }
 
 impl<T: Float> MulAssign<T> for Vec2<T> {
+    #[inline(always)]
     fn mul_assign(&mut self, rhs: T) {
         self.0[0] = self.0[0] * rhs;
         self.0[1] = self.0[1] * rhs;
@@ -422,6 +523,7 @@ impl<T: Float> MulAssign<T> for Vec2<T> {
 }
 
 impl<T: Float> DivAssign<Self> for Vec2<T> {
+    #[inline(always)]
     fn div_assign(&mut self, rhs: Self) {
         self.0[0] = self.0[0] / rhs.0[0];
         self.0[1] = self.0[1] / rhs.0[1];
@@ -429,6 +531,7 @@ impl<T: Float> DivAssign<Self> for Vec2<T> {
 }
 
 impl<T: Float> DivAssign<T> for Vec2<T> {
+    #[inline(always)]
     fn div_assign(&mut self, rhs: T) {
         self.0[0] = self.0[0] / rhs;
         self.0[1] = self.0[1] / rhs;
@@ -444,24 +547,6 @@ impl<T> AsRef<Vec2<T>> for Vec2<T> {
 impl<T> AsRef<[T]> for Vec2<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl AsRef<[u8]> for Vec2<f64> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f64; 2], &[u8; 16]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Vec2<f32> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f32; 2], &[u8; 8]>(&self.0) }
-    }
-}
-
-impl AsRef<[u8]> for Vec2<f16> {
-    fn as_ref(&self) -> &[u8] {
-        unsafe { std::mem::transmute::<&[f16; 2], &[u8; 4]>(&self.0) }
     }
 }
 
@@ -481,56 +566,56 @@ impl<T: Display> Display for Vec2<T> {
 mod tests {
     use std::sync::OnceLock;
 
-    use crate::{error::Error, mat2::Mat2, mat2d::Mat2d};
+    use crate::{error::Error, mat2::Mat2, mat2d::Mat2d, vec2::AsVec2};
 
     use super::Vec2;
 
-    static VEC_A_RAW: [f32; 2] = [1.0, 2.0];
-    static VEC_B_RAW: [f32; 2] = [3.0, 4.0];
+    static VEC_A_RAW: [f64; 2] = [1.0, 2.0];
+    static VEC_B_RAW: [f64; 2] = [3.0, 4.0];
 
-    static VEC_A: OnceLock<Vec2<f32>> = OnceLock::new();
-    static VEC_B: OnceLock<Vec2<f32>> = OnceLock::new();
+    static VEC_A: OnceLock<Vec2> = OnceLock::new();
+    static VEC_B: OnceLock<Vec2> = OnceLock::new();
 
-    fn vec_a() -> &'static Vec2<f32> {
+    fn vec_a() -> &'static Vec2 {
         VEC_A.get_or_init(|| Vec2::from_slice(&VEC_A_RAW))
     }
 
-    fn vec_b() -> &'static Vec2<f32> {
+    fn vec_b() -> &'static Vec2 {
         VEC_B.get_or_init(|| Vec2::from_slice(&VEC_B_RAW))
     }
 
     #[test]
     fn new() {
-        assert_eq!(Vec2::<f32>::new().raw(), &[0.0, 0.0]);
+        assert_eq!(Vec2::<f64>::new().to_raw(), [0.0, 0.0]);
     }
 
     #[test]
     fn from_slice() {
-        assert_eq!(Vec2::from_slice(&[3.0, 4.0]).raw(), &[3.0, 4.0]);
+        assert_eq!(Vec2::from_slice(&[3.0, 4.0]).to_raw(), [3.0, 4.0]);
     }
 
     #[test]
     fn from_values() {
-        assert_eq!(Vec2::from_values(3.0, 4.0).raw(), &[3.0, 4.0]);
+        assert_eq!(Vec2::from_values(3.0, 4.0).to_raw(), [3.0, 4.0]);
     }
 
     #[test]
     fn ceil() {
         assert_eq!(
-            Vec2::from_values(std::f32::consts::E, std::f32::consts::PI)
+            Vec2::from_values(std::f64::consts::E, std::f64::consts::PI)
                 .ceil()
-                .raw(),
-            &[3.0, 4.0]
+                .to_raw(),
+            [3.0, 4.0]
         );
     }
 
     #[test]
     fn floor() -> Result<(), Error> {
         assert_eq!(
-            Vec2::from_values(std::f32::consts::E, std::f32::consts::PI)
+            Vec2::from_values(std::f64::consts::E, std::f64::consts::PI)
                 .floor()
-                .raw(),
-            &[2.0, 3.0]
+                .to_raw(),
+            [2.0, 3.0]
         );
 
         Ok(())
@@ -540,7 +625,7 @@ mod tests {
     fn min() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.min(vec_b).raw(), &[1.0, 2.0]);
+        assert_eq!(vec_a.clone().min(&vec_b).to_raw(), [1.0, 2.0]);
 
         Ok(())
     }
@@ -549,7 +634,7 @@ mod tests {
     fn max() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.max(vec_b).raw(), &[3.0, 4.0]);
+        assert_eq!(vec_a.clone().max(&vec_b).to_raw(), [3.0, 4.0]);
 
         Ok(())
     }
@@ -557,10 +642,10 @@ mod tests {
     #[test]
     fn round() -> Result<(), Error> {
         assert_eq!(
-            Vec2::from_values(std::f32::consts::E, std::f32::consts::PI)
+            Vec2::from_values(std::f64::consts::E, std::f64::consts::PI)
                 .round()
-                .raw(),
-            &[3.0, 3.0]
+                .to_raw(),
+            [3.0, 3.0]
         );
 
         Ok(())
@@ -568,12 +653,12 @@ mod tests {
 
     #[test]
     fn scale() {
-        assert_eq!((*vec_a() * 2.0).raw(), &[2.0, 4.0]);
+        assert_eq!((*vec_a() * 2.0).to_raw(), [2.0, 4.0]);
     }
 
     #[test]
     fn scale_add() {
-        assert_eq!((*vec_a() + *vec_b() * 2.0).raw(), &[7.0, 10.0]);
+        assert_eq!((*vec_a() + *vec_b() * 2.0).to_raw(), [7.0, 10.0]);
     }
 
     #[test]
@@ -598,7 +683,7 @@ mod tests {
 
     #[test]
     fn negate() {
-        assert_eq!(vec_a().negate().raw(), &[-1.0, -2.0]);
+        assert_eq!(vec_a().clone().negate().raw(), &[-1.0, -2.0]);
     }
 
     #[test]
@@ -618,26 +703,26 @@ mod tests {
 
     #[test]
     fn lerp() {
-        assert_eq!(vec_a().lerp(vec_b(), 0.5).raw(), &[2.0, 3.0]);
+        assert_eq!(vec_a().clone().lerp(vec_b(), 0.5).raw(), &[2.0, 3.0]);
     }
 
     #[test]
     fn angle() {
         let vec_a = Vec2::from_values(1.0, 0.0);
         let vec_b = Vec2::from_values(1.0, 2.0);
-        assert_eq!(vec_a.angle(vec_b), 1.1071487177940904);
+        assert_eq!(vec_a.angle(&vec_b), 1.1071487177940904);
     }
 
     #[test]
     fn transform_mat2() {
         let mat = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(vec_a().transform_mat2(mat).raw(), &[7.0, 10.0]);
+        assert_eq!(vec_a().clone().transform_mat2(&mat).raw(), &[7.0, 10.0]);
     }
 
     #[test]
     fn transform_mat2d() {
         let mat = Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        assert_eq!(vec_a().transform_mat2d(mat).raw(), &[12.0, 16.0]);
+        assert_eq!(vec_a().clone().transform_mat2d(&mat).raw(), &[12.0, 16.0]);
     }
 
     #[test]
@@ -703,9 +788,9 @@ mod tests {
         let vec_c = Vec2::from_values(1.0, 2.0);
         let vec_d = Vec2::from_values(1e-16, 1.0);
 
-        assert_eq!(true, vec_a.approximate_eq(vec_b));
-        assert_eq!(false, vec_a.approximate_eq(vec_c));
-        assert_eq!(true, vec_a.approximate_eq(vec_d));
+        assert_eq!(true, vec_a.approximate_eq(&vec_b));
+        assert_eq!(false, vec_a.approximate_eq(&vec_c));
+        assert_eq!(true, vec_a.approximate_eq(&vec_d));
     }
 
     #[test]
@@ -716,27 +801,18 @@ mod tests {
 
     #[test]
     fn rotate() {
-        let vec_a = Vec2::<f32>::from_values(0.0, 1.0);
-        let vec_b = Vec2::<f32>::from_values(0.0, 0.0);
+        let vec_a = Vec2::from_values(0.0, 1.0);
+        let vec_b = Vec2::from_values(0.0, 0.0);
         assert_eq!(
-            vec_a.rotate(vec_b, std::f32::consts::PI).raw(),
-            &[8.742278e-8, -1.0]
+            vec_a.clone().rotate(&vec_b, std::f64::consts::PI).to_raw(),
+            [-1.2246467991473532e-16, -1.0]
         );
 
-        let vec_a = Vec2::<f32>::from_values(6.0, -5.0);
-        let vec_b = Vec2::<f32>::from_values(0.0, -5.0);
+        let vec_a = Vec2::from_values(6.0, -5.0);
+        let vec_b = Vec2::from_values(0.0, -5.0);
         assert_eq!(
-            vec_a.rotate(vec_b, std::f32::consts::PI).raw(),
-            &[-6.0, -5.0000005]
+            vec_a.clone().rotate(&vec_b, std::f64::consts::PI).to_raw(),
+            [-6.0, -4.999999999999999]
         );
-    }
-
-    #[test]
-    fn test_u8_slice() {
-        let bin: &[u8] = vec_a().as_ref();
-        bin.chunks(4).enumerate().for_each(|(index, bin)| {
-            let value = f32::from_ne_bytes(bin.try_into().unwrap());
-            assert_eq!(vec_a().0[index], value);
-        });
     }
 }
