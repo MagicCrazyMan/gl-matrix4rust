@@ -13,21 +13,38 @@ use crate::{
 };
 
 pub trait AsQuat2<T: Float> {
+    fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self;
+
     fn x1(&self) -> T;
+
     fn y1(&self) -> T;
+
     fn z1(&self) -> T;
+
     fn w1(&self) -> T;
+
     fn x2(&self) -> T;
+
     fn y2(&self) -> T;
+
     fn z2(&self) -> T;
+
     fn w2(&self) -> T;
+
     fn set_x1(&mut self, x1: T) -> &mut Self;
+
     fn set_y1(&mut self, y1: T) -> &mut Self;
+
     fn set_z1(&mut self, z1: T) -> &mut Self;
+
     fn set_w1(&mut self, w1: T) -> &mut Self;
+
     fn set_x2(&mut self, x2: T) -> &mut Self;
+
     fn set_y2(&mut self, y2: T) -> &mut Self;
+
     fn set_z2(&mut self, z2: T) -> &mut Self;
+
     fn set_w2(&mut self, w2: T) -> &mut Self;
 
     #[inline(always)]
@@ -161,7 +178,10 @@ pub trait AsQuat2<T: Float> {
     }
 
     #[inline(always)]
-    fn translate<V: AsVec3<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn translate<V: AsVec3<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let ax1 = self.x1();
         let ay1 = self.y1();
         let az1 = self.z1();
@@ -174,18 +194,23 @@ pub trait AsQuat2<T: Float> {
         let az2 = self.z2();
         let aw2 = self.w2();
 
-        self.set_x1(ax1)
-            .set_y1(ay1)
-            .set_z1(az1)
-            .set_w1(aw1)
-            .set_x2(aw1 * bx1 + ay1 * bz1 - az1 * by1 + ax2)
-            .set_y2(aw1 * by1 + az1 * bx1 - ax1 * bz1 + ay2)
-            .set_z2(aw1 * bz1 + ax1 * by1 - ay1 * bx1 + az2)
-            .set_w2(-ax1 * bx1 - ay1 * by1 - az1 * bz1 + aw2)
+        Self::from_values(
+            ax1,
+            ay1,
+            az1,
+            aw1,
+            aw1 * bx1 + ay1 * bz1 - az1 * by1 + ax2,
+            aw1 * by1 + az1 * bx1 - ax1 * bz1 + ay2,
+            aw1 * bz1 + ax1 * by1 - ay1 * bx1 + az2,
+            -ax1 * bx1 - ay1 * by1 - az1 * bz1 + aw2,
+        )
     }
 
     #[inline(always)]
-    fn rotate_x(&mut self, rad: T) -> &mut Self {
+    fn rotate_x(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let bx = -self.x1();
         let by = -self.y1();
         let bz = -self.z1();
@@ -198,25 +223,29 @@ pub trait AsQuat2<T: Float> {
         let ay1 = ay * bw + aw * by + az * bx - ax * bz;
         let az1 = az * bw + aw * bz + ax * by - ay * bx;
         let aw1 = aw * bw - ax * bx - ay * by - az * bz;
-        let mut quat = (self.x1(), self.y1(), self.z1(), self.w1());
-        quat.rotate_x(rad);
-        let bx = quat.0;
-        let by = quat.1;
-        let bz = quat.2;
-        let bw = quat.3;
+        let quat = Quat::from_values(self.x1(), self.y1(), self.z1(), self.w1()).rotate_x(rad);
+        let bx = quat.x();
+        let by = quat.y();
+        let bz = quat.z();
+        let bw = quat.w();
 
-        self.set_x1(bx)
-            .set_y1(by)
-            .set_z1(bz)
-            .set_w1(bw)
-            .set_x2(ax1 * bw + aw1 * bx + ay1 * bz - az1 * by)
-            .set_y2(ay1 * bw + aw1 * by + az1 * bx - ax1 * bz)
-            .set_z2(az1 * bw + aw1 * bz + ax1 * by - ay1 * bx)
-            .set_w2(aw1 * bw - ax1 * bx - ay1 * by - az1 * bz)
+        Self::from_values(
+            bx,
+            by,
+            bz,
+            bw,
+            ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+            ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+            az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+            aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+        )
     }
 
     #[inline(always)]
-    fn rotate_y(&mut self, rad: T) -> &mut Self {
+    fn rotate_y(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let bx = -self.x1();
         let by = -self.y1();
         let bz = -self.z1();
@@ -229,25 +258,29 @@ pub trait AsQuat2<T: Float> {
         let ay1 = ay * bw + aw * by + az * bx - ax * bz;
         let az1 = az * bw + aw * bz + ax * by - ay * bx;
         let aw1 = aw * bw - ax * bx - ay * by - az * bz;
-        let mut quat = (self.x1(), self.y1(), self.z1(), self.w1());
-        quat.rotate_y(rad);
-        let bx = quat.0;
-        let by = quat.1;
-        let bz = quat.2;
-        let bw = quat.3;
+        let quat = Quat::from_values(self.x1(), self.y1(), self.z1(), self.w1()).rotate_y(rad);
+        let bx = quat.x();
+        let by = quat.y();
+        let bz = quat.z();
+        let bw = quat.w();
 
-        self.set_x1(bx)
-            .set_y1(by)
-            .set_z1(bz)
-            .set_w1(bw)
-            .set_x2(ax1 * bw + aw1 * bx + ay1 * bz - az1 * by)
-            .set_y2(ay1 * bw + aw1 * by + az1 * bx - ax1 * bz)
-            .set_z2(az1 * bw + aw1 * bz + ax1 * by - ay1 * bx)
-            .set_w2(aw1 * bw - ax1 * bx - ay1 * by - az1 * bz)
+        Self::from_values(
+            bx,
+            by,
+            bz,
+            bw,
+            ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+            ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+            az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+            aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+        )
     }
 
     #[inline(always)]
-    fn rotate_z(&mut self, rad: T) -> &mut Self {
+    fn rotate_z(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let bx = -self.x1();
         let by = -self.y1();
         let bz = -self.z1();
@@ -260,25 +293,29 @@ pub trait AsQuat2<T: Float> {
         let ay1 = ay * bw + aw * by + az * bx - ax * bz;
         let az1 = az * bw + aw * bz + ax * by - ay * bx;
         let aw1 = aw * bw - ax * bx - ay * by - az * bz;
-        let mut quat = (self.x1(), self.y1(), self.z1(), self.w1());
-        quat.rotate_z(rad);
-        let bx = quat.0;
-        let by = quat.1;
-        let bz = quat.2;
-        let bw = quat.3;
+        let quat = Quat::from_values(self.x1(), self.y1(), self.z1(), self.w1()).rotate_z(rad);
+        let bx = quat.x();
+        let by = quat.y();
+        let bz = quat.z();
+        let bw = quat.w();
 
-        self.set_x1(bx)
-            .set_y1(by)
-            .set_z1(bz)
-            .set_w1(bw)
-            .set_x2(ax1 * bw + aw1 * bx + ay1 * bz - az1 * by)
-            .set_y2(ay1 * bw + aw1 * by + az1 * bx - ax1 * bz)
-            .set_z2(az1 * bw + aw1 * bz + ax1 * by - ay1 * bx)
-            .set_w2(aw1 * bw - ax1 * bx - ay1 * by - az1 * bz)
+        Self::from_values(
+            bx,
+            by,
+            bz,
+            bw,
+            ax1 * bw + aw1 * bx + ay1 * bz - az1 * by,
+            ay1 * bw + aw1 * by + az1 * bx - ax1 * bz,
+            az1 * bw + aw1 * bz + ax1 * by - ay1 * bx,
+            aw1 * bw - ax1 * bx - ay1 * by - az1 * bz,
+        )
     }
 
     #[inline(always)]
-    fn rotate_by_quat_append<Q: AsQuat<T> + ?Sized>(&mut self, q: &Q) -> &mut Self {
+    fn rotate_by_quat_append<Q: AsQuat<T> + ?Sized>(&self, q: &Q) -> Self
+    where
+        Self: Sized,
+    {
         let qx = q.x();
         let qy = q.y();
         let qz = q.z();
@@ -287,25 +324,28 @@ pub trait AsQuat2<T: Float> {
         let mut ay = self.y1();
         let mut az = self.z1();
         let mut aw = self.w1();
-        self.set_x1(ax * qw + aw * qx + ay * qz - az * qy)
-            .set_y1(ay * qw + aw * qy + az * qx - ax * qz)
-            .set_z1(az * qw + aw * qz + ax * qy - ay * qx)
-            .set_w1(aw * qw - ax * qx - ay * qy - az * qz);
+        let x1 = ax * qw + aw * qx + ay * qz - az * qy;
+        let y1 = ay * qw + aw * qy + az * qx - ax * qz;
+        let z1 = az * qw + aw * qz + ax * qy - ay * qx;
+        let w1 = aw * qw - ax * qx - ay * qy - az * qz;
 
         ax = self.x2();
         ay = self.y2();
         az = self.z2();
         aw = self.w2();
-        self.set_x2(ax * qw + aw * qx + ay * qz - az * qy)
-            .set_y2(ay * qw + aw * qy + az * qx - ax * qz)
-            .set_z2(az * qw + aw * qz + ax * qy - ay * qx)
-            .set_w2(aw * qw - ax * qx - ay * qy - az * qz);
+        let x2 = ax * qw + aw * qx + ay * qz - az * qy;
+        let y2 = ay * qw + aw * qy + az * qx - ax * qz;
+        let z2 = az * qw + aw * qz + ax * qy - ay * qx;
+        let w2 = aw * qw - ax * qx - ay * qy - az * qz;
 
-        self
+        Self::from_values(x1, y1, z1, w1, x2, y2, z2, w2)
     }
 
     #[inline(always)]
-    fn rotate_by_quat_prepend<Q: AsQuat<T> + ?Sized>(&mut self, q: &Q) -> &mut Self {
+    fn rotate_by_quat_prepend<Q: AsQuat<T> + ?Sized>(&self, q: &Q) -> Self
+    where
+        Self: Sized,
+    {
         let qx = q.x();
         let qy = q.y();
         let qz = q.z();
@@ -314,27 +354,39 @@ pub trait AsQuat2<T: Float> {
         let mut by = self.y1();
         let mut bz = self.z1();
         let mut bw = self.w1();
-        self.set_x1(qx * bw + qw * bx + qy * bz - qz * by)
-            .set_y1(qy * bw + qw * by + qz * bx - qx * bz)
-            .set_z1(qz * bw + qw * bz + qx * by - qy * bx)
-            .set_w1(qw * bw - qx * bx - qy * by - qz * bz);
+        let x1 = qx * bw + qw * bx + qy * bz - qz * by;
+        let y1 = qy * bw + qw * by + qz * bx - qx * bz;
+        let z1 = qz * bw + qw * bz + qx * by - qy * bx;
+        let w1 = qw * bw - qx * bx - qy * by - qz * bz;
 
         bx = self.x2();
         by = self.y2();
         bz = self.z2();
         bw = self.w2();
-        self.set_x2(qx * bw + qw * bx + qy * bz - qz * by)
-            .set_y2(qy * bw + qw * by + qz * bx - qx * bz)
-            .set_z2(qz * bw + qw * bz + qx * by - qy * bx)
-            .set_w2(qw * bw - qx * bx - qy * by - qz * bz);
+        let x2 = qx * bw + qw * bx + qy * bz - qz * by;
+        let y2 = qy * bw + qw * by + qz * bx - qx * bz;
+        let z2 = qz * bw + qw * bz + qx * by - qy * bx;
+        let w2 = qw * bw - qx * bx - qy * by - qz * bz;
 
-        self
+        Self::from_values(x1, y1, z1, w1, x2, y2, z2, w2)
     }
 
     #[inline(always)]
-    fn rotate_around_axis<V: AsVec3<T> + ?Sized>(&mut self, axis: &V, rad: T) -> &mut Self {
+    fn rotate_around_axis<V: AsVec3<T> + ?Sized>(&self, axis: &V, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         if rad.abs() < epsilon() {
-            return self;
+            return Self::from_values(
+                self.x1(),
+                self.y1(),
+                self.z1(),
+                self.w1(),
+                self.x2(),
+                self.y2(),
+                self.z2(),
+                self.w2(),
+            );
         }
 
         let axis_length = (axis.x() * axis.x() + axis.y() * axis.y() + axis.z() * axis.z()).sqrt();
@@ -349,25 +401,28 @@ pub trait AsQuat2<T: Float> {
         let ay1 = self.y1();
         let az1 = self.z1();
         let aw1 = self.w1();
-        self.set_x1(ax1 * bw + aw1 * bx + ay1 * bz - az1 * by)
-            .set_y1(ay1 * bw + aw1 * by + az1 * bx - ax1 * bz)
-            .set_z1(az1 * bw + aw1 * bz + ax1 * by - ay1 * bx)
-            .set_w1(aw1 * bw - ax1 * bx - ay1 * by - az1 * bz);
+        let x1 = ax1 * bw + aw1 * bx + ay1 * bz - az1 * by;
+        let y1 = ay1 * bw + aw1 * by + az1 * bx - ax1 * bz;
+        let z1 = az1 * bw + aw1 * bz + ax1 * by - ay1 * bx;
+        let w1 = aw1 * bw - ax1 * bx - ay1 * by - az1 * bz;
 
         let ax = self.x2();
         let ay = self.y2();
         let az = self.z2();
         let aw = self.w2();
-        self.set_x2(ax * bw + aw * bx + ay * bz - az * by)
-            .set_y2(ay * bw + aw * by + az * bx - ax * bz)
-            .set_z2(az * bw + aw * bz + ax * by - ay * bx)
-            .set_w2(aw * bw - ax * bx - ay * by - az * bz);
+        let x2 = ax * bw + aw * bx + ay * bz - az * by;
+        let y2 = ay * bw + aw * by + az * bx - ax * bz;
+        let z2 = az * bw + aw * bz + ax * by - ay * bx;
+        let w2 = aw * bw - ax * bx - ay * by - az * bz;
 
-        self
+        Self::from_values(x1, y1, z1, w1, x2, y2, z2, w2)
     }
 
     #[inline(always)]
-    fn scale(&mut self, scale: T) -> &mut Self {
+    fn scale(&self, scale: T) -> Self
+    where
+        Self: Sized,
+    {
         let x1 = self.x1();
         let y1 = self.y1();
         let z1 = self.z1();
@@ -377,14 +432,16 @@ pub trait AsQuat2<T: Float> {
         let z2 = self.z2();
         let w2 = self.w2();
 
-        self.set_x1(x1 * scale)
-            .set_y1(y1 * scale)
-            .set_z1(z1 * scale)
-            .set_w1(w1 * scale)
-            .set_x2(x2 * scale)
-            .set_y2(y2 * scale)
-            .set_z2(z2 * scale)
-            .set_w2(w2 * scale)
+        Self::from_values(
+            x1 * scale,
+            y1 * scale,
+            z1 * scale,
+            w1 * scale,
+            x2 * scale,
+            y2 * scale,
+            z2 * scale,
+            w2 * scale,
+        )
     }
 
     #[inline(always)]
@@ -393,7 +450,10 @@ pub trait AsQuat2<T: Float> {
     }
 
     #[inline(always)]
-    fn lerp(&mut self, b: &Self, t: T) -> &mut Self {
+    fn lerp(&self, b: &Self, t: T) -> Self
+    where
+        Self: Sized,
+    {
         let mt = T::one() - t;
         let t = if self.dot(b) < T::zero() { -t } else { t };
 
@@ -406,14 +466,16 @@ pub trait AsQuat2<T: Float> {
         let az = self.z2();
         let aw = self.w2();
 
-        self.set_x1(bx * mt + b.x1() * t)
-            .set_y1(by * mt + b.y1() * t)
-            .set_z1(bz * mt + b.z1() * t)
-            .set_w1(bw * mt + b.w1() * t)
-            .set_x2(ax * mt + b.x2() * t)
-            .set_y2(ay * mt + b.y2() * t)
-            .set_z2(az * mt + b.z2() * t)
-            .set_w2(aw * mt + b.w2() * t)
+        Self::from_values(
+            bx * mt + b.x1() * t,
+            by * mt + b.y1() * t,
+            bz * mt + b.z1() * t,
+            bw * mt + b.w1() * t,
+            ax * mt + b.x2() * t,
+            ay * mt + b.y2() * t,
+            az * mt + b.z2() * t,
+            aw * mt + b.w2() * t,
+        )
     }
 
     #[inline(always)]
@@ -431,7 +493,10 @@ pub trait AsQuat2<T: Float> {
     }
 
     #[inline(always)]
-    fn normalize(&mut self) -> &mut Self {
+    fn normalize(&self) -> Self
+    where
+        Self: Sized,
+    {
         let mut magnitude = self.squared_length();
         if magnitude > T::zero() {
             magnitude = magnitude.sqrt();
@@ -449,18 +514,23 @@ pub trait AsQuat2<T: Float> {
 
         let a_dot_b = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
 
-        self.set_x1(a0)
-            .set_y1(a1)
-            .set_z1(a2)
-            .set_w1(a3)
-            .set_x2((b0 - a0 * a_dot_b) / magnitude)
-            .set_y2((b1 - a1 * a_dot_b) / magnitude)
-            .set_z2((b2 - a2 * a_dot_b) / magnitude)
-            .set_w2((b3 - a3 * a_dot_b) / magnitude)
+        Self::from_values(
+            a0,
+            a1,
+            a2,
+            a3,
+            (b0 - a0 * a_dot_b) / magnitude,
+            (b1 - a1 * a_dot_b) / magnitude,
+            (b2 - a2 * a_dot_b) / magnitude,
+            (b3 - a3 * a_dot_b) / magnitude,
+        )
     }
 
     #[inline(always)]
-    fn invert(&mut self) -> &mut Self {
+    fn invert(&self) -> Self
+    where
+        Self: Sized,
+    {
         let sqlen = self.squared_length();
 
         let bx = self.x1();
@@ -472,18 +542,23 @@ pub trait AsQuat2<T: Float> {
         let az = self.z2();
         let aw = self.w2();
 
-        self.set_x1(-bx / sqlen)
-            .set_y1(-by / sqlen)
-            .set_z1(-bz / sqlen)
-            .set_w1(bw / sqlen)
-            .set_x2(-ax / sqlen)
-            .set_y2(-ay / sqlen)
-            .set_z2(-az / sqlen)
-            .set_w2(aw / sqlen)
+        Self::from_values(
+            -bx / sqlen,
+            -by / sqlen,
+            -bz / sqlen,
+            bw / sqlen,
+            -ax / sqlen,
+            -ay / sqlen,
+            -az / sqlen,
+            aw / sqlen,
+        )
     }
 
     #[inline(always)]
-    fn conjugate(&mut self) -> &mut Self {
+    fn conjugate(&self) -> Self
+    where
+        Self: Sized,
+    {
         let bx = self.x1();
         let by = self.y1();
         let bz = self.z1();
@@ -493,14 +568,7 @@ pub trait AsQuat2<T: Float> {
         let az = self.z2();
         let aw = self.w2();
 
-        self.set_x1(-bx)
-            .set_y1(-by)
-            .set_z1(-bz)
-            .set_w1(bw)
-            .set_x2(-ax)
-            .set_y2(-ay)
-            .set_z2(-az)
-            .set_w2(aw)
+        Self::from_values(-bx, -by, -bz, bw, -ax, -ay, -az, aw)
     }
 
     #[inline(always)]
@@ -534,6 +602,11 @@ pub trait AsQuat2<T: Float> {
 }
 
 impl<T: Float> AsQuat2<T> for [T; 8] {
+    #[inline(always)]
+    fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self {
+        [x1, y1, z1, w1, x2, y2, z2, w2]
+    }
+
     #[inline(always)]
     fn x1(&self) -> T {
         self[0]
@@ -624,6 +697,11 @@ impl<T: Float> AsQuat2<T> for [T; 8] {
 }
 
 impl<T: Float> AsQuat2<T> for (T, T, T, T, T, T, T, T) {
+    #[inline(always)]
+    fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self {
+        (x1, y1, z1, w1, x2, y2, z2, w2)
+    }
+
     #[inline(always)]
     fn x1(&self) -> T {
         self.0
@@ -742,13 +820,8 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self {
-        Self([x1, y1, z1, w1, x2, y2, z2, w2])
-    }
-
-    #[inline(always)]
-    pub fn from_slice([x1, y1, z1, w1, x2, y2, z2, w2]: &[T; 8]) -> Self {
-        Self([*x1, *y1, *z1, *w1, *x2, *y2, *z2, *w2])
+    pub fn from_slice(slice: &[T; 8]) -> Self {
+        Self(slice.clone())
     }
 
     #[inline(always)]
@@ -838,6 +911,11 @@ impl<T: Float> Quat2<T> {
 }
 
 impl<T: Float> AsQuat2<T> for Quat2<T> {
+    #[inline(always)]
+    fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self {
+        Self([x1, y1, z1, w1, x2, y2, z2, w2])
+    }
+
     #[inline(always)]
     fn x1(&self) -> T {
         self.0[0]
@@ -1139,7 +1217,6 @@ mod tests {
 
         assert_eq!(
             quat2_a()
-                .clone()
                 .rotate_by_quat_append(&(2.0, 5.0, 2.0, -10.0))
                 .to_raw(),
             (*quat2_a() * quat2_rotation).to_raw()
@@ -1152,7 +1229,6 @@ mod tests {
 
         assert_eq!(
             quat2_a()
-                .clone()
                 .rotate_by_quat_prepend(&quat2_rotation.real())
                 .to_raw(),
             (quat2_rotation * *quat2_a()).to_raw()
@@ -1177,7 +1253,7 @@ mod tests {
     #[test]
     fn conjugate() {
         assert_eq!(
-            quat2_a().clone().conjugate().to_raw(),
+            quat2_a().conjugate().to_raw(),
             [-1.0, -2.0, -3.0, 4.0, -2.0, -5.0, -6.0, -2.0]
         );
     }
@@ -1285,10 +1361,9 @@ mod tests {
 
     #[test]
     fn from_mat4() {
-        let mut quat_rotation = Quat::from_values(1.0, 2.0, 3.0, 4.0);
-        quat_rotation.normalize();
-        let mut quat2_a = Quat2::from_rotation_translation(&quat_rotation, &(1.0, -5.0, 3.0));
-        quat2_a.normalize();
+        let quat_rotation = Quat::from_values(1.0, 2.0, 3.0, 4.0).normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&quat_rotation, &(1.0, -5.0, 3.0)).normalize();
 
         assert_eq!(
             quat2_a.to_raw(),
@@ -1308,7 +1383,7 @@ mod tests {
     #[test]
     fn invert() {
         assert_eq!(
-            quat2_a().clone().invert().to_raw(),
+            quat2_a().invert().to_raw(),
             [
                 -0.03333333333333333,
                 -0.06666666666666667,
@@ -1321,7 +1396,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            quat2_a().clone().invert().real().to_raw(),
+            quat2_a().invert().real().to_raw(),
             [
                 -0.03333333333333333,
                 -0.06666666666666667,
@@ -1334,7 +1409,7 @@ mod tests {
     #[test]
     fn lerp() {
         assert_eq!(
-            quat2_a().clone().lerp(quat2_b(), 0.7).to_raw(),
+            quat2_a().lerp(quat2_b(), 0.7).to_raw(),
             [3.8, 4.799999999999999, 5.8, 6.8, 6.9, 7.1, 6.0, -3.4]
         );
     }
@@ -1372,9 +1447,8 @@ mod tests {
 
     #[test]
     fn rotate_around_axis() -> Result<(), Error> {
-        let mut quat2_a =
-            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0));
-        quat2_a.normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0)).normalize();
 
         let result = quat2_a.rotate_around_axis(&(1.0, 4.0, 2.0), 5.0);
 
@@ -1397,9 +1471,8 @@ mod tests {
 
     #[test]
     fn rotate_x() {
-        let mut quat2_a =
-            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0));
-        quat2_a.normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0)).normalize();
 
         let result = quat2_a.rotate_x(5.0);
 
@@ -1420,9 +1493,8 @@ mod tests {
 
     #[test]
     fn rotate_y() {
-        let mut quat2_a =
-            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0));
-        quat2_a.normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0)).normalize();
 
         let result = quat2_a.rotate_y(5.0);
 
@@ -1443,9 +1515,8 @@ mod tests {
 
     #[test]
     fn rotate_z() {
-        let mut quat2_a =
-            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0));
-        quat2_a.normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0)).normalize();
 
         let result = quat2_a.rotate_y(5.0);
 
@@ -1496,9 +1567,8 @@ mod tests {
 
     #[test]
     fn translate() {
-        let mut quat2_a =
-            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0));
-        quat2_a.normalize();
+        let quat2_a =
+            Quat2::from_rotation_translation(&(1.0, 2.0, 3.0, 4.0), &(-5.0, 4.0, 10.0)).normalize();
 
         let result = quat2_a.translate(&(1.0, 1.0, -1.0));
 

@@ -9,6 +9,8 @@ use num_traits::Float;
 use crate::{epsilon, mat3::AsMat3, mat4::AsMat4, quat::AsQuat};
 
 pub trait AsVec3<T: Float> {
+    fn from_values(x: T, y: T, z: T) -> Self;
+
     fn x(&self) -> T;
 
     fn y(&self) -> T;
@@ -61,61 +63,75 @@ pub trait AsVec3<T: Float> {
     }
 
     #[inline(always)]
-    fn ceil(&mut self) -> &mut Self {
+    fn ceil(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.ceil()).set_y(y.ceil()).set_z(z.ceil())
+        Self::from_values(x.ceil(), y.ceil(), z.ceil())
     }
 
     #[inline(always)]
-    fn floor(&mut self) -> &mut Self {
+    fn floor(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.floor()).set_y(y.floor()).set_z(z.floor())
+        Self::from_values(x.floor(), y.floor(), z.floor())
     }
 
     #[inline(always)]
-    fn round(&mut self) -> &mut Self {
+    fn round(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.round()).set_y(y.round()).set_z(z.round())
+        Self::from_values(x.round(), y.round(), z.round())
     }
 
     #[inline(always)]
-    fn min<V: AsVec3<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+    fn min<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.min(b.x()))
-            .set_y(y.min(b.y()))
-            .set_z(z.min(b.z()))
+        Self::from_values(x.min(b.x()), y.min(b.y()), z.min(b.z()))
     }
 
     #[inline(always)]
-    fn max<V: AsVec3<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+    fn max<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.max(b.x()))
-            .set_y(y.max(b.y()))
-            .set_z(z.max(b.z()))
+        Self::from_values(x.max(b.x()), y.max(b.y()), z.max(b.z()))
     }
 
     #[inline(always)]
-    fn scale(&mut self, scale: T) -> &mut Self {
+    fn scale(&self, scale: T) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x * scale).set_y(y * scale).set_z(z * scale)
+        Self::from_values(x * scale, y * scale, z * scale)
     }
 
     #[inline(always)]
@@ -145,27 +161,34 @@ pub trait AsVec3<T: Float> {
     }
 
     #[inline(always)]
-    fn negate(&mut self) -> &mut Self {
+    fn negate(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x.neg()).set_y(y.neg()).set_z(z.neg())
+        Self::from_values(x.neg(), y.neg(), z.neg())
     }
 
     #[inline(always)]
-    fn inverse(&mut self) -> &mut Self {
+    fn inverse(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(T::one() / x)
-            .set_y(T::one() / y)
-            .set_z(T::one() / z)
+        Self::from_values(T::one() / x, T::one() / y, T::one() / z)
     }
 
     #[inline(always)]
-    fn normalize(&mut self) -> &mut Self {
+    fn normalize(&self) -> Self
+    where
+        Self: Sized,
+    {
         let mut len = self.squared_length();
         if len > T::zero() {
             len = T::one() / len.sqrt();
@@ -175,7 +198,7 @@ pub trait AsVec3<T: Float> {
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x * len).set_y(y * len).set_z(z * len)
+        Self::from_values(x * len, y * len, z * len)
     }
 
     #[inline(always)]
@@ -184,7 +207,10 @@ pub trait AsVec3<T: Float> {
     }
 
     #[inline(always)]
-    fn cross<V: AsVec3<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+    fn cross<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
+    where
+        Self: Sized,
+    {
         let ax = self.x();
         let ay = self.y();
         let az = self.z();
@@ -192,24 +218,30 @@ pub trait AsVec3<T: Float> {
         let by = b.y();
         let bz = b.z();
 
-        self.set_x(ay * bz - az * by)
-            .set_y(az * bx - ax * bz)
-            .set_z(ax * by - ay * bx)
+        Self::from_values(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
     }
 
     #[inline(always)]
-    fn lerp<V: AsVec3<T> + ?Sized>(&mut self, b: &V, t: T) -> &mut Self {
+    fn lerp<V: AsVec3<T> + ?Sized>(&self, b: &V, t: T) -> Self
+    where
+        Self: Sized,
+    {
         let ax = self.x();
         let ay = self.y();
         let az = self.z();
 
-        self.set_x(ax + t * (b.x() - ax))
-            .set_y(ay + t * (b.y() - ay))
-            .set_z(az + t * (b.z() - az))
+        Self::from_values(
+            ax + t * (b.x() - ax),
+            ay + t * (b.y() - ay),
+            az + t * (b.z() - az),
+        )
     }
 
     #[inline(always)]
-    fn slerp<V: AsVec3<T> + ?Sized>(&mut self, b: &V, t: T) -> &mut Self {
+    fn slerp<V: AsVec3<T> + ?Sized>(&self, b: &V, t: T) -> Self
+    where
+        Self: Sized,
+    {
         let angle = self.dot(b).max(-T::one()).min(T::one()).acos();
         let sin_total = angle.sin();
 
@@ -220,14 +252,18 @@ pub trait AsVec3<T: Float> {
         let ay = self.y();
         let az = self.z();
 
-        self.set_x(ratio_a * ax + ratio_b * b.x())
-            .set_y(ratio_a * ay + ratio_b * b.y())
-            .set_z(ratio_a * az + ratio_b * b.z())
+        Self::from_values(
+            ratio_a * ax + ratio_b * b.x(),
+            ratio_a * ay + ratio_b * b.y(),
+            ratio_a * az + ratio_b * b.z(),
+        )
     }
 
     #[inline(always)]
-    fn hermite<V1, V2, V3>(&mut self, b: &V1, c: &V2, d: &V3, t: T) -> &mut Self
+    fn hermite<V1, V2, V3>(&self, b: &V1, c: &V2, d: &V3, t: T) -> Self
     where
+        Self: Sized,
+
         V1: AsVec3<T> + ?Sized,
         V2: AsVec3<T> + ?Sized,
         V3: AsVec3<T> + ?Sized,
@@ -243,14 +279,17 @@ pub trait AsVec3<T: Float> {
         let ay = self.y();
         let az = self.z();
 
-        self.set_x(ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4)
-            .set_y(ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4)
-            .set_z(az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4)
+        Self::from_values(
+            ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
+            ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
+            az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
+        )
     }
 
     #[inline(always)]
-    fn bezier<V1, V2, V3>(&mut self, b: &V1, c: &V2, d: &V3, t: T) -> &mut Self
+    fn bezier<V1, V2, V3>(&self, b: &V1, c: &V2, d: &V3, t: T) -> Self
     where
+        Self: Sized,
         V1: AsVec3<T> + ?Sized,
         V2: AsVec3<T> + ?Sized,
         V3: AsVec3<T> + ?Sized,
@@ -267,24 +306,34 @@ pub trait AsVec3<T: Float> {
         let ay = self.y();
         let az = self.z();
 
-        self.set_x(ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4)
-            .set_y(ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4)
-            .set_z(az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4)
+        Self::from_values(
+            ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
+            ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
+            az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
+        )
     }
 
     #[inline(always)]
-    fn transform_mat3<M: AsMat3<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat3<M: AsMat3<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
 
-        self.set_x(x * m.m00() + y * m.m10() + z * m.m20())
-            .set_y(x * m.m01() + y * m.m11() + z * m.m21())
-            .set_z(x * m.m02() + y * m.m12() + z * m.m22())
+        Self::from_values(
+            x * m.m00() + y * m.m10() + z * m.m20(),
+            x * m.m01() + y * m.m11() + z * m.m21(),
+            x * m.m02() + y * m.m12() + z * m.m22(),
+        )
     }
 
     #[inline(always)]
-    fn transform_quat<Q: AsQuat<T> + ?Sized>(&mut self, q: &Q) -> &mut Self {
+    fn transform_quat<Q: AsQuat<T> + ?Sized>(&self, q: &Q) -> Self
+    where
+        Self: Sized,
+    {
         // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
         let qx = q.x();
         let qy = q.y();
@@ -313,13 +362,14 @@ pub trait AsVec3<T: Float> {
         uuvz = uuvz * T::from(2.0).unwrap();
         // return vec3.add(out, a, vec3.add(out, uv, uuv));
 
-        self.set_x(x + uvx + uuvx)
-            .set_y(y + uvy + uuvy)
-            .set_z(z + uvz + uuvz)
+        Self::from_values(x + uvx + uuvx, y + uvy + uuvy, z + uvz + uuvz)
     }
 
     #[inline(always)]
-    fn transform_mat4<M: AsMat4<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat4<M: AsMat4<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
         let z = self.z();
@@ -330,13 +380,18 @@ pub trait AsVec3<T: Float> {
         let mut w = m03 * x + m07 * y + m11 * z + m15;
         w = if w == T::zero() { T::one() } else { w };
 
-        self.set_x((m00 * x + m04 * y + m08 * z + m12) / w)
-            .set_y((m01 * x + m05 * y + m09 * z + m13) / w)
-            .set_z((m02 * x + m06 * y + m10 * z + m14) / w)
+        Self::from_values(
+            (m00 * x + m04 * y + m08 * z + m12) / w,
+            (m01 * x + m05 * y + m09 * z + m13) / w,
+            (m02 * x + m06 * y + m10 * z + m14) / w,
+        )
     }
 
     #[inline(always)]
-    fn rotate_x<V: AsVec3<T> + ?Sized>(&mut self, b: &V, rad: T) -> &mut Self {
+    fn rotate_x<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
 
@@ -350,13 +405,14 @@ pub trait AsVec3<T: Float> {
         r[1] = p[1] * rad.cos() - p[2] * rad.sin();
         r[2] = p[1] * rad.sin() + p[2] * rad.cos();
 
-        self.set_x(r[0] + b.x())
-            .set_y(r[1] + b.y())
-            .set_z(r[2] + b.z())
+        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
     }
 
     #[inline(always)]
-    fn rotate_y<V: AsVec3<T> + ?Sized>(&mut self, b: &V, rad: T) -> &mut Self {
+    fn rotate_y<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
 
@@ -370,13 +426,14 @@ pub trait AsVec3<T: Float> {
         r[1] = p[1];
         r[2] = p[2] * rad.cos() - p[0] * rad.sin();
 
-        self.set_x(r[0] + b.x())
-            .set_y(r[1] + b.y())
-            .set_z(r[2] + b.z())
+        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
     }
 
     #[inline(always)]
-    fn rotate_z<V: AsVec3<T> + ?Sized>(&mut self, b: &V, rad: T) -> &mut Self {
+    fn rotate_z<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let mut p = [T::zero(); 3];
         let mut r = [T::zero(); 3];
 
@@ -390,9 +447,7 @@ pub trait AsVec3<T: Float> {
         r[1] = p[0] * rad.sin() + p[1] * rad.cos();
         r[2] = p[2];
 
-        self.set_x(r[0] + b.x())
-            .set_y(r[1] + b.y())
-            .set_z(r[2] + b.z())
+        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
     }
 
     #[inline(always)]
@@ -430,6 +485,11 @@ pub trait AsVec3<T: Float> {
 
 impl<T: Float> AsVec3<T> for [T; 3] {
     #[inline(always)]
+    fn from_values(x: T, y: T, z: T) -> Self {
+        [x, y, z]
+    }
+
+    #[inline(always)]
     fn x(&self) -> T {
         self[0]
     }
@@ -464,6 +524,11 @@ impl<T: Float> AsVec3<T> for [T; 3] {
 }
 
 impl<T: Float> AsVec3<T> for (T, T, T) {
+    #[inline(always)]
+    fn from_values(x: T, y: T, z: T) -> Self {
+        (x, y, z)
+    }
+
     #[inline(always)]
     fn x(&self) -> T {
         self.0
@@ -508,11 +573,6 @@ impl<T: Float> Vec3<T> {
     }
 
     #[inline(always)]
-    pub fn from_values(x: T, y: T, z: T) -> Self {
-        Self([x, y, z])
-    }
-
-    #[inline(always)]
     pub fn from_slice(slice: &[T; 3]) -> Self {
         Self(slice.clone())
     }
@@ -524,6 +584,11 @@ impl<T: Float> Vec3<T> {
 }
 
 impl<T: Float> AsVec3<T> for Vec3<T> {
+    #[inline(always)]
+    fn from_values(x: T, y: T, z: T) -> Self {
+        Self([x, y, z])
+    }
+
     #[inline(always)]
     fn x(&self) -> T {
         self.0[0]
@@ -778,9 +843,9 @@ mod tests {
 
     use crate::{
         error::Error,
-        mat3::Mat3,
-        mat4::Mat4,
-        quat::Quat,
+        mat3::{AsMat3, Mat3},
+        mat4::{AsMat4, Mat4},
+        quat::{AsQuat, Quat},
         vec3::{AsVec3, Vec3},
     };
 
@@ -843,28 +908,37 @@ mod tests {
 
     #[test]
     fn min() -> Result<(), Error> {
-        let mut vec_a = Vec3::from_values(1.0, 3.0, 1.0);
-        assert_eq!(vec_a.min(&[3.0, 1.0, 3.0]).to_raw(), [1.0, 1.0, 1.0]);
+        assert_eq!(
+            Vec3::from_values(1.0, 3.0, 1.0)
+                .min(&[3.0, 1.0, 3.0])
+                .to_raw(),
+            [1.0, 1.0, 1.0]
+        );
 
         Ok(())
     }
 
     #[test]
     fn max() -> Result<(), Error> {
-        let mut vec_a = Vec3::from_values(1.0, 3.0, 1.0);
-        assert_eq!(vec_a.max(&[3.0, 1.0, 3.0]).to_raw(), [3.0, 3.0, 3.0]);
+        assert_eq!(
+            Vec3::from_values(1.0, 3.0, 1.0)
+                .max(&[3.0, 1.0, 3.0])
+                .to_raw(),
+            [3.0, 3.0, 3.0]
+        );
 
         Ok(())
     }
 
     #[test]
     fn round() -> Result<(), Error> {
-        let mut vec = Vec3::from_values(
+        let vec = Vec3::from_values(
             std::f64::consts::E,
             std::f64::consts::PI,
             std::f64::consts::SQRT_2,
-        );
-        assert_eq!(vec.round().to_raw(), [3.0, 3.0, 1.0]);
+        )
+        .round();
+        assert_eq!(vec.to_raw(), [3.0, 3.0, 1.0]);
 
         Ok(())
     }
@@ -901,7 +975,7 @@ mod tests {
 
     #[test]
     fn negate() {
-        assert_eq!(vec_a().clone().negate().to_raw(), [-1.0, -2.0, -3.0]);
+        assert_eq!(vec_a().negate().to_raw(), [-1.0, -2.0, -3.0]);
     }
 
     #[test]
@@ -919,22 +993,22 @@ mod tests {
 
     #[test]
     fn cross() {
-        assert_eq!(vec_a().clone().cross(vec_b()).to_raw(), [-3.0, 6.0, -3.0]);
+        assert_eq!(vec_a().cross(vec_b()).to_raw(), [-3.0, 6.0, -3.0]);
     }
 
     #[test]
     fn lerp() {
-        assert_eq!(vec_a().clone().lerp(vec_b(), 0.5).to_raw(), [2.5, 3.5, 4.5]);
+        assert_eq!(vec_a().lerp(vec_b(), 0.5).to_raw(), [2.5, 3.5, 4.5]);
     }
 
     #[test]
     fn slerp() {
         let vec_a = Vec3::from_values(1.0, 0.0, 0.0);
         let vec_b = [0.0, 1.0, 0.0];
-        assert_eq!(vec_a.clone().slerp(&vec_b, 0.0).to_raw(), [1.0, 0.0, 0.0]);
-        assert_eq!(vec_a.clone().slerp(&vec_b, 1.0).to_raw(), [0.0, 1.0, 0.0]);
+        assert_eq!(vec_a.slerp(&vec_b, 0.0).to_raw(), [1.0, 0.0, 0.0]);
+        assert_eq!(vec_a.slerp(&vec_b, 1.0).to_raw(), [0.0, 1.0, 0.0]);
         assert_eq!(
-            vec_a.clone().slerp(&vec_b, 0.5).to_raw(),
+            vec_a.slerp(&vec_b, 0.5).to_raw(),
             [0.7071067811865475, 0.7071067811865475, 0.0]
         );
     }
@@ -944,19 +1018,13 @@ mod tests {
         let mat = Mat4::from_values(
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
-        assert_eq!(
-            vec_a().clone().transform_mat4(&mat).to_raw(),
-            [1.0, 2.0, 3.0]
-        );
+        assert_eq!(vec_a().transform_mat4(&mat).to_raw(), [1.0, 2.0, 3.0]);
     }
 
     #[test]
     fn transform_mat3() {
         let mat = Mat3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        assert_eq!(
-            vec_a().clone().transform_mat3(&mat).to_raw(),
-            [1.0, 2.0, 3.0]
-        );
+        assert_eq!(vec_a().transform_mat3(&mat).to_raw(), [1.0, 2.0, 3.0]);
     }
 
     #[test]
@@ -967,10 +1035,7 @@ mod tests {
             0.5477225570103322,
             0.730296742680443,
         );
-        assert_eq!(
-            vec_a().clone().transform_quat(&quat).to_raw(),
-            [1.0, 2.0, 3.0]
-        );
+        assert_eq!(vec_a().transform_quat(&quat).to_raw(), [1.0, 2.0, 3.0]);
     }
 
     #[test]
@@ -1057,20 +1122,14 @@ mod tests {
         let vec_a = Vec3::from_values(0.0, 1.0, 0.0);
         let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_x(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_x(&vec_b, std::f64::consts::PI).to_raw(),
             [0.0, -1.0, 1.2246467991473532e-16]
         );
 
         let vec_a = Vec3::from_values(2.0, 7.0, 0.0);
         let vec_b = Vec3::from_values(2.0, 5.0, 0.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_x(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_x(&vec_b, std::f64::consts::PI).to_raw(),
             [2.0, 3.0, 2.4492935982947064e-16]
         );
     }
@@ -1080,20 +1139,14 @@ mod tests {
         let vec_a = Vec3::from_values(1.0, 0.0, 0.0);
         let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_y(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_y(&vec_b, std::f64::consts::PI).to_raw(),
             [-1.0, 0.0, -1.2246467991473532e-16]
         );
 
         let vec_a = Vec3::from_values(-2.0, 3.0, 10.0);
         let vec_b = Vec3::from_values(-4.0, 3.0, 10.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_y(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_y(&vec_b, std::f64::consts::PI).to_raw(),
             [-6.0, 3.0, 10.0]
         );
     }
@@ -1103,20 +1156,14 @@ mod tests {
         let vec_a = Vec3::from_values(0.0, 1.0, 0.0);
         let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_z(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_z(&vec_b, std::f64::consts::PI).to_raw(),
             [-1.2246467991473532e-16, -1.0, 0.0]
         );
 
         let vec_a = Vec3::from_values(0.0, 6.0, -5.0);
         let vec_b = Vec3::from_values(0.0, 0.0, -5.0);
         assert_eq!(
-            vec_a
-                .clone()
-                .rotate_z(&vec_b, std::f64::consts::PI)
-                .to_raw(),
+            vec_a.rotate_z(&vec_b, std::f64::consts::PI).to_raw(),
             [-7.347880794884119e-16, -6.0, -5.0]
         );
     }

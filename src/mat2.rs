@@ -8,6 +8,8 @@ use num_traits::Float;
 use crate::{epsilon, error::Error, vec2::AsVec2};
 
 pub trait AsMat2<T: Float> {
+    fn from_values(m00: T, m01: T, m10: T, m11: T) -> Self;
+
     fn m00(&self) -> T;
 
     fn m01(&self) -> T;
@@ -79,17 +81,23 @@ pub trait AsMat2<T: Float> {
     }
 
     #[inline(always)]
-    fn transpose(&mut self) -> &mut Self {
+    fn transpose(&self) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.m00();
         let a1 = self.m01();
         let a2 = self.m10();
         let a3 = self.m11();
 
-        self.set_m00(a0).set_m01(a2).set_m10(a1).set_m11(a3)
+        Self::from_values(a0, a2, a1, a3)
     }
 
     #[inline(always)]
-    fn invert(&mut self) -> Result<&mut Self, Error> {
+    fn invert(&self) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let a0 = self.m00();
         let a1 = self.m01();
         let a2 = self.m10();
@@ -103,21 +111,20 @@ pub trait AsMat2<T: Float> {
         }
         det = T::one() / det;
 
-        Ok(self
-            .set_m00(a3 * det)
-            .set_m01(-a1 * det)
-            .set_m10(-a2 * det)
-            .set_m11(a0 * det))
+        Ok(Self::from_values(a3 * det, -a1 * det, -a2 * det, a0 * det))
     }
 
     #[inline(always)]
-    fn adjoint(&mut self) -> &mut Self {
+    fn adjoint(&self) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.m00();
         let a1 = self.m01();
         let a2 = self.m10();
         let a3 = self.m11();
 
-        self.set_m00(a3).set_m01(-a1).set_m10(-a2).set_m11(a0)
+        Self::from_values(a3, -a1, -a2, a0)
     }
 
     #[inline(always)]
@@ -131,7 +138,10 @@ pub trait AsMat2<T: Float> {
     }
 
     #[inline(always)]
-    fn scale<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn scale<V: AsVec2<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.m00();
         let a1 = self.m01();
         let a2 = self.m10();
@@ -140,14 +150,14 @@ pub trait AsMat2<T: Float> {
         let v0 = v.x();
         let v1 = v.y();
 
-        self.set_m00(a0 * v0)
-            .set_m01(a1 * v0)
-            .set_m10(a2 * v1)
-            .set_m11(a3 * v1)
+        Self::from_values(a0 * v0, a1 * v0, a2 * v1, a3 * v1)
     }
 
     #[inline(always)]
-    fn rotate(&mut self, rad: T) -> &mut Self {
+    fn rotate(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.m00();
         let a1 = self.m01();
         let a2 = self.m10();
@@ -156,10 +166,12 @@ pub trait AsMat2<T: Float> {
         let s = rad.sin();
         let c = rad.cos();
 
-        self.set_m00(a0 * c + a2 * s)
-            .set_m01(a1 * c + a3 * s)
-            .set_m10(a0 * -s + a2 * c)
-            .set_m11(a1 * -s + a3 * c)
+        Self::from_values(
+            a0 * c + a2 * s,
+            a1 * c + a3 * s,
+            a0 * -s + a2 * c,
+            a1 * -s + a3 * c,
+        )
     }
 
     #[inline(always)]
@@ -214,6 +226,11 @@ pub trait AsMat2<T: Float> {
 
 impl<T: Float> AsMat2<T> for [T; 4] {
     #[inline(always)]
+    fn from_values(m00: T, m01: T, m10: T, m11: T) -> Self {
+        [m00, m01, m10, m11]
+    }
+
+    #[inline(always)]
     fn m00(&self) -> T {
         self[0]
     }
@@ -259,6 +276,11 @@ impl<T: Float> AsMat2<T> for [T; 4] {
 }
 
 impl<T: Float> AsMat2<T> for (T, T, T, T) {
+    #[inline(always)]
+    fn from_values(m00: T, m01: T, m10: T, m11: T) -> Self {
+        (m00, m01, m10, m11)
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self.0
@@ -319,11 +341,6 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_values(m00: T, m01: T, m10: T, m11: T) -> Self {
-        Self([m00, m01, m10, m11])
-    }
-
-    #[inline(always)]
     pub fn from_slice(slice: &[T; 4]) -> Self {
         Self(slice.clone())
     }
@@ -347,6 +364,11 @@ impl<T: Float> Mat2<T> {
 }
 
 impl<T: Float> AsMat2<T> for Mat2<T> {
+    #[inline(always)]
+    fn from_values(m00: T, m01: T, m10: T, m11: T) -> Self {
+        Self([m00, m01, m10, m11])
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self.0[0]
@@ -533,18 +555,18 @@ mod tests {
 
     #[test]
     fn transpose() {
-        assert_eq!(mat_a().clone().transpose().to_raw(), [1.0, 3.0, 2.0, 4.0]);
+        assert_eq!(mat_a().transpose().to_raw(), [1.0, 3.0, 2.0, 4.0]);
     }
 
     #[test]
     fn invert() -> Result<(), Error> {
-        assert_eq!(mat_a().clone().invert()?.to_raw(), [-2.0, 1.0, 1.5, -0.5]);
+        assert_eq!(mat_a().invert()?.to_raw(), [-2.0, 1.0, 1.5, -0.5]);
         Ok(())
     }
 
     #[test]
     fn adjoint() {
-        assert_eq!(mat_a().clone().adjoint().to_raw(), [4.0, -2.0, -3.0, 1.0]);
+        assert_eq!(mat_a().adjoint().to_raw(), [4.0, -2.0, -3.0, 1.0]);
     }
 
     #[test]
@@ -554,10 +576,7 @@ mod tests {
 
     #[test]
     fn scale() {
-        assert_eq!(
-            mat_a().clone().scale(&(2.0, 3.0)).to_raw(),
-            [2.0, 4.0, 9.0, 12.0]
-        );
+        assert_eq!(mat_a().scale(&(2.0, 3.0)).to_raw(), [2.0, 4.0, 9.0, 12.0]);
     }
 
     #[test]
@@ -645,7 +664,7 @@ mod tests {
     #[test]
     fn rotate() {
         assert_eq!(
-            mat_a().clone().rotate(std::f64::consts::PI * 0.5).to_raw(),
+            mat_a().rotate(std::f64::consts::PI * 0.5).to_raw(),
             [3.0, 4.0, -0.9999999999999998, -1.9999999999999998]
         );
     }

@@ -8,6 +8,8 @@ use num_traits::Float;
 use crate::{epsilon, error::Error, mat2d::AsMat2d, mat4::AsMat4, quat::AsQuat, vec2::AsVec2};
 
 pub trait AsMat3<T: Float> {
+    fn from_values(m00: T, m01: T, m02: T, m10: T, m11: T, m12: T, m20: T, m21: T, m22: T) -> Self;
+
     fn m00(&self) -> T;
 
     fn m01(&self) -> T;
@@ -157,7 +159,10 @@ pub trait AsMat3<T: Float> {
     }
 
     #[inline(always)]
-    fn transpose(&mut self) -> &mut Self {
+    fn transpose(&self) -> Self
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -168,19 +173,14 @@ pub trait AsMat3<T: Float> {
         let m21 = self.m21();
         let m22 = self.m22();
 
-        self.set_m00(a00)
-            .set_m01(m10)
-            .set_m02(m20)
-            .set_m10(a01)
-            .set_m11(m11)
-            .set_m12(m21)
-            .set_m20(a02)
-            .set_m21(m12)
-            .set_m22(m22)
+        Self::from_values(a00, m10, m20, a01, m11, m21, a02, m12, m22)
     }
 
     #[inline(always)]
-    fn invert(&mut self) -> Result<&mut Self, Error> {
+    fn invert(&self) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -203,20 +203,24 @@ pub trait AsMat3<T: Float> {
         }
         det = T::one() / det;
 
-        Ok(self
-            .set_m00(b01 * det)
-            .set_m01((-a22 * a01 + a02 * a21) * det)
-            .set_m02((a12 * a01 - a02 * a11) * det)
-            .set_m10(b11 * det)
-            .set_m11((a22 * a00 - a02 * a20) * det)
-            .set_m12((-a12 * a00 + a02 * a10) * det)
-            .set_m20(b21 * det)
-            .set_m21((-a21 * a00 + a01 * a20) * det)
-            .set_m22((a11 * a00 - a01 * a10) * det))
+        Ok(Self::from_values(
+            b01 * det,
+            (-a22 * a01 + a02 * a21) * det,
+            (a12 * a01 - a02 * a11) * det,
+            b11 * det,
+            (a22 * a00 - a02 * a20) * det,
+            (-a12 * a00 + a02 * a10) * det,
+            b21 * det,
+            (-a21 * a00 + a01 * a20) * det,
+            (a11 * a00 - a01 * a10) * det,
+        ))
     }
 
     #[inline(always)]
-    fn adjoint(&mut self) -> &mut Self {
+    fn adjoint(&self) -> Self
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -227,15 +231,17 @@ pub trait AsMat3<T: Float> {
         let a21 = self.m21();
         let a22 = self.m22();
 
-        self.set_m00(a11 * a22 - a12 * a21)
-            .set_m01(a02 * a21 - a01 * a22)
-            .set_m02(a01 * a12 - a02 * a11)
-            .set_m10(a12 * a20 - a10 * a22)
-            .set_m11(a00 * a22 - a02 * a20)
-            .set_m12(a02 * a10 - a00 * a12)
-            .set_m20(a10 * a21 - a11 * a20)
-            .set_m21(a01 * a20 - a00 * a21)
-            .set_m22(a00 * a11 - a01 * a10)
+        Self::from_values(
+            a11 * a22 - a12 * a21,
+            a02 * a21 - a01 * a22,
+            a01 * a12 - a02 * a11,
+            a12 * a20 - a10 * a22,
+            a00 * a22 - a02 * a20,
+            a02 * a10 - a00 * a12,
+            a10 * a21 - a11 * a20,
+            a01 * a20 - a00 * a21,
+            a00 * a11 - a01 * a10,
+        )
     }
 
     #[inline(always)]
@@ -256,7 +262,10 @@ pub trait AsMat3<T: Float> {
     }
 
     #[inline(always)]
-    fn translate<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn translate<V: AsVec2<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = v.x();
         let y = v.y();
 
@@ -270,19 +279,24 @@ pub trait AsMat3<T: Float> {
         let a21 = self.m21();
         let a22 = self.m22();
 
-        self.set_m00(a00)
-            .set_m01(a01)
-            .set_m02(a02)
-            .set_m10(a10)
-            .set_m11(a11)
-            .set_m12(a12)
-            .set_m20(x * a00 + y * a10 + a20)
-            .set_m21(x * a01 + y * a11 + a21)
-            .set_m22(x * a02 + y * a12 + a22)
+        Self::from_values(
+            a00,
+            a01,
+            a02,
+            a10,
+            a11,
+            a12,
+            x * a00 + y * a10 + a20,
+            x * a01 + y * a11 + a21,
+            x * a02 + y * a12 + a22,
+        )
     }
 
     #[inline(always)]
-    fn scale<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn scale<V: AsVec2<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = v.x();
         let y = v.y();
 
@@ -296,19 +310,24 @@ pub trait AsMat3<T: Float> {
         let a21 = self.m21();
         let a22 = self.m22();
 
-        self.set_m00(x * a00)
-            .set_m01(x * a01)
-            .set_m02(x * a02)
-            .set_m10(y * a10)
-            .set_m11(y * a11)
-            .set_m12(y * a12)
-            .set_m20(a20)
-            .set_m21(a21)
-            .set_m22(a22)
+        Self::from_values(
+            x * a00,
+            x * a01,
+            x * a02,
+            y * a10,
+            y * a11,
+            y * a12,
+            a20,
+            a21,
+            a22,
+        )
     }
 
     #[inline(always)]
-    fn rotate(&mut self, rad: T) -> &mut Self {
+    fn rotate(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -322,15 +341,17 @@ pub trait AsMat3<T: Float> {
         let s = rad.sin();
         let c = rad.cos();
 
-        self.set_m00(c * a00 + s * a10)
-            .set_m01(c * a01 + s * a11)
-            .set_m02(c * a02 + s * a12)
-            .set_m10(c * a10 - s * a00)
-            .set_m11(c * a11 - s * a01)
-            .set_m12(c * a12 - s * a02)
-            .set_m20(a20)
-            .set_m21(a21)
-            .set_m22(a22)
+        Self::from_values(
+            c * a00 + s * a10,
+            c * a01 + s * a11,
+            c * a02 + s * a12,
+            c * a10 - s * a00,
+            c * a11 - s * a01,
+            c * a12 - s * a02,
+            a20,
+            a21,
+            a22,
+        )
     }
 
     #[inline(always)]
@@ -395,6 +416,11 @@ pub trait AsMat3<T: Float> {
 }
 
 impl<T: Float> AsMat3<T> for [T; 9] {
+    #[inline(always)]
+    fn from_values(m00: T, m01: T, m02: T, m10: T, m11: T, m12: T, m20: T, m21: T, m22: T) -> Self {
+        [m00, m01, m02, m10, m11, m12, m20, m21, m22]
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self[0]
@@ -496,6 +522,11 @@ impl<T: Float> AsMat3<T> for [T; 9] {
 }
 
 impl<T: Float> AsMat3<T> for (T, T, T, T, T, T, T, T, T) {
+    #[inline(always)]
+    fn from_values(m00: T, m01: T, m02: T, m10: T, m11: T, m12: T, m20: T, m21: T, m22: T) -> Self {
+        (m00, m01, m02, m10, m11, m12, m20, m21, m22)
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self.0
@@ -633,21 +664,6 @@ impl<T: Float> Mat3<T> {
             mat.m21(),
             mat.m22(),
         ])
-    }
-
-    #[inline(always)]
-    pub fn from_values(
-        m00: T,
-        m01: T,
-        m02: T,
-        m10: T,
-        m11: T,
-        m12: T,
-        m20: T,
-        m21: T,
-        m22: T,
-    ) -> Self {
-        Self([m00, m01, m02, m10, m11, m12, m20, m21, m22])
     }
 
     #[inline(always)]
@@ -825,6 +841,11 @@ impl<T: Float> Mat3<T> {
 }
 
 impl<T: Float> AsMat3<T> for Mat3<T> {
+    #[inline(always)]
+    fn from_values(m00: T, m01: T, m02: T, m10: T, m11: T, m12: T, m20: T, m21: T, m22: T) -> Self {
+        Self([m00, m01, m02, m10, m11, m12, m20, m21, m22])
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self.0[0]
@@ -1061,7 +1082,8 @@ mod tests {
         error::Error,
         mat3::AsMat3,
         mat4::{AsMat4, Mat4},
-        quat::Quat, vec3::AsVec3,
+        quat::{AsQuat, Quat},
+        vec3::AsVec3,
     };
 
     use super::Mat3;
@@ -1143,7 +1165,7 @@ mod tests {
     #[test]
     fn transpose() {
         assert_eq!(
-            mat_a().clone().transpose().to_raw(),
+            mat_a().transpose().to_raw(),
             [1.0, 0.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 1.0]
         );
     }
@@ -1151,7 +1173,7 @@ mod tests {
     #[test]
     fn invert() -> Result<(), Error> {
         assert_eq!(
-            mat_a().clone().invert()?.to_raw(),
+            mat_a().invert()?.to_raw(),
             [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -2.0, 1.0]
         );
 
@@ -1161,7 +1183,7 @@ mod tests {
     #[test]
     fn adjoint() {
         assert_eq!(
-            mat_a().clone().adjoint().to_raw(),
+            mat_a().adjoint().to_raw(),
             [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, -2.0, 1.0]
         );
     }
@@ -1281,8 +1303,8 @@ mod tests {
     }
     #[test]
     fn normal_matrix_from_mat4() -> Result<(), Error> {
-        let mut mat4 = Mat4::new_identity();
-        mat4.translate(&(2.0, 4.0, 6.0))
+        let mat4 = Mat4::new_identity()
+            .translate(&(2.0, 4.0, 6.0))
             .rotate_x(std::f64::consts::PI / 2.0);
 
         assert_eq!(
@@ -1300,7 +1322,7 @@ mod tests {
             ]
         );
 
-        mat4.scale(&(2.0, 3.0, 4.0));
+        let mat4 = mat4.scale(&(2.0, 3.0, 4.0));
 
         assert_eq!(
             Mat3::normal_matrix_from_mat4(&mat4)?.to_raw(),

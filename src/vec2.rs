@@ -6,9 +6,18 @@ use std::{
 use half::f16;
 use num_traits::Float;
 
-use crate::{epsilon, mat2::AsMat2, mat2d::AsMat2d, mat3::AsMat3, mat4::AsMat4, vec3::Vec3};
+use crate::{
+    epsilon,
+    mat2::AsMat2,
+    mat2d::AsMat2d,
+    mat3::AsMat3,
+    mat4::AsMat4,
+    vec3::{AsVec3, Vec3},
+};
 
 pub trait AsVec2<T: Float> {
+    fn from_values(x: T, y: T) -> Self;
+
     fn x(&self) -> T;
 
     fn y(&self) -> T;
@@ -53,51 +62,69 @@ pub trait AsVec2<T: Float> {
     }
 
     #[inline(always)]
-    fn ceil(&mut self) -> &mut Self {
+    fn ceil(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.ceil()).set_y(y.ceil())
+        Self::from_values(x.ceil(), y.ceil())
     }
 
     #[inline(always)]
-    fn floor(&mut self) -> &mut Self {
+    fn floor(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.floor()).set_y(y.floor())
+        Self::from_values(x.floor(), y.floor())
     }
 
     #[inline(always)]
-    fn round(&mut self) -> &mut Self {
+    fn round(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.round()).set_y(y.round())
+        Self::from_values(x.round(), y.round())
     }
 
     #[inline(always)]
-    fn min<V: AsVec2<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+    fn min<V: AsVec2<T> + ?Sized>(&self, b: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.min(b.x())).set_y(y.min(b.y()))
+        Self::from_values(x.min(b.x()), y.min(b.y()))
     }
 
     #[inline(always)]
-    fn max<V: AsVec2<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
+    fn max<V: AsVec2<T> + ?Sized>(&self, b: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.max(b.x())).set_y(y.max(b.y()))
+        Self::from_values(x.max(b.x()), y.max(b.y()))
     }
 
     #[inline(always)]
-    fn scale(&mut self, scale: T) -> &mut Self {
+    fn scale(&self, scale: T) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x * scale).set_y(y * scale)
+        Self::from_values(x * scale, y * scale)
     }
 
     #[inline(always)]
@@ -125,23 +152,32 @@ pub trait AsVec2<T: Float> {
     }
 
     #[inline(always)]
-    fn negate(&mut self) -> &mut Self {
+    fn negate(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x.neg()).set_y(y.neg())
+        Self::from_values(x.neg(), y.neg())
     }
 
     #[inline(always)]
-    fn inverse(&mut self) -> &mut Self {
+    fn inverse(&self) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(T::one() / x).set_y(T::one() / y)
+        Self::from_values(T::one() / x, T::one() / y)
     }
 
     #[inline(always)]
-    fn normalize(&mut self) -> &mut Self {
+    fn normalize(&self) -> Self
+    where
+        Self: Sized,
+    {
         let mut len = self.squared_length();
         if len > T::zero() {
             len = T::one() / len.sqrt();
@@ -150,7 +186,7 @@ pub trait AsVec2<T: Float> {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(x * len).set_y(y * len)
+        Self::from_values(x * len, y * len)
     }
 
     #[inline(always)]
@@ -170,52 +206,74 @@ pub trait AsVec2<T: Float> {
     }
 
     #[inline(always)]
-    fn lerp<V: AsVec2<T> + ?Sized>(&mut self, b: &V, t: T) -> &mut Self {
+    fn lerp<V: AsVec2<T> + ?Sized>(&self, b: &V, t: T) -> Self
+    where
+        Self: Sized,
+    {
         let ax = self.x();
         let ay = self.y();
 
-        self.set_x(ax + t * (b.x() - ax))
-            .set_y(ay + t * (b.y() - ay))
+        Self::from_values(ax + t * (b.x() - ax), ay + t * (b.y() - ay))
     }
 
     #[inline(always)]
-    fn transform_mat2<M: AsMat2<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat2<M: AsMat2<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(m.m00() * x + m.m10() * y)
-            .set_y(m.m01() * x + m.m11() * y)
+        Self::from_values(m.m00() * x + m.m10() * y, m.m01() * x + m.m11() * y)
     }
 
     #[inline(always)]
-    fn transform_mat2d<M: AsMat2d<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat2d<M: AsMat2d<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(m.a() * x + m.c() * y + m.tx())
-            .set_y(m.b() * x + m.d() * y + m.ty())
+        Self::from_values(
+            m.a() * x + m.c() * y + m.tx(),
+            m.b() * x + m.d() * y + m.ty(),
+        )
     }
 
     #[inline(always)]
-    fn transform_mat3<M: AsMat3<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat3<M: AsMat3<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(m.m00() * x + m.m10() * y + m.m20())
-            .set_y(m.m01() * x + m.m11() * y + m.m21())
+        Self::from_values(
+            m.m00() * x + m.m10() * y + m.m20(),
+            m.m01() * x + m.m11() * y + m.m21(),
+        )
     }
 
     #[inline(always)]
-    fn transform_mat4<M: AsMat4<T> + ?Sized>(&mut self, m: &M) -> &mut Self {
+    fn transform_mat4<M: AsMat4<T> + ?Sized>(&self, m: &M) -> Self
+    where
+        Self: Sized,
+    {
         let x = self.x();
         let y = self.y();
 
-        self.set_x(m.m00() * x + m.m10() * y + m.m30())
-            .set_y(m.m01() * x + m.m11() * y + m.m31())
+        Self::from_values(
+            m.m00() * x + m.m10() * y + m.m30(),
+            m.m01() * x + m.m11() * y + m.m31(),
+        )
     }
 
     #[inline(always)]
-    fn rotate<V: AsVec2<T> + ?Sized>(&mut self, b: &V, rad: T) -> &mut Self {
+    fn rotate<V: AsVec2<T> + ?Sized>(&self, b: &V, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         //Translate point to the origin
         let p0 = self.x() - b.x();
         let p1 = self.y() - b.y();
@@ -223,8 +281,10 @@ pub trait AsVec2<T: Float> {
         let cos_c = rad.cos();
 
         //perform rotation and translate to correct position
-        self.set_x(p0 * cos_c - p1 * sin_c + b.x())
-            .set_y(p0 * sin_c + p1 * cos_c + b.y())
+        Self::from_values(
+            p0 * cos_c - p1 * sin_c + b.x(),
+            p0 * sin_c + p1 * cos_c + b.y(),
+        )
     }
 
     #[inline(always)]
@@ -258,6 +318,11 @@ pub trait AsVec2<T: Float> {
 }
 
 impl<T: Float> AsVec2<T> for [T; 2] {
+    #[inline(always)]
+    fn from_values(x: T, y: T) -> Self {
+        [x, y]
+    }
+
     #[inline]
     fn x(&self) -> T {
         self[0]
@@ -282,6 +347,11 @@ impl<T: Float> AsVec2<T> for [T; 2] {
 }
 
 impl<T: Float> AsVec2<T> for (T, T) {
+    #[inline(always)]
+    fn from_values(x: T, y: T) -> Self {
+        (x, y)
+    }
+
     #[inline]
     fn x(&self) -> T {
         self.0
@@ -315,11 +385,6 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn from_values(x: T, y: T) -> Self {
-        Self([x, y])
-    }
-
-    #[inline(always)]
     pub fn from_slice(slice: &[T; 2]) -> Self {
         Self(slice.clone())
     }
@@ -331,6 +396,11 @@ impl<T: Float> Vec2<T> {
 }
 
 impl<T: Float> AsVec2<T> for Vec2<T> {
+    #[inline(always)]
+    fn from_values(x: T, y: T) -> Self {
+        Self([x, y])
+    }
+
     #[inline]
     fn x(&self) -> T {
         self.0[0]
@@ -566,7 +636,12 @@ impl<T: Display> Display for Vec2<T> {
 mod tests {
     use std::sync::OnceLock;
 
-    use crate::{error::Error, mat2::Mat2, mat2d::Mat2d, vec2::AsVec2};
+    use crate::{
+        error::Error,
+        mat2::{Mat2, AsMat2},
+        mat2d::{AsMat2d, Mat2d},
+        vec2::AsVec2,
+    };
 
     use super::Vec2;
 

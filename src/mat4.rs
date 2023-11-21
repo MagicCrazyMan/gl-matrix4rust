@@ -13,6 +13,25 @@ use crate::{
 };
 
 pub trait AsMat4<T: Float> {
+    fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m03: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m13: T,
+        m20: T,
+        m21: T,
+        m22: T,
+        m23: T,
+        m30: T,
+        m31: T,
+        m32: T,
+        m33: T,
+    ) -> Self;
+
     fn m00(&self) -> T;
 
     fn m01(&self) -> T;
@@ -248,7 +267,10 @@ pub trait AsMat4<T: Float> {
     }
 
     #[inline(always)]
-    fn transpose(&mut self) -> &mut Self {
+    fn transpose(&self) -> Self
+    where
+        Self: Sized,
+    {
         let m00 = self.m00();
         let m01 = self.m01();
         let m02 = self.m02();
@@ -266,26 +288,16 @@ pub trait AsMat4<T: Float> {
         let m32 = self.m32();
         let m33 = self.m33();
 
-        self.set_m00(m00)
-            .set_m01(m10)
-            .set_m02(m20)
-            .set_m03(m30)
-            .set_m10(m01)
-            .set_m11(m11)
-            .set_m12(m21)
-            .set_m13(m31)
-            .set_m20(m02)
-            .set_m21(m12)
-            .set_m22(m22)
-            .set_m23(m32)
-            .set_m30(m03)
-            .set_m31(m13)
-            .set_m32(m23)
-            .set_m33(m33)
+        Self::from_values(
+            m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32, m03, m13, m23, m33,
+        )
     }
 
     #[inline(always)]
-    fn invert(&mut self) -> Result<&mut Self, Error> {
+    fn invert(&self) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -324,27 +336,31 @@ pub trait AsMat4<T: Float> {
         }
         det = T::one() / det;
 
-        Ok(self
-            .set_m00((a11 * b11 - a12 * b10 + a13 * b09) * det)
-            .set_m01((a02 * b10 - a01 * b11 - a03 * b09) * det)
-            .set_m02((a31 * b05 - a32 * b04 + a33 * b03) * det)
-            .set_m03((a22 * b04 - a21 * b05 - a23 * b03) * det)
-            .set_m10((a12 * b08 - a10 * b11 - a13 * b07) * det)
-            .set_m11((a00 * b11 - a02 * b08 + a03 * b07) * det)
-            .set_m12((a32 * b02 - a30 * b05 - a33 * b01) * det)
-            .set_m13((a20 * b05 - a22 * b02 + a23 * b01) * det)
-            .set_m20((a10 * b10 - a11 * b08 + a13 * b06) * det)
-            .set_m21((a01 * b08 - a00 * b10 - a03 * b06) * det)
-            .set_m22((a30 * b04 - a31 * b02 + a33 * b00) * det)
-            .set_m23((a21 * b02 - a20 * b04 - a23 * b00) * det)
-            .set_m30((a11 * b07 - a10 * b09 - a12 * b06) * det)
-            .set_m31((a00 * b09 - a01 * b07 + a02 * b06) * det)
-            .set_m32((a31 * b01 - a30 * b03 - a32 * b00) * det)
-            .set_m33((a20 * b03 - a21 * b01 + a22 * b00) * det))
+        Ok(Self::from_values(
+            (a11 * b11 - a12 * b10 + a13 * b09) * det,
+            (a02 * b10 - a01 * b11 - a03 * b09) * det,
+            (a31 * b05 - a32 * b04 + a33 * b03) * det,
+            (a22 * b04 - a21 * b05 - a23 * b03) * det,
+            (a12 * b08 - a10 * b11 - a13 * b07) * det,
+            (a00 * b11 - a02 * b08 + a03 * b07) * det,
+            (a32 * b02 - a30 * b05 - a33 * b01) * det,
+            (a20 * b05 - a22 * b02 + a23 * b01) * det,
+            (a10 * b10 - a11 * b08 + a13 * b06) * det,
+            (a01 * b08 - a00 * b10 - a03 * b06) * det,
+            (a30 * b04 - a31 * b02 + a33 * b00) * det,
+            (a21 * b02 - a20 * b04 - a23 * b00) * det,
+            (a11 * b07 - a10 * b09 - a12 * b06) * det,
+            (a00 * b09 - a01 * b07 + a02 * b06) * det,
+            (a31 * b01 - a30 * b03 - a32 * b00) * det,
+            (a20 * b03 - a21 * b01 + a22 * b00) * det,
+        ))
     }
 
     #[inline(always)]
-    fn adjoint(&mut self) -> &mut Self {
+    fn adjoint(&self) -> Self
+    where
+        Self: Sized,
+    {
         let a00 = self.m00();
         let a01 = self.m01();
         let a02 = self.m02();
@@ -375,22 +391,24 @@ pub trait AsMat4<T: Float> {
         let b10 = a21 * a33 - a23 * a31;
         let b11 = a22 * a33 - a23 * a32;
 
-        self.set_m00(a11 * b11 - a12 * b10 + a13 * b09)
-            .set_m01(a02 * b10 - a01 * b11 - a03 * b09)
-            .set_m02(a31 * b05 - a32 * b04 + a33 * b03)
-            .set_m03(a22 * b04 - a21 * b05 - a23 * b03)
-            .set_m10(a12 * b08 - a10 * b11 - a13 * b07)
-            .set_m11(a00 * b11 - a02 * b08 + a03 * b07)
-            .set_m12(a32 * b02 - a30 * b05 - a33 * b01)
-            .set_m13(a20 * b05 - a22 * b02 + a23 * b01)
-            .set_m20(a10 * b10 - a11 * b08 + a13 * b06)
-            .set_m21(a01 * b08 - a00 * b10 - a03 * b06)
-            .set_m22(a30 * b04 - a31 * b02 + a33 * b00)
-            .set_m23(a21 * b02 - a20 * b04 - a23 * b00)
-            .set_m30(a11 * b07 - a10 * b09 - a12 * b06)
-            .set_m31(a00 * b09 - a01 * b07 + a02 * b06)
-            .set_m32(a31 * b01 - a30 * b03 - a32 * b00)
-            .set_m33(a20 * b03 - a21 * b01 + a22 * b00)
+        Self::from_values(
+            a11 * b11 - a12 * b10 + a13 * b09,
+            a02 * b10 - a01 * b11 - a03 * b09,
+            a31 * b05 - a32 * b04 + a33 * b03,
+            a22 * b04 - a21 * b05 - a23 * b03,
+            a12 * b08 - a10 * b11 - a13 * b07,
+            a00 * b11 - a02 * b08 + a03 * b07,
+            a32 * b02 - a30 * b05 - a33 * b01,
+            a20 * b05 - a22 * b02 + a23 * b01,
+            a10 * b10 - a11 * b08 + a13 * b06,
+            a01 * b08 - a00 * b10 - a03 * b06,
+            a30 * b04 - a31 * b02 + a33 * b00,
+            a21 * b02 - a20 * b04 - a23 * b00,
+            a11 * b07 - a10 * b09 - a12 * b06,
+            a00 * b09 - a01 * b07 + a02 * b06,
+            a31 * b01 - a30 * b03 - a32 * b00,
+            a20 * b03 - a21 * b01 + a22 * b00,
+        )
     }
 
     #[inline(always)]
@@ -428,7 +446,10 @@ pub trait AsMat4<T: Float> {
     }
 
     #[inline(always)]
-    fn translate<V: AsVec3<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn translate<V: AsVec3<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = v.x();
         let y = v.y();
         let z = v.z();
@@ -449,26 +470,31 @@ pub trait AsMat4<T: Float> {
         let a32 = self.m32();
         let a33 = self.m33();
 
-        self.set_m00(a00)
-            .set_m01(a01)
-            .set_m02(a02)
-            .set_m03(a03)
-            .set_m10(a10)
-            .set_m11(a11)
-            .set_m12(a12)
-            .set_m13(a13)
-            .set_m20(a20)
-            .set_m21(a21)
-            .set_m22(a22)
-            .set_m23(a23)
-            .set_m30(a00 * x + a10 * y + a20 * z + a30)
-            .set_m31(a01 * x + a11 * y + a21 * z + a31)
-            .set_m32(a02 * x + a12 * y + a22 * z + a32)
-            .set_m33(a03 * x + a13 * y + a23 * z + a33)
+        Self::from_values(
+            a00,
+            a01,
+            a02,
+            a03,
+            a10,
+            a11,
+            a12,
+            a13,
+            a20,
+            a21,
+            a22,
+            a23,
+            a00 * x + a10 * y + a20 * z + a30,
+            a01 * x + a11 * y + a21 * z + a31,
+            a02 * x + a12 * y + a22 * z + a32,
+            a03 * x + a13 * y + a23 * z + a33,
+        )
     }
 
     #[inline(always)]
-    fn scale<V: AsVec3<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn scale<V: AsVec3<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let x = v.x();
         let y = v.y();
         let z = v.z();
@@ -490,26 +516,31 @@ pub trait AsMat4<T: Float> {
         let a32 = self.m32();
         let a33 = self.m33();
 
-        self.set_m00(a00 * x)
-            .set_m01(a01 * x)
-            .set_m02(a02 * x)
-            .set_m03(a03 * x)
-            .set_m10(a10 * y)
-            .set_m11(a11 * y)
-            .set_m12(a12 * y)
-            .set_m13(a13 * y)
-            .set_m20(a20 * z)
-            .set_m21(a21 * z)
-            .set_m22(a22 * z)
-            .set_m23(a23 * z)
-            .set_m30(a30)
-            .set_m31(a31)
-            .set_m32(a32)
-            .set_m33(a33)
+        Self::from_values(
+            a00 * x,
+            a01 * x,
+            a02 * x,
+            a03 * x,
+            a10 * y,
+            a11 * y,
+            a12 * y,
+            a13 * y,
+            a20 * z,
+            a21 * z,
+            a22 * z,
+            a23 * z,
+            a30,
+            a31,
+            a32,
+            a33,
+        )
     }
 
     #[inline(always)]
-    fn rotate<V: AsVec3<T> + ?Sized>(&mut self, axis: &V, rad: T) -> Result<&mut Self, Error> {
+    fn rotate<V: AsVec3<T> + ?Sized>(&self, axis: &V, rad: T) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let mut x = axis.x();
         let mut y = axis.y();
         let mut z = axis.z();
@@ -569,29 +600,32 @@ pub trait AsMat4<T: Float> {
         b21 = y * z * t - x * s;
         b22 = z * z * t + c;
 
-        Ok(self
-            // Perform rotation-specific matrix multiplication
-            .set_m00(a00 * b00 + a10 * b01 + a20 * b02)
-            .set_m01(a01 * b00 + a11 * b01 + a21 * b02)
-            .set_m02(a02 * b00 + a12 * b01 + a22 * b02)
-            .set_m03(a03 * b00 + a13 * b01 + a23 * b02)
-            .set_m10(a00 * b10 + a10 * b11 + a20 * b12)
-            .set_m11(a01 * b10 + a11 * b11 + a21 * b12)
-            .set_m12(a02 * b10 + a12 * b11 + a22 * b12)
-            .set_m13(a03 * b10 + a13 * b11 + a23 * b12)
-            .set_m20(a00 * b20 + a10 * b21 + a20 * b22)
-            .set_m21(a01 * b20 + a11 * b21 + a21 * b22)
-            .set_m22(a02 * b20 + a12 * b21 + a22 * b22)
-            .set_m23(a03 * b20 + a13 * b21 + a23 * b22)
+        Ok(Self::from_values(
+            a00 * b00 + a10 * b01 + a20 * b02,
+            a01 * b00 + a11 * b01 + a21 * b02,
+            a02 * b00 + a12 * b01 + a22 * b02,
+            a03 * b00 + a13 * b01 + a23 * b02,
+            a00 * b10 + a10 * b11 + a20 * b12,
+            a01 * b10 + a11 * b11 + a21 * b12,
+            a02 * b10 + a12 * b11 + a22 * b12,
+            a03 * b10 + a13 * b11 + a23 * b12,
+            a00 * b20 + a10 * b21 + a20 * b22,
+            a01 * b20 + a11 * b21 + a21 * b22,
+            a02 * b20 + a12 * b21 + a22 * b22,
+            a03 * b20 + a13 * b21 + a23 * b22,
             // If the source and destination differ, copy the unchanged last row
-            .set_m30(a30)
-            .set_m31(a31)
-            .set_m32(a32)
-            .set_m33(a33))
+            a30,
+            a31,
+            a32,
+            a33,
+        ))
     }
 
     #[inline(always)]
-    fn rotate_x(&mut self, rad: T) -> &mut Self {
+    fn rotate_x(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let s = rad.sin();
         let c = rad.cos();
 
@@ -613,26 +647,31 @@ pub trait AsMat4<T: Float> {
         let a33 = self.m33();
 
         // Perform axis-specific matrix multiplication
-        self.set_m00(a00)
-            .set_m01(a01)
-            .set_m02(a02)
-            .set_m03(a03)
-            .set_m10(a10 * c + a20 * s)
-            .set_m11(a11 * c + a21 * s)
-            .set_m12(a12 * c + a22 * s)
-            .set_m13(a13 * c + a23 * s)
-            .set_m20(a20 * c - a10 * s)
-            .set_m21(a21 * c - a11 * s)
-            .set_m22(a22 * c - a12 * s)
-            .set_m23(a23 * c - a13 * s)
-            .set_m30(a30)
-            .set_m31(a31)
-            .set_m32(a32)
-            .set_m33(a33)
+        Self::from_values(
+            a00,
+            a01,
+            a02,
+            a03,
+            a10 * c + a20 * s,
+            a11 * c + a21 * s,
+            a12 * c + a22 * s,
+            a13 * c + a23 * s,
+            a20 * c - a10 * s,
+            a21 * c - a11 * s,
+            a22 * c - a12 * s,
+            a23 * c - a13 * s,
+            a30,
+            a31,
+            a32,
+            a33,
+        )
     }
 
     #[inline(always)]
-    fn rotate_y(&mut self, rad: T) -> &mut Self {
+    fn rotate_y(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let s = rad.sin();
         let c = rad.cos();
 
@@ -654,26 +693,31 @@ pub trait AsMat4<T: Float> {
         let a33 = self.m33();
 
         // Perform axis-specific matrix multiplication
-        self.set_m00(a00 * c - a20 * s)
-            .set_m01(a01 * c - a21 * s)
-            .set_m02(a02 * c - a22 * s)
-            .set_m03(a03 * c - a23 * s)
-            .set_m10(a10)
-            .set_m11(a11)
-            .set_m12(a12)
-            .set_m13(a13)
-            .set_m20(a00 * s + a20 * c)
-            .set_m21(a01 * s + a21 * c)
-            .set_m22(a02 * s + a22 * c)
-            .set_m23(a03 * s + a23 * c)
-            .set_m30(a30)
-            .set_m31(a31)
-            .set_m32(a32)
-            .set_m33(a33)
+        Self::from_values(
+            a00 * c - a20 * s,
+            a01 * c - a21 * s,
+            a02 * c - a22 * s,
+            a03 * c - a23 * s,
+            a10,
+            a11,
+            a12,
+            a13,
+            a00 * s + a20 * c,
+            a01 * s + a21 * c,
+            a02 * s + a22 * c,
+            a03 * s + a23 * c,
+            a30,
+            a31,
+            a32,
+            a33,
+        )
     }
 
     #[inline(always)]
-    fn rotate_z(&mut self, rad: T) -> &mut Self {
+    fn rotate_z(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let s = rad.sin();
         let c = rad.cos();
 
@@ -695,22 +739,24 @@ pub trait AsMat4<T: Float> {
         let a33 = self.m33();
 
         // Perform axis-specific matrix multiplication
-        self.set_m00(a00 * c + a10 * s)
-            .set_m01(a01 * c + a11 * s)
-            .set_m02(a02 * c + a12 * s)
-            .set_m03(a03 * c + a13 * s)
-            .set_m10(a10 * c - a00 * s)
-            .set_m11(a11 * c - a01 * s)
-            .set_m12(a12 * c - a02 * s)
-            .set_m13(a13 * c - a03 * s)
-            .set_m20(a20)
-            .set_m21(a21)
-            .set_m22(a22)
-            .set_m23(a23)
-            .set_m30(a30)
-            .set_m31(a31)
-            .set_m32(a32)
-            .set_m33(a33)
+        Self::from_values(
+            a00 * c + a10 * s,
+            a01 * c + a11 * s,
+            a02 * c + a12 * s,
+            a03 * c + a13 * s,
+            a10 * c - a00 * s,
+            a11 * c - a01 * s,
+            a12 * c - a02 * s,
+            a13 * c - a03 * s,
+            a20,
+            a21,
+            a22,
+            a23,
+            a30,
+            a31,
+            a32,
+            a33,
+        )
     }
 
     #[inline(always)]
@@ -974,6 +1020,30 @@ pub trait AsMat4<T: Float> {
 
 impl<T: Float> AsMat4<T> for [T; 16] {
     #[inline(always)]
+    fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m03: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m13: T,
+        m20: T,
+        m21: T,
+        m22: T,
+        m23: T,
+        m30: T,
+        m31: T,
+        m32: T,
+        m33: T,
+    ) -> Self {
+        [
+            m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33,
+        ]
+    }
+
+    #[inline(always)]
     fn m00(&self) -> T {
         self[0]
     }
@@ -1151,6 +1221,30 @@ impl<T: Float> AsMat4<T> for [T; 16] {
 }
 
 impl<T: Float> AsMat4<T> for (T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T) {
+    #[inline(always)]
+    fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m03: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m13: T,
+        m20: T,
+        m21: T,
+        m22: T,
+        m23: T,
+        m30: T,
+        m31: T,
+        m32: T,
+        m33: T,
+    ) -> Self {
+        (
+            m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33,
+        )
+    }
+
     #[inline(always)]
     fn m00(&self) -> T {
         self.0
@@ -1356,30 +1450,6 @@ impl<T: Float> Mat4<T> {
             T::zero(),
             T::zero(),
             T::one(),
-        ])
-    }
-
-    #[inline(always)]
-    pub fn from_values(
-        m00: T,
-        m01: T,
-        m02: T,
-        m03: T,
-        m10: T,
-        m11: T,
-        m12: T,
-        m13: T,
-        m20: T,
-        m21: T,
-        m22: T,
-        m23: T,
-        m30: T,
-        m31: T,
-        m32: T,
-        m33: T,
-    ) -> Self {
-        Self([
-            m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33,
         ])
     }
 
@@ -1690,7 +1760,6 @@ impl<T: Float> Mat4<T> {
         V2: AsVec3<T> + ?Sized,
         V3: AsVec3<T> + ?Sized,
     {
-
         // Quaternion math
         let x = q.x1();
         let y = q.y1();
@@ -2147,6 +2216,30 @@ impl<T: Float + FloatConst> Mat4<T> {
 
 impl<T: Float> AsMat4<T> for Mat4<T> {
     #[inline(always)]
+    fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m03: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m13: T,
+        m20: T,
+        m21: T,
+        m22: T,
+        m23: T,
+        m30: T,
+        m31: T,
+        m32: T,
+        m33: T,
+    ) -> Self {
+        Self([
+            m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33,
+        ])
+    }
+
+    #[inline(always)]
     fn m00(&self) -> T {
         self.0[0]
     }
@@ -2498,7 +2591,11 @@ impl<T: Display> Display for Mat4<T> {
 mod tests {
     use std::sync::OnceLock;
 
-    use crate::{error::Error, mat4::AsMat4, vec3::Vec3};
+    use crate::{
+        error::Error,
+        mat4::AsMat4,
+        vec3::{AsVec3, Vec3},
+    };
 
     use super::Mat4;
 

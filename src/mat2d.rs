@@ -8,18 +8,30 @@ use num_traits::Float;
 use crate::{epsilon, error::Error, vec2::AsVec2};
 
 pub trait AsMat2d<T: Float> {
+    fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self;
+
     fn a(&self) -> T;
+
     fn b(&self) -> T;
+
     fn c(&self) -> T;
+
     fn d(&self) -> T;
+
     fn tx(&self) -> T;
+
     fn ty(&self) -> T;
 
     fn set_a(&mut self, a: T) -> &mut Self;
+
     fn set_b(&mut self, b: T) -> &mut Self;
+
     fn set_c(&mut self, c: T) -> &mut Self;
+
     fn set_d(&mut self, d: T) -> &mut Self;
+
     fn set_tx(&mut self, tx: T) -> &mut Self;
+
     fn set_ty(&mut self, ty: T) -> &mut Self;
 
     #[inline(always)]
@@ -95,7 +107,10 @@ pub trait AsMat2d<T: Float> {
     }
 
     #[inline(always)]
-    fn invert(&mut self) -> Result<&mut Self, Error> {
+    fn invert(&self) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let aa = self.a();
         let ab = self.b();
         let ac = self.c();
@@ -111,13 +126,14 @@ pub trait AsMat2d<T: Float> {
         }
         det = T::one() / det;
 
-        Ok(self
-            .set_a(ad * det)
-            .set_b(-ab * det)
-            .set_c(-ac * det)
-            .set_d(aa * det)
-            .set_tx((ac * aty - ad * atx) * det)
-            .set_ty((ab * atx - aa * aty) * det))
+        Ok(Self::from_values(
+            ad * det,
+            -ab * det,
+            -ac * det,
+            aa * det,
+            (ac * aty - ad * atx) * det,
+            (ab * atx - aa * aty) * det,
+        ))
     }
 
     #[inline(always)]
@@ -126,7 +142,10 @@ pub trait AsMat2d<T: Float> {
     }
 
     #[inline(always)]
-    fn scale<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn scale<V: AsVec2<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.a();
         let a1 = self.b();
         let a2 = self.c();
@@ -136,16 +155,14 @@ pub trait AsMat2d<T: Float> {
         let v0 = v.x();
         let v1 = v.y();
 
-        self.set_a(a0 * v0)
-            .set_b(a1 * v0)
-            .set_c(a2 * v1)
-            .set_d(a3 * v1)
-            .set_tx(a4)
-            .set_ty(a5)
+        Self::from_values(a0 * v0, a1 * v0, a2 * v1, a3 * v1, a4, a5)
     }
 
     #[inline(always)]
-    fn rotate(&mut self, rad: T) -> &mut Self {
+    fn rotate(&self, rad: T) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.a();
         let a1 = self.b();
         let a2 = self.c();
@@ -155,16 +172,21 @@ pub trait AsMat2d<T: Float> {
         let s = rad.sin();
         let c = rad.cos();
 
-        self.set_a(a0 * c + a2 * s)
-            .set_b(a1 * c + a3 * s)
-            .set_c(a0 * -s + a2 * c)
-            .set_d(a1 * -s + a3 * c)
-            .set_tx(a4)
-            .set_ty(a5)
+        Self::from_values(
+            a0 * c + a2 * s,
+            a1 * c + a3 * s,
+            a0 * -s + a2 * c,
+            a1 * -s + a3 * c,
+            a4,
+            a5,
+        )
     }
 
     #[inline(always)]
-    fn translate<V: AsVec2<T> + ?Sized>(&mut self, v: &V) -> &mut Self {
+    fn translate<V: AsVec2<T> + ?Sized>(&self, v: &V) -> Self
+    where
+        Self: Sized,
+    {
         let a0 = self.a();
         let a1 = self.b();
         let a2 = self.c();
@@ -174,12 +196,14 @@ pub trait AsMat2d<T: Float> {
         let v0 = v.x();
         let v1 = v.y();
 
-        self.set_a(a0)
-            .set_b(a1)
-            .set_c(a2)
-            .set_d(a3)
-            .set_tx(a0 * v0 + a2 * v1 + a4)
-            .set_ty(a1 * v0 + a3 * v1 + a5)
+        Self::from_values(
+            a0,
+            a1,
+            a2,
+            a3,
+            a0 * v0 + a2 * v1 + a4,
+            a1 * v0 + a3 * v1 + a5,
+        )
     }
 
     #[inline(always)]
@@ -223,6 +247,11 @@ pub trait AsMat2d<T: Float> {
 }
 
 impl<T: Float> AsMat2d<T> for [T; 6] {
+    #[inline(always)]
+    fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self {
+        [a, b, c, d, tx, ty]
+    }
+
     #[inline(always)]
     fn a(&self) -> T {
         self[0]
@@ -291,6 +320,11 @@ impl<T: Float> AsMat2d<T> for [T; 6] {
 }
 
 impl<T: Float> AsMat2d<T> for (T, T, T, T, T, T) {
+    #[inline(always)]
+    fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self {
+        (a, b, c, d, tx, ty)
+    }
+
     #[inline(always)]
     fn a(&self) -> T {
         self.0
@@ -380,13 +414,8 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self {
-        Self([a, b, c, d, tx, ty])
-    }
-
-    #[inline(always)]
     pub fn from_slice(slice: &[T; 6]) -> Self {
-        Self([slice[0], slice[1], slice[2], slice[3], slice[4], slice[5]])
+        Self(slice.clone())
     }
 
     #[inline(always)]
@@ -413,6 +442,11 @@ impl<T: Float> Mat2d<T> {
 }
 
 impl<T: Float> AsMat2d<T> for Mat2d<T> {
+    #[inline(always)]
+    fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self {
+        Self([a, b, c, d, tx, ty])
+    }
+
     #[inline(always)]
     fn a(&self) -> T {
         self.0[0]
@@ -642,7 +676,7 @@ mod tests {
     #[test]
     fn invert() -> Result<(), Error> {
         assert_eq!(
-            mat_a().clone().invert()?.to_raw(),
+            mat_a().invert()?.to_raw(),
             [-2.0, 1.0, 1.5, -0.5, 1.0, -2.0]
         );
 
@@ -657,7 +691,7 @@ mod tests {
     #[test]
     fn scale() {
         assert_eq!(
-            mat_a().clone().scale(&(2.0, 3.0)).to_raw(),
+            mat_a().scale(&(2.0, 3.0)).to_raw(),
             [2.0, 4.0, 9.0, 12.0, 5.0, 6.0]
         );
     }
@@ -665,7 +699,7 @@ mod tests {
     #[test]
     fn translate() {
         assert_eq!(
-            mat_a().clone().translate(&(2.0, 3.0)).to_raw(),
+            mat_a().translate(&(2.0, 3.0)).to_raw(),
             [1.0, 2.0, 3.0, 4.0, 16.0, 22.0]
         );
     }
@@ -759,7 +793,7 @@ mod tests {
     #[test]
     fn rotate() {
         assert_eq!(
-            mat_a().clone().rotate(std::f64::consts::PI * 0.5).to_raw(),
+            mat_a().rotate(std::f64::consts::PI * 0.5).to_raw(),
             [3.0, 4.0, -0.9999999999999998, -1.9999999999999998, 5.0, 6.0]
         );
     }
