@@ -3,6 +3,7 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::{Float, FloatConst};
 
 use crate::{
@@ -2416,63 +2417,63 @@ impl<T: Float> AsMat4<T> for Mat4<T> {
     }
 }
 
-impl<T: Float> Add<Mat4<T>> for Mat4<T> {
+impl<T: Float, M: AsMat4<T>> Add<M> for Mat4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
-        let mut out = Mat4::<T>::new_identity();
-        out.0[0] = self.0[0] + b.0[0];
-        out.0[1] = self.0[1] + b.0[1];
-        out.0[2] = self.0[2] + b.0[2];
-        out.0[3] = self.0[3] + b.0[3];
-        out.0[4] = self.0[4] + b.0[4];
-        out.0[5] = self.0[5] + b.0[5];
-        out.0[6] = self.0[6] + b.0[6];
-        out.0[7] = self.0[7] + b.0[7];
-        out.0[8] = self.0[8] + b.0[8];
-        out.0[9] = self.0[9] + b.0[9];
-        out.0[10] = self.0[10] + b.0[10];
-        out.0[11] = self.0[11] + b.0[11];
-        out.0[12] = self.0[12] + b.0[12];
-        out.0[13] = self.0[13] + b.0[13];
-        out.0[14] = self.0[14] + b.0[14];
-        out.0[15] = self.0[15] + b.0[15];
-        out
+    fn add(self, b: M) -> Self::Output {
+        Self([
+            self.0[0] + b.m00(),
+            self.0[1] + b.m01(),
+            self.0[2] + b.m02(),
+            self.0[3] + b.m03(),
+            self.0[4] + b.m10(),
+            self.0[5] + b.m11(),
+            self.0[6] + b.m12(),
+            self.0[7] + b.m13(),
+            self.0[8] + b.m20(),
+            self.0[9] + b.m21(),
+            self.0[10] + b.m22(),
+            self.0[11] + b.m23(),
+            self.0[12] + b.m30(),
+            self.0[13] + b.m31(),
+            self.0[14] + b.m32(),
+            self.0[15] + b.m33(),
+        ])
     }
 }
 
-impl<T: Float> Sub<Mat4<T>> for Mat4<T> {
+impl<T: Float, M: AsMat4<T>> Sub<M> for Mat4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Self) -> Self {
-        let mut out = Mat4::<T>::new_identity();
-        out.0[0] = self.0[0] - b.0[0];
-        out.0[1] = self.0[1] - b.0[1];
-        out.0[2] = self.0[2] - b.0[2];
-        out.0[3] = self.0[3] - b.0[3];
-        out.0[4] = self.0[4] - b.0[4];
-        out.0[5] = self.0[5] - b.0[5];
-        out.0[6] = self.0[6] - b.0[6];
-        out.0[7] = self.0[7] - b.0[7];
-        out.0[8] = self.0[8] - b.0[8];
-        out.0[9] = self.0[9] - b.0[9];
-        out.0[10] = self.0[10] - b.0[10];
-        out.0[11] = self.0[11] - b.0[11];
-        out.0[12] = self.0[12] - b.0[12];
-        out.0[13] = self.0[13] - b.0[13];
-        out.0[14] = self.0[14] - b.0[14];
-        out.0[15] = self.0[15] - b.0[15];
-        out
+    fn sub(self, b: M) -> Self::Output {
+        Self([
+            self.0[0] - b.m00(),
+            self.0[1] - b.m01(),
+            self.0[2] - b.m02(),
+            self.0[3] - b.m03(),
+            self.0[4] - b.m10(),
+            self.0[5] - b.m11(),
+            self.0[6] - b.m12(),
+            self.0[7] - b.m13(),
+            self.0[8] - b.m20(),
+            self.0[9] - b.m21(),
+            self.0[10] - b.m22(),
+            self.0[11] - b.m23(),
+            self.0[12] - b.m30(),
+            self.0[13] - b.m31(),
+            self.0[14] - b.m32(),
+            self.0[15] - b.m33(),
+        ])
     }
 }
 
-impl<T: Float> Mul<Mat4<T>> for Mat4<T> {
+impl<T: Float, M: AsMat4<T>> Mul<M> for Mat4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Self) -> Self {
+    fn mul(self, b: M) -> Self::Output {
         let mut out = Mat4::<T>::new_identity();
         let a00 = self.0[0];
         let a01 = self.0[1];
@@ -2492,37 +2493,37 @@ impl<T: Float> Mul<Mat4<T>> for Mat4<T> {
         let a33 = self.0[15];
 
         // Cache only the current line of the second matrix
-        let mut b0 = b.0[0];
-        let mut b1 = b.0[1];
-        let mut b2 = b.0[2];
-        let mut b3 = b.0[3];
+        let mut b0 = b.m00();
+        let mut b1 = b.m01();
+        let mut b2 = b.m02();
+        let mut b3 = b.m03();
         out.0[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
         out.0[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
         out.0[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
         out.0[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-        b0 = b.0[4];
-        b1 = b.0[5];
-        b2 = b.0[6];
-        b3 = b.0[7];
+        b0 = b.m10();
+        b1 = b.m11();
+        b2 = b.m12();
+        b3 = b.m13();
         out.0[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
         out.0[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
         out.0[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
         out.0[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-        b0 = b.0[8];
-        b1 = b.0[9];
-        b2 = b.0[10];
-        b3 = b.0[11];
+        b0 = b.m20();
+        b1 = b.m21();
+        b2 = b.m22();
+        b3 = b.m23();
         out.0[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
         out.0[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
         out.0[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
         out.0[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-        b0 = b.0[12];
-        b1 = b.0[13];
-        b2 = b.0[14];
-        b3 = b.0[15];
+        b0 = b.m30();
+        b1 = b.m31();
+        b2 = b.m32();
+        b3 = b.m33();
         out.0[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
         out.0[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
         out.0[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
@@ -2531,31 +2532,39 @@ impl<T: Float> Mul<Mat4<T>> for Mat4<T> {
     }
 }
 
-impl<T: Float> Mul<T> for Mat4<T> {
-    type Output = Self;
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+            impl Mul<$float> for Mat4<$float> {
+                type Output = Self;
 
-    #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        let mut out = Mat4::<T>::new_identity();
-        out.0[0] = self.0[0] * b;
-        out.0[1] = self.0[1] * b;
-        out.0[2] = self.0[2] * b;
-        out.0[3] = self.0[3] * b;
-        out.0[4] = self.0[4] * b;
-        out.0[5] = self.0[5] * b;
-        out.0[6] = self.0[6] * b;
-        out.0[7] = self.0[7] * b;
-        out.0[8] = self.0[8] * b;
-        out.0[9] = self.0[9] * b;
-        out.0[10] = self.0[10] * b;
-        out.0[11] = self.0[11] * b;
-        out.0[12] = self.0[12] * b;
-        out.0[13] = self.0[13] * b;
-        out.0[14] = self.0[14] * b;
-        out.0[15] = self.0[15] * b;
-        out
-    }
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([
+                        self.0[0] * b,
+                        self.0[1] * b,
+                        self.0[2] * b,
+                        self.0[3] * b,
+                        self.0[4] * b,
+                        self.0[5] * b,
+                        self.0[6] * b,
+                        self.0[7] * b,
+                        self.0[8] * b,
+                        self.0[9] * b,
+                        self.0[10] * b,
+                        self.0[11] * b,
+                        self.0[12] * b,
+                        self.0[13] * b,
+                        self.0[14] * b,
+                        self.0[15] * b,
+                    ])
+                }
+            }
+        )+
+    };
 }
+
+float_implementations!(f16, f32, f64);
 
 impl<T> AsRef<Mat4<T>> for Mat4<T> {
     fn as_ref(&self) -> &Self {
@@ -2589,8 +2598,6 @@ impl<T: Display> Display for Mat4<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::{
         error::Error,
         mat4::AsMat4,
@@ -2599,30 +2606,22 @@ mod tests {
 
     use super::Mat4;
 
-    const MAT_A_RAW: [f64; 16] = [
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0,
-    ];
-    const MAT_B_RAW: [f64; 16] = [
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 4.0, 5.0, 6.0, 1.0,
-    ];
-    const MAT_IDENTITY_RAW: [f64; 16] = [
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-    ];
-
-    static MAT_A: OnceLock<Mat4> = OnceLock::new();
-    static MAT_B: OnceLock<Mat4> = OnceLock::new();
-    static MAT_IDENTITY: OnceLock<Mat4> = OnceLock::new();
-
-    fn mat_a() -> &'static Mat4 {
-        MAT_A.get_or_init(|| Mat4::from_slice(&MAT_A_RAW))
+    fn mat_a() -> Mat4 {
+        Mat4::from_values(
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0,
+        )
     }
 
-    fn mat_b() -> &'static Mat4 {
-        MAT_B.get_or_init(|| Mat4::from_slice(&MAT_B_RAW))
+    fn mat_b() -> Mat4 {
+        Mat4::from_values(
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 4.0, 5.0, 6.0, 1.0,
+        )
     }
 
-    fn mat_identity() -> &'static Mat4 {
-        MAT_IDENTITY.get_or_init(|| Mat4::from_slice(&MAT_IDENTITY_RAW))
+    fn mat_identity() -> Mat4 {
+        Mat4::from_values(
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        )
     }
 
     #[test]
@@ -2635,7 +2634,7 @@ mod tests {
 
     #[test]
     fn new_identity() {
-        assert_eq!(Mat4::<f64>::new_identity().to_raw(), MAT_IDENTITY_RAW);
+        assert_eq!(Mat4::<f64>::new_identity(), mat_identity());
     }
 
     #[test]
@@ -2942,7 +2941,7 @@ mod tests {
 
     #[test]
     fn mul() {
-        let out = *mat_a() * *mat_b();
+        let out = mat_a() * mat_b();
         assert_eq!(
             out.to_raw(),
             [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 5.0, 7.0, 9.0, 1.0]
@@ -2956,7 +2955,7 @@ mod tests {
         );
 
         assert_eq!(
-            (mat * 2.0).to_raw(),
+            ((mat * 2.0) as Mat4).to_raw(),
             [
                 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0,
                 30.0, 32.0

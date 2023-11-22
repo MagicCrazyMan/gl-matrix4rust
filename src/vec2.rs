@@ -472,141 +472,151 @@ impl<T: Float> Default for Vec2<T> {
     }
 }
 
-impl<T: Float> Add<Self> for Vec2<T> {
+impl<T: Float, V: AsVec2<T>> Add<V> for Vec2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
-        Self([self.0[0] + b.0[0], self.0[1] + b.0[1]])
+    fn add(self, b: V) -> Self::Output {
+        Self([self.0[0] + b.x(), self.0[1] + b.y()])
     }
 }
 
-impl<T: Float> Add<T> for Vec2<T> {
+impl<T: Float, V: AsVec2<T>> Sub<V> for Vec2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: T) -> Self {
-        Self([self.0[0] + b, self.0[1] + b])
+    fn sub(self, b: V) -> Self::Output {
+        Self([self.0[0] - b.x(), self.0[1] - b.y()])
     }
 }
 
-impl<T: Float> Sub<Vec2<T>> for Vec2<T> {
+impl<T: Float, V: AsVec2<T>> Mul<V> for Vec2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Self) -> Self {
-        Self([self.0[0] - b.0[0], self.0[1] - b.0[1]])
+    fn mul(self, b: V) -> Self::Output {
+        Self([self.0[0] * b.x(), self.0[1] * b.y()])
     }
 }
 
-impl<T: Float> Sub<T> for Vec2<T> {
+impl<T: Float, V: AsVec2<T>> Div<V> for Vec2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: T) -> Self {
-        Self([self.0[0] - b, self.0[1] - b])
+    fn div(self, b: V) -> Self::Output {
+        Self([self.0[0] / b.x(), self.0[1] / b.y()])
     }
 }
 
-impl<T: Float> Mul<Vec2<T>> for Vec2<T> {
-    type Output = Self;
-
+impl<T: Float + AddAssign, V: AsVec2<T>> AddAssign<V> for Vec2<T> {
     #[inline(always)]
-    fn mul(self, b: Self) -> Self {
-        Self([self.0[0] * b.0[0], self.0[1] * b.0[1]])
+    fn add_assign(&mut self, rhs: V) {
+        self.0[0] += rhs.x();
+        self.0[1] += rhs.y();
     }
 }
 
-impl<T: Float> Mul<T> for Vec2<T> {
-    type Output = Self;
-
+impl<T: Float + SubAssign, V: AsVec2<T>> SubAssign<V> for Vec2<T> {
     #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        Self([self.0[0] * b, self.0[1] * b])
+    fn sub_assign(&mut self, rhs: V) {
+        self.0[0] -= rhs.x();
+        self.0[1] -= rhs.y();
     }
 }
 
-impl<T: Float> Div<Vec2<T>> for Vec2<T> {
-    type Output = Self;
-
+impl<T: Float + MulAssign, V: AsVec2<T>> MulAssign<V> for Vec2<T> {
     #[inline(always)]
-    fn div(self, b: Self) -> Self {
-        Self([self.0[0] / b.0[0], self.0[1] / b.0[1]])
+    fn mul_assign(&mut self, rhs: V) {
+        self.0[0] *= rhs.x();
+        self.0[1] *= rhs.y();
     }
 }
 
-impl<T: Float> Div<T> for Vec2<T> {
-    type Output = Self;
-
+impl<T: Float + DivAssign, V: AsVec2<T>> DivAssign<V> for Vec2<T> {
     #[inline(always)]
-    fn div(self, b: T) -> Self {
-        Self([self.0[0] / b, self.0[1] / b])
+    fn div_assign(&mut self, rhs: V) {
+        self.0[0] /= rhs.x();
+        self.0[1] /= rhs.y();
     }
 }
 
-impl<T: Float> AddAssign<Self> for Vec2<T> {
-    #[inline(always)]
-    fn add_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] + rhs.0[0];
-        self.0[1] = self.0[1] + rhs.0[1];
-    }
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+
+            impl Add<$float> for Vec2<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn add(self, b: $float) -> Self::Output {
+                    Self([self.0[0] + b, self.0[1] + b])
+                }
+            }
+
+            impl Sub<$float> for Vec2<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn sub(self, b: $float) -> Self::Output {
+                    Self([self.0[0] - b, self.0[1] - b])
+                }
+            }
+
+            impl Mul<$float> for Vec2<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([self.0[0] * b, self.0[1] * b])
+                }
+            }
+
+            impl Div<$float> for Vec2<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn div(self, b: $float) -> Self::Output {
+                    Self([self.0[0] / b, self.0[1] / b])
+                }
+            }
+
+            impl AddAssign<$float> for Vec2<$float> {
+                #[inline(always)]
+                fn add_assign(&mut self, rhs: $float) {
+                    self.0[0] += rhs;
+                    self.0[1] += rhs;
+                }
+            }
+
+            impl SubAssign<$float> for Vec2<$float> {
+                #[inline(always)]
+                fn sub_assign(&mut self, rhs: $float) {
+                    self.0[0] -= rhs;
+                    self.0[1] -= rhs;
+                }
+            }
+
+            impl MulAssign<$float> for Vec2<$float> {
+                #[inline(always)]
+                fn mul_assign(&mut self, rhs: $float) {
+                    self.0[0] *= rhs;
+                    self.0[1] *= rhs;
+                }
+            }
+
+            impl DivAssign<$float> for Vec2<$float> {
+                #[inline(always)]
+                fn div_assign(&mut self, rhs: $float) {
+                    self.0[0] /= rhs;
+                    self.0[1] /= rhs;
+                }
+            }
+
+        )+
+    };
 }
 
-impl<T: Float> AddAssign<T> for Vec2<T> {
-    #[inline(always)]
-    fn add_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] + rhs;
-        self.0[1] = self.0[1] + rhs;
-    }
-}
-
-impl<T: Float> SubAssign<Self> for Vec2<T> {
-    #[inline(always)]
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] - rhs.0[0];
-        self.0[1] = self.0[1] - rhs.0[1];
-    }
-}
-
-impl<T: Float> SubAssign<T> for Vec2<T> {
-    #[inline(always)]
-    fn sub_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] - rhs;
-        self.0[1] = self.0[1] - rhs;
-    }
-}
-
-impl<T: Float> MulAssign<Self> for Vec2<T> {
-    #[inline(always)]
-    fn mul_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] * rhs.0[0];
-        self.0[1] = self.0[1] * rhs.0[1];
-    }
-}
-
-impl<T: Float> MulAssign<T> for Vec2<T> {
-    #[inline(always)]
-    fn mul_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] * rhs;
-        self.0[1] = self.0[1] * rhs;
-    }
-}
-
-impl<T: Float> DivAssign<Self> for Vec2<T> {
-    #[inline(always)]
-    fn div_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] / rhs.0[0];
-        self.0[1] = self.0[1] / rhs.0[1];
-    }
-}
-
-impl<T: Float> DivAssign<T> for Vec2<T> {
-    #[inline(always)]
-    fn div_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] / rhs;
-        self.0[1] = self.0[1] / rhs;
-    }
-}
+float_implementations!(f16, f32, f64);
 
 impl<T> AsRef<Vec2<T>> for Vec2<T> {
     fn as_ref(&self) -> &Self {
@@ -634,29 +644,21 @@ impl<T: Display> Display for Vec2<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::{
         error::Error,
-        mat2::{Mat2, AsMat2},
+        mat2::{AsMat2, Mat2},
         mat2d::{AsMat2d, Mat2d},
         vec2::AsVec2,
     };
 
     use super::Vec2;
 
-    static VEC_A_RAW: [f64; 2] = [1.0, 2.0];
-    static VEC_B_RAW: [f64; 2] = [3.0, 4.0];
-
-    static VEC_A: OnceLock<Vec2> = OnceLock::new();
-    static VEC_B: OnceLock<Vec2> = OnceLock::new();
-
-    fn vec_a() -> &'static Vec2 {
-        VEC_A.get_or_init(|| Vec2::from_slice(&VEC_A_RAW))
+    fn vec_a() -> Vec2 {
+        Vec2::from_values(1.0, 2.0)
     }
 
-    fn vec_b() -> &'static Vec2 {
-        VEC_B.get_or_init(|| Vec2::from_slice(&VEC_B_RAW))
+    fn vec_b() -> Vec2 {
+        Vec2::from_values(3.0, 4.0)
     }
 
     #[test]
@@ -700,7 +702,7 @@ mod tests {
     fn min() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.clone().min(&vec_b).to_raw(), [1.0, 2.0]);
+        assert_eq!(vec_a.min(&vec_b).to_raw(), [1.0, 2.0]);
 
         Ok(())
     }
@@ -709,7 +711,7 @@ mod tests {
     fn max() -> Result<(), Error> {
         let vec_a = Vec2::from_values(1.0, 4.0);
         let vec_b = Vec2::from_values(3.0, 2.0);
-        assert_eq!(vec_a.clone().max(&vec_b).to_raw(), [3.0, 4.0]);
+        assert_eq!(vec_a.max(&vec_b).to_raw(), [3.0, 4.0]);
 
         Ok(())
     }
@@ -728,22 +730,22 @@ mod tests {
 
     #[test]
     fn scale() {
-        assert_eq!((*vec_a() * 2.0).to_raw(), [2.0, 4.0]);
+        assert_eq!((vec_a() * 2.0).to_raw(), [2.0, 4.0]);
     }
 
     #[test]
     fn scale_add() {
-        assert_eq!((*vec_a() + *vec_b() * 2.0).to_raw(), [7.0, 10.0]);
+        assert_eq!((vec_a() + vec_b() * 2.0).to_raw(), [7.0, 10.0]);
     }
 
     #[test]
     fn squared_distance() {
-        assert_eq!(vec_a().squared_distance(vec_b()), 8.0);
+        assert_eq!(vec_a().squared_distance(&vec_b()), 8.0);
     }
 
     #[test]
     fn distance() {
-        assert_eq!(vec_a().distance(vec_b()), 2.8284271247461903);
+        assert_eq!(vec_a().distance(&vec_b()), 2.8284271247461903);
     }
 
     #[test]
@@ -758,7 +760,7 @@ mod tests {
 
     #[test]
     fn negate() {
-        assert_eq!(vec_a().clone().negate().raw(), &[-1.0, -2.0]);
+        assert_eq!(vec_a().negate().raw(), &[-1.0, -2.0]);
     }
 
     #[test]
@@ -768,17 +770,17 @@ mod tests {
 
     #[test]
     fn dot() {
-        assert_eq!(vec_a().dot(vec_b()), 11.0);
+        assert_eq!(vec_a().dot(&vec_b()), 11.0);
     }
 
     #[test]
     fn cross() {
-        assert_eq!(vec_a().cross(vec_b()).raw(), &[0.0, 0.0, -2.0]);
+        assert_eq!(vec_a().cross(&vec_b()).raw(), &[0.0, 0.0, -2.0]);
     }
 
     #[test]
     fn lerp() {
-        assert_eq!(vec_a().clone().lerp(vec_b(), 0.5).raw(), &[2.0, 3.0]);
+        assert_eq!(vec_a().lerp(&vec_b(), 0.5).raw(), &[2.0, 3.0]);
     }
 
     #[test]
@@ -791,13 +793,13 @@ mod tests {
     #[test]
     fn transform_mat2() {
         let mat = Mat2::from_values(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(vec_a().clone().transform_mat2(&mat).raw(), &[7.0, 10.0]);
+        assert_eq!(vec_a().transform_mat2(&mat).raw(), &[7.0, 10.0]);
     }
 
     #[test]
     fn transform_mat2d() {
         let mat = Mat2d::from_values(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        assert_eq!(vec_a().clone().transform_mat2d(&mat).raw(), &[12.0, 16.0]);
+        assert_eq!(vec_a().transform_mat2d(&mat).raw(), &[12.0, 16.0]);
     }
 
     #[test]
@@ -818,42 +820,42 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!((*vec_a() + *vec_b()).raw(), &[4.0, 6.0]);
+        assert_eq!((vec_a() + vec_b()).raw(), &[4.0, 6.0]);
     }
 
     #[test]
     fn sub() {
-        assert_eq!((*vec_a() - *vec_b()).raw(), &[-2.0, -2.0]);
+        assert_eq!((vec_a() - vec_b()).raw(), &[-2.0, -2.0]);
     }
 
     #[test]
     fn mul() {
-        assert_eq!((*vec_a() * *vec_b()).raw(), &[3.0, 8.0]);
+        assert_eq!((vec_a() * vec_b()).raw(), &[3.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*vec_a() * 2.0).raw(), &[2.0, 4.0]);
+        assert_eq!((vec_a() * 2.0).raw(), &[2.0, 4.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*vec_a() + *vec_b() * 0.5).raw(), &[2.5, 4.0]);
+        assert_eq!((vec_a() + vec_b() * 0.5).raw(), &[2.5, 4.0]);
     }
 
     #[test]
     fn div() {
-        assert_eq!((*vec_a() / *vec_b()).raw(), &[0.3333333333333333, 0.5]);
+        assert_eq!((vec_a() / vec_b()).raw(), &[0.3333333333333333, 0.5]);
     }
 
     #[test]
     fn div_scalar() {
-        assert_eq!((*vec_a() / 2.0).raw(), &[0.5, 1.0]);
+        assert_eq!((vec_a() / 2.0).raw(), &[0.5, 1.0]);
     }
 
     #[test]
     fn div_scalar_add() {
-        assert_eq!((*vec_a() + *vec_b() / 0.5).raw(), &[7.0, 10.0]);
+        assert_eq!((vec_a() + vec_b() / 0.5).raw(), &[7.0, 10.0]);
     }
 
     #[test]
@@ -879,14 +881,14 @@ mod tests {
         let vec_a = Vec2::from_values(0.0, 1.0);
         let vec_b = Vec2::from_values(0.0, 0.0);
         assert_eq!(
-            vec_a.clone().rotate(&vec_b, std::f64::consts::PI).to_raw(),
+            vec_a.rotate(&vec_b, std::f64::consts::PI).to_raw(),
             [-1.2246467991473532e-16, -1.0]
         );
 
         let vec_a = Vec2::from_values(6.0, -5.0);
         let vec_b = Vec2::from_values(0.0, -5.0);
         assert_eq!(
-            vec_a.clone().rotate(&vec_b, std::f64::consts::PI).to_raw(),
+            vec_a.rotate(&vec_b, std::f64::consts::PI).to_raw(),
             [-6.0, -4.999999999999999]
         );
     }

@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Mul},
+    ops::{Add, Mul, Sub},
 };
 
 use half::f16;
@@ -818,33 +818,47 @@ impl Quat<f16> {
     }
 }
 
-impl<T: Float> Add<Quat<T>> for Quat<T> {
+impl<T: Float, Q: AsQuat<T>> Add<Q> for Quat<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
-        let mut out = Quat::<T>::new();
-        out.0[0] = self.0[0] + b.0[0];
-        out.0[1] = self.0[1] + b.0[1];
-        out.0[2] = self.0[2] + b.0[2];
-        out.0[3] = self.0[3] + b.0[3];
-        out
+    fn add(self, b: Q) -> Self::Output {
+        Self([
+            self.0[0] + b.x(),
+            self.0[1] + b.y(),
+            self.0[2] + b.z(),
+            self.0[3] + b.w(),
+        ])
     }
 }
 
-impl<T: Float> Mul<Quat<T>> for Quat<T> {
+impl<T: Float, Q: AsQuat<T>> Sub<Q> for Quat<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Self) -> Self {
+    fn sub(self, b: Q) -> Self::Output {
+        Self([
+            self.0[0] - b.x(),
+            self.0[1] - b.y(),
+            self.0[2] - b.z(),
+            self.0[3] - b.w(),
+        ])
+    }
+}
+
+impl<T: Float, Q: AsQuat<T>> Mul<Q> for Quat<T> {
+    type Output = Self;
+
+    #[inline(always)]
+    fn mul(self, b: Q) -> Self::Output {
         let ax = self.0[0];
         let ay = self.0[1];
         let az = self.0[2];
         let aw = self.0[3];
-        let bx = b.0[0];
-        let by = b.0[1];
-        let bz = b.0[2];
-        let bw = b.0[3];
+        let bx = b.x();
+        let by = b.y();
+        let bz = b.z();
+        let bw = b.w();
 
         Quat::<T>::from_values(
             ax * bw + aw * bx + ay * bz - az * by,
@@ -855,14 +869,27 @@ impl<T: Float> Mul<Quat<T>> for Quat<T> {
     }
 }
 
-impl<T: Float> Mul<T> for Quat<T> {
-    type Output = Self;
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+            impl Mul<$float> for Quat<$float> {
+                type Output = Self;
 
-    #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
-    }
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([
+                        self.0[0] * b,
+                        self.0[1] * b,
+                        self.0[2] * b,
+                        self.0[3] * b,
+                    ])
+                }
+            }
+        )+
+    };
 }
+
+float_implementations!(f16, f32, f64);
 
 impl<T> AsRef<Quat<T>> for Quat<T> {
     fn as_ref(&self) -> &Self {
@@ -896,8 +923,6 @@ impl<T: Display> Display for Quat<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::{
         error::Error,
         mat3::{AsMat3, Mat3},
@@ -908,24 +933,16 @@ mod tests {
 
     use super::Quat;
 
-    static QUAT_A_RAW: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
-    static QUAT_B_RAW: [f64; 4] = [5.0, 6.0, 7.0, 8.0];
-    static QUAT_IDENTITY_RAW: [f64; 4] = [0.0, 0.0, 0.0, 1.0];
-
-    static QUAT_A: OnceLock<Quat> = OnceLock::new();
-    static QUAT_B: OnceLock<Quat> = OnceLock::new();
-    static QUAT_IDENTITY: OnceLock<Quat> = OnceLock::new();
-
-    fn quat_a() -> &'static Quat {
-        QUAT_A.get_or_init(|| Quat::from_slice(&QUAT_A_RAW))
+    fn quat_a() -> Quat {
+        Quat::from_values(1.0, 2.0, 3.0, 4.0)
     }
 
-    fn quat_b() -> &'static Quat {
-        QUAT_B.get_or_init(|| Quat::from_slice(&QUAT_B_RAW))
+    fn quat_b() -> Quat {
+        Quat::from_values(5.0, 6.0, 7.0, 8.0)
     }
 
-    fn quat_identity() -> &'static Quat {
-        QUAT_IDENTITY.get_or_init(|| Quat::from_slice(&QUAT_IDENTITY_RAW))
+    fn quat_identity() -> Quat {
+        Quat::from_values(0.0, 0.0, 0.0, 1.0)
     }
 
     #[test]
@@ -956,12 +973,12 @@ mod tests {
 
     #[test]
     fn scale() {
-        assert_eq!((*quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn scale_add() {
-        assert_eq!((*quat_a() + *quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((quat_a() + quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
@@ -984,17 +1001,20 @@ mod tests {
 
     #[test]
     fn dot() {
-        assert_eq!(quat_a().dot(quat_b()), 70.0);
+        assert_eq!(quat_a().dot(&quat_b()), 70.0);
     }
 
     #[test]
     fn lerp() {
-        assert_eq!(quat_a().lerp(quat_b(), 0.5).to_raw(), [3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(quat_a().lerp(&quat_b(), 0.5).to_raw(), [3.0, 4.0, 5.0, 6.0]);
     }
 
     #[test]
     fn slerp() {
-        assert_eq!(quat_a().slerp(quat_b(), 0.5).to_raw(), [3.0, 4.0, 5.0, 6.0]);
+        assert_eq!(
+            quat_a().slerp(&quat_b(), 0.5).to_raw(),
+            [3.0, 4.0, 5.0, 6.0]
+        );
     }
 
     #[test]
@@ -1020,22 +1040,22 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!((*quat_a() + *quat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
+        assert_eq!((quat_a() + quat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
     }
 
     #[test]
     fn mul() {
-        assert_eq!((*quat_a() * *quat_b()).to_raw(), [24.0, 48.0, 48.0, -6.0]);
+        assert_eq!((quat_a() * quat_b()).to_raw(), [24.0, 48.0, 48.0, -6.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((quat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*quat_a() + *quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((quat_a() + quat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
@@ -1259,7 +1279,7 @@ mod tests {
     #[test]
     fn pow() {
         // identity quat
-        assert_eq!(quat_identity().pow(2.1).to_raw(), QUAT_IDENTITY_RAW);
+        assert_eq!(quat_identity().pow(2.1), quat_identity());
 
         // power of one
         assert_eq!(quat_a().normalize().pow(1.0).length(), 0.9999999999999999);

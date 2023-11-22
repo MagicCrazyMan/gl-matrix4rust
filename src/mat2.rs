@@ -3,6 +3,7 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{epsilon, error::Error, vec2::AsVec2};
@@ -414,48 +415,54 @@ impl<T: Float> AsMat2<T> for Mat2<T> {
     }
 }
 
-impl<T: Float> Add<Mat2<T>> for Mat2<T> {
+impl<T: Float> Default for Mat2<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
+impl<T: Float, M: AsMat2<T>> Add<M> for Mat2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
+    fn add(self, b: M) -> Self::Output {
         Self([
-            self.0[0] + b.0[0],
-            self.0[1] + b.0[1],
-            self.0[2] + b.0[2],
-            self.0[3] + b.0[3],
+            self.0[0] + b.m00(),
+            self.0[1] + b.m01(),
+            self.0[2] + b.m10(),
+            self.0[3] + b.m11(),
         ])
     }
 }
 
-impl<T: Float> Sub<Mat2<T>> for Mat2<T> {
+impl<T: Float, M: AsMat2<T>> Sub<M> for Mat2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: Self) -> Self {
+    fn sub(self, b: M) -> Self::Output {
         Self([
-            self.0[0] - b.0[0],
-            self.0[1] - b.0[1],
-            self.0[2] - b.0[2],
-            self.0[3] - b.0[3],
+            self.0[0] - b.m00(),
+            self.0[1] - b.m01(),
+            self.0[2] - b.m10(),
+            self.0[3] - b.m11(),
         ])
     }
 }
 
-impl<T: Float> Mul<Mat2<T>> for Mat2<T> {
+impl<T: Float, M: AsMat2<T>> Mul<M> for Mat2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Self) -> Self {
+    fn mul(self, b: M) -> Self::Output {
         let a0 = self.0[0];
         let a1 = self.0[1];
         let a2 = self.0[2];
         let a3 = self.0[3];
 
-        let b0 = b.0[0];
-        let b1 = b.0[1];
-        let b2 = b.0[2];
-        let b3 = b.0[3];
+        let b0 = b.m00();
+        let b1 = b.m01();
+        let b2 = b.m10();
+        let b3 = b.m11();
 
         Self([
             a0 * b0 + a2 * b1,
@@ -466,16 +473,24 @@ impl<T: Float> Mul<Mat2<T>> for Mat2<T> {
     }
 }
 
-impl<T: Float> Mul<T> for Mat2<T> {
-    type Output = Self;
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+            impl Mul<$float> for Mat2<$float> {
+                type Output = Self;
 
-    #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
-    }
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
+                }
+            }
+        )+
+    };
 }
 
-impl<T> AsRef<Mat2<T>> for Mat2<T> {
+float_implementations!(f16, f32, f64);
+
+impl<T> AsRef<Self> for Mat2<T> {
     fn as_ref(&self) -> &Self {
         self
     }
@@ -484,12 +499,6 @@ impl<T> AsRef<Mat2<T>> for Mat2<T> {
 impl<T> AsRef<[T]> for Mat2<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl<T: Float> Default for Mat2<T> {
-    fn default() -> Self {
-        Self::new_identity()
     }
 }
 
@@ -507,24 +516,16 @@ impl<T: Display> Display for Mat2<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::{error::Error, mat2::AsMat2};
 
     use super::Mat2;
 
-    static MAT_A_RAW: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
-    static MAT_B_RAW: [f64; 4] = [5.0, 6.0, 7.0, 8.0];
-
-    static MAT_A: OnceLock<Mat2> = OnceLock::new();
-    static MAT_B: OnceLock<Mat2> = OnceLock::new();
-
-    fn mat_a() -> &'static Mat2 {
-        MAT_A.get_or_init(|| Mat2::from_slice(&MAT_A_RAW))
+    fn mat_a() -> Mat2 {
+        Mat2::from_values(1.0, 2.0, 3.0, 4.0)
     }
 
-    fn mat_b() -> &'static Mat2 {
-        MAT_B.get_or_init(|| Mat2::from_slice(&MAT_B_RAW))
+    fn mat_b() -> Mat2 {
+        Mat2::from_values(5.0, 6.0, 7.0, 8.0)
     }
 
     #[test]
@@ -619,28 +620,28 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!((*mat_a() + *mat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
+        assert_eq!((mat_a() + mat_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
     }
 
     #[test]
     fn sub() {
-        assert_eq!((*mat_a() - *mat_b()).to_raw(), [-4.0, -4.0, -4.0, -4.0]);
+        assert_eq!((mat_a() - mat_b()).to_raw(), [-4.0, -4.0, -4.0, -4.0]);
     }
 
     #[test]
     fn mul() {
-        let out = *mat_a() * *mat_b();
+        let out = mat_a() * mat_b();
         assert_eq!(out.to_raw(), [23.0, 34.0, 31.0, 46.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*mat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((mat_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*mat_a() + *mat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((mat_a() + mat_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]

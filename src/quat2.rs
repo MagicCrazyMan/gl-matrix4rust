@@ -1,8 +1,9 @@
 use std::{
     fmt::Display,
-    ops::{Add, Mul},
+    ops::{Add, Mul, Sub},
 };
 
+use half::f16;
 use num_traits::Float;
 
 use crate::{
@@ -1005,45 +1006,63 @@ impl<T: Float> AsQuat2<T> for Quat2<T> {
     }
 }
 
-impl<T: Float> Add<Quat2<T>> for Quat2<T> {
+impl<T: Float, Q: AsQuat2<T>> Add<Q> for Quat2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
+    fn add(self, b: Q) -> Self::Output {
         Self([
-            self.0[0] + b.0[0],
-            self.0[1] + b.0[1],
-            self.0[2] + b.0[2],
-            self.0[3] + b.0[3],
-            self.0[4] + b.0[4],
-            self.0[5] + b.0[5],
-            self.0[6] + b.0[6],
-            self.0[7] + b.0[7],
+            self.0[0] + b.x1(),
+            self.0[1] + b.y1(),
+            self.0[2] + b.z1(),
+            self.0[3] + b.w1(),
+            self.0[4] + b.x2(),
+            self.0[5] + b.y2(),
+            self.0[6] + b.z2(),
+            self.0[7] + b.w2(),
         ])
     }
 }
 
-impl<T: Float> Mul<Quat2<T>> for Quat2<T> {
+impl<T: Float, Q: AsQuat2<T>> Sub<Q> for Quat2<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: Self) -> Self {
+    fn sub(self, b: Q) -> Self::Output {
+        Self([
+            self.0[0] - b.x1(),
+            self.0[1] - b.y1(),
+            self.0[2] - b.z1(),
+            self.0[3] - b.w1(),
+            self.0[4] - b.x2(),
+            self.0[5] - b.y2(),
+            self.0[6] - b.z2(),
+            self.0[7] - b.w2(),
+        ])
+    }
+}
+
+impl<T: Float, Q: AsQuat2<T>> Mul<Q> for Quat2<T> {
+    type Output = Self;
+
+    #[inline(always)]
+    fn mul(self, b: Q) -> Self::Output {
         let ax0 = self.0[0];
         let ay0 = self.0[1];
         let az0 = self.0[2];
         let aw0 = self.0[3];
-        let bx1 = b.0[4];
-        let by1 = b.0[5];
-        let bz1 = b.0[6];
-        let bw1 = b.0[7];
+        let bx1 = b.x2();
+        let by1 = b.y2();
+        let bz1 = b.z2();
+        let bw1 = b.w2();
         let ax1 = self.0[4];
         let ay1 = self.0[5];
         let az1 = self.0[6];
         let aw1 = self.0[7];
-        let bx0 = b.0[0];
-        let by0 = b.0[1];
-        let bz0 = b.0[2];
-        let bw0 = b.0[3];
+        let bx0 = b.x1();
+        let by0 = b.y1();
+        let bz0 = b.z1();
+        let bw0 = b.w1();
 
         Self([
             ax0 * bw0 + aw0 * bx0 + ay0 * bz0 - az0 * by0,
@@ -1064,23 +1083,31 @@ impl<T: Float> Mul<Quat2<T>> for Quat2<T> {
     }
 }
 
-impl<T: Float> Mul<T> for Quat2<T> {
-    type Output = Self;
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+            impl Mul<$float> for Quat2<$float> {
+                type Output = Self;
 
-    #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        Self([
-            self.0[0] * b,
-            self.0[1] * b,
-            self.0[2] * b,
-            self.0[3] * b,
-            self.0[4] * b,
-            self.0[5] * b,
-            self.0[6] * b,
-            self.0[7] * b,
-        ])
-    }
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([
+                        self.0[0] * b,
+                        self.0[1] * b,
+                        self.0[2] * b,
+                        self.0[3] * b,
+                        self.0[4] * b,
+                        self.0[5] * b,
+                        self.0[6] * b,
+                        self.0[7] * b,
+                    ])
+                }
+            }
+        )+
+    };
 }
+
+float_implementations!(f16, f32, f64);
 
 impl<T> AsRef<Quat2<T>> for Quat2<T> {
     fn as_ref(&self) -> &Self {
@@ -1114,8 +1141,6 @@ impl<T: Display> Display for Quat2<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::{
         error::Error,
         quat::{AsQuat, Quat},
@@ -1125,18 +1150,12 @@ mod tests {
 
     use super::Quat2;
 
-    static QUAT2_A_RAW: [f64; 8] = [1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0];
-    static QUAT2_B_RAW: [f64; 8] = [5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 6.0, -4.0];
-
-    static QUAT2_A: OnceLock<Quat2> = OnceLock::new();
-    static QUAT2_B: OnceLock<Quat2> = OnceLock::new();
-
-    fn quat2_a() -> &'static Quat2 {
-        QUAT2_A.get_or_init(|| Quat2::from_slice(&QUAT2_A_RAW))
+    fn quat2_a() -> Quat2 {
+        Quat2::from_values(1.0, 2.0, 3.0, 4.0, 2.0, 5.0, 6.0, -2.0)
     }
 
-    fn quat2_b() -> &'static Quat2 {
-        QUAT2_B.get_or_init(|| Quat2::from_slice(&QUAT2_B_RAW))
+    fn quat2_b() -> Quat2 {
+        Quat2::from_values(5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 6.0, -4.0)
     }
 
     #[test]
@@ -1198,7 +1217,7 @@ mod tests {
     #[test]
     fn scale() {
         assert_eq!(
-            (*quat2_a() * 2.0).to_raw(),
+            (quat2_a() * 2.0).to_raw(),
             [2.0, 4.0, 6.0, 8.0, 4.0, 10.0, 12.0, -4.0]
         );
     }
@@ -1206,7 +1225,7 @@ mod tests {
     #[test]
     fn scale_add() {
         assert_eq!(
-            (*quat2_a() + *quat2_b() * 0.5).to_raw(),
+            (quat2_a() + quat2_b() * 0.5).to_raw(),
             [3.5, 5.0, 6.5, 8.0, 6.5, 9.0, 9.0, -4.0]
         );
     }
@@ -1219,7 +1238,7 @@ mod tests {
             quat2_a()
                 .rotate_by_quat_append(&(2.0, 5.0, 2.0, -10.0))
                 .to_raw(),
-            (*quat2_a() * quat2_rotation).to_raw()
+            (quat2_a() * quat2_rotation).to_raw()
         );
     }
 
@@ -1231,7 +1250,7 @@ mod tests {
             quat2_a()
                 .rotate_by_quat_prepend(&quat2_rotation.real())
                 .to_raw(),
-            (quat2_rotation * *quat2_a()).to_raw()
+            (quat2_rotation * quat2_a()).to_raw()
         );
     }
 
@@ -1247,7 +1266,7 @@ mod tests {
 
     #[test]
     fn dot() {
-        assert_eq!(quat2_a().dot(quat2_b()), 70.0);
+        assert_eq!(quat2_a().dot(&quat2_b()), 70.0);
     }
 
     #[test]
@@ -1312,7 +1331,7 @@ mod tests {
     #[test]
     fn add() {
         assert_eq!(
-            (*quat2_a() + *quat2_b()).to_raw(),
+            (quat2_a() + quat2_b()).to_raw(),
             [6.0, 8.0, 10.0, 12.0, 11.0, 13.0, 12.0, -6.0]
         );
     }
@@ -1320,7 +1339,7 @@ mod tests {
     #[test]
     fn mul() {
         assert_eq!(
-            (*quat2_a() * *quat2_b()).to_raw(),
+            (quat2_a() * quat2_b()).to_raw(),
             [24.0, 48.0, 48.0, -6.0, 25.0, 89.0, 23.0, -157.0]
         );
     }
@@ -1328,7 +1347,7 @@ mod tests {
     #[test]
     fn mul_scalar() {
         assert_eq!(
-            (*quat2_a() * 2.0).to_raw(),
+            (quat2_a() * 2.0).to_raw(),
             [2.0, 4.0, 6.0, 8.0, 4.0, 10.0, 12.0, -4.0]
         );
     }
@@ -1336,7 +1355,7 @@ mod tests {
     #[test]
     fn mul_scalar_add() {
         assert_eq!(
-            (*quat2_a() + *quat2_b() * 0.5).to_raw(),
+            (quat2_a() + quat2_b() * 0.5).to_raw(),
             [3.5, 5.0, 6.5, 8.0, 6.5, 9.0, 9.0, -4.0]
         );
     }
@@ -1409,7 +1428,7 @@ mod tests {
     #[test]
     fn lerp() {
         assert_eq!(
-            quat2_a().lerp(quat2_b(), 0.7).to_raw(),
+            quat2_a().lerp(&quat2_b(), 0.7).to_raw(),
             [3.8, 4.799999999999999, 5.8, 6.8, 6.9, 7.1, 6.0, -3.4]
         );
     }

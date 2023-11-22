@@ -629,171 +629,185 @@ impl Vec4<f16> {
     }
 }
 
-impl<T: Float> Add<Vec4<T>> for Vec4<T> {
+impl<T: Float> Default for Vec4<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Float, V: AsVec4<T>> Add<V> for Vec4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: Self) -> Self {
+    fn add(self, b: V) -> Self::Output {
         Self([
-            self.0[0] + b.0[0],
-            self.0[1] + b.0[1],
-            self.0[2] + b.0[2],
-            self.0[3] + b.0[3],
+            self.0[0] + b.x(),
+            self.0[1] + b.y(),
+            self.0[2] + b.z(),
+            self.0[3] + b.w(),
         ])
     }
 }
 
-impl<T: Float> Add<T> for Vec4<T> {
+impl<T: Float, V: AsVec4<T>> Sub<V> for Vec4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn add(self, b: T) -> Self {
-        Self([self.0[0] + b, self.0[1] + b, self.0[2] + b, self.0[3] + b])
-    }
-}
-
-impl<T: Float> Sub<Vec4<T>> for Vec4<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn sub(self, b: Self) -> Self {
+    fn sub(self, b: V) -> Self::Output {
         Self([
-            self.0[0] - b.0[0],
-            self.0[1] - b.0[1],
-            self.0[2] - b.0[2],
-            self.0[3] - b.0[3],
+            self.0[0] - b.x(),
+            self.0[1] - b.y(),
+            self.0[2] - b.z(),
+            self.0[3] - b.w(),
         ])
     }
 }
 
-impl<T: Float> Sub<T> for Vec4<T> {
+impl<T: Float, V: AsVec4<T>> Mul<V> for Vec4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn sub(self, b: T) -> Self {
-        Self([self.0[0] - b, self.0[1] - b, self.0[2] - b, self.0[3] - b])
-    }
-}
-
-impl<T: Float> Mul<Vec4<T>> for Vec4<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn mul(self, b: Self) -> Self {
+    fn mul(self, b: V) -> Self::Output {
         Self([
-            self.0[0] * b.0[0],
-            self.0[1] * b.0[1],
-            self.0[2] * b.0[2],
-            self.0[3] * b.0[3],
+            self.0[0] * b.x(),
+            self.0[1] * b.y(),
+            self.0[2] * b.z(),
+            self.0[3] * b.w(),
         ])
     }
 }
 
-impl<T: Float> Mul<T> for Vec4<T> {
+impl<T: Float, V: AsVec4<T>> Div<V> for Vec4<T> {
     type Output = Self;
 
     #[inline(always)]
-    fn mul(self, b: T) -> Self {
-        Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
-    }
-}
-
-impl<T: Float> Div<Vec4<T>> for Vec4<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn div(self, b: Self) -> Self {
+    fn div(self, b: V) -> Self::Output {
         Self([
-            self.0[0] / b.0[0],
-            self.0[1] / b.0[1],
-            self.0[2] / b.0[2],
-            self.0[3] / b.0[3],
+            self.0[0] / b.x(),
+            self.0[1] / b.y(),
+            self.0[2] / b.z(),
+            self.0[3] / b.w(),
         ])
     }
 }
 
-impl<T: Float> Div<T> for Vec4<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn div(self, b: T) -> Self {
-        Self([self.0[0] / b, self.0[1] / b, self.0[2] / b, self.0[3] / b])
+impl<T: Float + AddAssign, V: AsVec4<T>> AddAssign<V> for Vec4<T> {
+    fn add_assign(&mut self, rhs: V) {
+        self.0[0] += rhs.x();
+        self.0[1] += rhs.y();
+        self.0[2] += rhs.z();
+        self.0[3] += rhs.w();
     }
 }
 
-impl<T: Float> AddAssign<Self> for Vec4<T> {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] + rhs.0[0];
-        self.0[1] = self.0[1] + rhs.0[1];
-        self.0[2] = self.0[2] + rhs.0[2];
-        self.0[3] = self.0[3] + rhs.0[3];
+impl<T: Float + SubAssign, V: AsVec4<T>> SubAssign<V> for Vec4<T> {
+    fn sub_assign(&mut self, rhs: V) {
+        self.0[0] -= rhs.x();
+        self.0[1] -= rhs.y();
+        self.0[2] -= rhs.z();
+        self.0[3] -= rhs.w();
     }
 }
 
-impl<T: Float> AddAssign<T> for Vec4<T> {
-    fn add_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] + rhs;
-        self.0[1] = self.0[1] + rhs;
-        self.0[2] = self.0[2] + rhs;
-        self.0[3] = self.0[3] + rhs;
+impl<T: Float + MulAssign, V: AsVec4<T>> MulAssign<V> for Vec4<T> {
+    fn mul_assign(&mut self, rhs: V) {
+        self.0[0] *= rhs.x();
+        self.0[1] *= rhs.y();
+        self.0[2] *= rhs.z();
+        self.0[3] *= rhs.w();
     }
 }
 
-impl<T: Float> SubAssign<Self> for Vec4<T> {
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] - rhs.0[0];
-        self.0[1] = self.0[1] - rhs.0[1];
-        self.0[2] = self.0[2] - rhs.0[2];
-        self.0[3] = self.0[3] - rhs.0[2];
+impl<T: Float + DivAssign, V: AsVec4<T>> DivAssign<V> for Vec4<T> {
+    fn div_assign(&mut self, rhs: V) {
+        self.0[0] /= rhs.x();
+        self.0[1] /= rhs.y();
+        self.0[2] /= rhs.z();
+        self.0[3] /= rhs.w();
     }
 }
 
-impl<T: Float> SubAssign<T> for Vec4<T> {
-    fn sub_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] - rhs;
-        self.0[1] = self.0[1] - rhs;
-        self.0[2] = self.0[2] - rhs;
-        self.0[3] = self.0[3] - rhs;
-    }
+macro_rules! float_implementations {
+    ($($float: tt),+) => {
+        $(
+            impl Add<$float> for Vec4<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn add(self, b: $float) -> Self::Output {
+                    Self([self.0[0] + b, self.0[1] + b, self.0[2] + b, self.0[3] + b])
+                }
+            }
+
+            impl Sub<$float> for Vec4<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn sub(self, b: $float) -> Self::Output {
+                    Self([self.0[0] - b, self.0[1] - b, self.0[2] - b, self.0[3] - b])
+                }
+            }
+
+            impl Mul<$float> for Vec4<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn mul(self, b: $float) -> Self::Output {
+                    Self([self.0[0] * b, self.0[1] * b, self.0[2] * b, self.0[3] * b])
+                }
+            }
+
+            impl Div<$float> for Vec4<$float> {
+                type Output = Self;
+
+                #[inline(always)]
+                fn div(self, b: $float) -> Self::Output {
+                    Self([self.0[0] / b, self.0[1] / b, self.0[2] / b, self.0[3] / b])
+                }
+            }
+
+            impl AddAssign<$float> for Vec4<$float> {
+                fn add_assign(&mut self, rhs: $float) {
+                    self.0[0] = self.0[0] + rhs;
+                    self.0[1] = self.0[1] + rhs;
+                    self.0[2] = self.0[2] + rhs;
+                    self.0[3] = self.0[3] + rhs;
+                }
+            }
+
+            impl SubAssign<$float> for Vec4<$float> {
+                fn sub_assign(&mut self, rhs: $float) {
+                    self.0[0] = self.0[0] - rhs;
+                    self.0[1] = self.0[1] - rhs;
+                    self.0[2] = self.0[2] - rhs;
+                    self.0[3] = self.0[3] - rhs;
+                }
+            }
+
+            impl MulAssign<$float> for Vec4<$float> {
+                fn mul_assign(&mut self, rhs: $float) {
+                    self.0[0] = self.0[0] * rhs;
+                    self.0[1] = self.0[1] * rhs;
+                    self.0[2] = self.0[2] * rhs;
+                    self.0[3] = self.0[3] * rhs;
+                }
+            }
+
+            impl DivAssign<$float> for Vec4<$float> {
+                fn div_assign(&mut self, rhs: $float) {
+                    self.0[0] = self.0[0] / rhs;
+                    self.0[1] = self.0[1] / rhs;
+                    self.0[2] = self.0[2] / rhs;
+                    self.0[3] = self.0[3] / rhs;
+                }
+            }
+        )+
+    };
 }
 
-impl<T: Float> MulAssign<Self> for Vec4<T> {
-    fn mul_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] * rhs.0[0];
-        self.0[1] = self.0[1] * rhs.0[1];
-        self.0[2] = self.0[2] * rhs.0[2];
-        self.0[3] = self.0[3] * rhs.0[3];
-    }
-}
+float_implementations!(f16, f32, f64);
 
-impl<T: Float> MulAssign<T> for Vec4<T> {
-    fn mul_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] * rhs;
-        self.0[1] = self.0[1] * rhs;
-        self.0[2] = self.0[2] * rhs;
-        self.0[3] = self.0[3] * rhs;
-    }
-}
-
-impl<T: Float> DivAssign<Self> for Vec4<T> {
-    fn div_assign(&mut self, rhs: Self) {
-        self.0[0] = self.0[0] / rhs.0[0];
-        self.0[1] = self.0[1] / rhs.0[1];
-        self.0[2] = self.0[2] / rhs.0[2];
-        self.0[3] = self.0[3] / rhs.0[3];
-    }
-}
-
-impl<T: Float> DivAssign<T> for Vec4<T> {
-    fn div_assign(&mut self, rhs: T) {
-        self.0[0] = self.0[0] / rhs;
-        self.0[1] = self.0[1] / rhs;
-        self.0[2] = self.0[2] / rhs;
-        self.0[3] = self.0[3] / rhs;
-    }
-}
-
-impl<T> AsRef<Vec4<T>> for Vec4<T> {
+impl<T> AsRef<Self> for Vec4<T> {
     fn as_ref(&self) -> &Self {
         self
     }
@@ -802,12 +816,6 @@ impl<T> AsRef<Vec4<T>> for Vec4<T> {
 impl<T> AsRef<[T]> for Vec4<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl<T: Float> Default for Vec4<T> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -825,24 +833,16 @@ impl<T: Display> Display for Vec4<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::OnceLock;
-
     use crate::vec4::AsVec4;
 
     use super::Vec4;
 
-    const VEC_A_RAW: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
-    const VEC_B_RAW: [f64; 4] = [5.0, 6.0, 7.0, 8.0];
-
-    static VEC_A: OnceLock<Vec4> = OnceLock::new();
-    static VEC_B: OnceLock<Vec4> = OnceLock::new();
-
-    fn vec_a() -> &'static Vec4 {
-        VEC_A.get_or_init(|| Vec4::from_slice(&VEC_A_RAW))
+    fn vec_a() -> Vec4 {
+        Vec4::from_values(1.0, 2.0, 3.0, 4.0)
     }
 
-    fn vec_b() -> &'static Vec4 {
-        VEC_B.get_or_init(|| Vec4::from_slice(&VEC_B_RAW))
+    fn vec_b() -> Vec4 {
+        Vec4::from_values(5.0, 6.0, 7.0, 8.0)
     }
 
     #[test]
@@ -930,22 +930,22 @@ mod tests {
 
     #[test]
     fn scale() {
-        assert_eq!((*vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn scale_add() {
-        assert_eq!((*vec_a() + *vec_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((vec_a() + vec_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
     fn squared_distance() {
-        assert_eq!(vec_a().squared_distance(vec_b()), 64.0);
+        assert_eq!(vec_a().squared_distance(&vec_b()), 64.0);
     }
 
     #[test]
     fn distance() {
-        assert_eq!(vec_a().distance(vec_b()), 8.0);
+        assert_eq!(vec_a().distance(&vec_b()), 8.0);
     }
 
     #[test]
@@ -973,7 +973,7 @@ mod tests {
 
     #[test]
     fn dot() {
-        assert_eq!(vec_a().dot(vec_b()), 70.0);
+        assert_eq!(vec_a().dot(&vec_b()), 70.0);
     }
 
     #[test]
@@ -985,10 +985,7 @@ mod tests {
 
     #[test]
     fn lerp() {
-        assert_eq!(
-            vec_a().lerp(vec_b(), 0.5).to_raw(),
-            [3.0, 4.0, 5.0, 6.0]
-        );
+        assert_eq!(vec_a().lerp(&vec_b(), 0.5).to_raw(), [3.0, 4.0, 5.0, 6.0]);
     }
 
     #[test]
@@ -1009,48 +1006,45 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!((*vec_a() + *vec_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
+        assert_eq!((vec_a() + vec_b()).to_raw(), [6.0, 8.0, 10.0, 12.0]);
     }
 
     #[test]
     fn sub() {
-        assert_eq!((*vec_a() - *vec_b()).to_raw(), [-4.0, -4.0, -4.0, -4.0]);
+        assert_eq!((vec_a() - vec_b()).to_raw(), [-4.0, -4.0, -4.0, -4.0]);
     }
 
     #[test]
     fn mul() {
-        assert_eq!((*vec_a() * *vec_b()).to_raw(), [5.0, 12.0, 21.0, 32.0]);
+        assert_eq!((vec_a() * vec_b()).to_raw(), [5.0, 12.0, 21.0, 32.0]);
     }
 
     #[test]
     fn mul_scalar() {
-        assert_eq!((*vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
+        assert_eq!((vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0, 8.0]);
     }
 
     #[test]
     fn mul_scalar_add() {
-        assert_eq!((*vec_a() + *vec_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
+        assert_eq!((vec_a() + vec_b() * 0.5).to_raw(), [3.5, 5.0, 6.5, 8.0]);
     }
 
     #[test]
     fn div() {
         assert_eq!(
-            (*vec_a() / *vec_b()).to_raw(),
+            (vec_a() / vec_b()).to_raw(),
             [0.2, 0.3333333333333333, 0.42857142857142855, 0.5]
         );
     }
 
     #[test]
     fn div_scalar() {
-        assert_eq!((*vec_a() / 2.0).to_raw(), [0.5, 1.0, 1.5, 2.0]);
+        assert_eq!((vec_a() / 2.0).to_raw(), [0.5, 1.0, 1.5, 2.0]);
     }
 
     #[test]
     fn div_scalar_add() {
-        assert_eq!(
-            (*vec_a() + *vec_b() / 0.5).to_raw(),
-            [11.0, 14.0, 17.0, 20.0]
-        );
+        assert_eq!((vec_a() + vec_b() / 0.5).to_raw(), [11.0, 14.0, 17.0, 20.0]);
     }
 
     #[test]
