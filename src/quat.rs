@@ -693,16 +693,16 @@ impl<T: Float + FloatConst> Quat<T> {
     #[inline(always)]
     pub fn from_rotation_to<V1, V2>(a: &V1, b: &V2) -> Self
     where
-        V1: AsVec3<T>,
-        V2: AsVec3<T>,
+        V1: AsVec3<T> + ?Sized,
+        V2: AsVec3<T> + ?Sized,
     {
         let dot = a.dot(b);
         if dot < T::from(-0.999999).unwrap() {
-            let x_unit = Vec3::from_values(T::one(), T::zero(), T::zero());
+            let x_unit = [T::one(), T::zero(), T::zero()];
 
             let mut tmp = x_unit.cross(a);
             if tmp.length() < T::from(0.00001).unwrap() {
-                let y_unit = Vec3::from_values(T::zero(), T::one(), T::zero());
+                let y_unit = [T::zero(), T::one(), T::zero()];
                 tmp = y_unit.cross(a);
             };
 
@@ -710,7 +710,7 @@ impl<T: Float + FloatConst> Quat<T> {
         } else if dot > T::from(0.999999).unwrap() {
             Self([T::zero(), T::zero(), T::zero(), T::one()])
         } else {
-            let tmp = a.cross(b);
+            let tmp = a.to_raw().cross(b);
             Self([tmp.x(), tmp.y(), tmp.z(), T::one() + dot]).normalize()
         }
     }
