@@ -1455,8 +1455,13 @@ impl<T: Float> Mat4<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice(slice: &[T; 16]) -> Self {
-        Self(slice.clone())
+    pub fn from_slice(slice: [T; 16]) -> Self {
+        Self(slice)
+    }
+
+    #[inline(always)]
+    pub fn from_as_mat4<M: AsMat4<T>>(m: M) -> Self {
+        Self(m.to_raw())
     }
 
     #[inline(always)]
@@ -2417,6 +2422,12 @@ impl<T: Float> AsMat4<T> for Mat4<T> {
     }
 }
 
+impl<T: Float> Default for Mat4<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float, M: AsMat4<T>> Add<M> for Mat4<T> {
     type Output = Self;
 
@@ -2566,6 +2577,18 @@ macro_rules! float_implementations {
 
 float_implementations!(f16, f32, f64);
 
+impl<T: Float> From<[T; 16]> for Mat4<T> {
+    fn from(value: [T; 16]) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Float> From<(T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T)> for Mat4<T> {
+    fn from(value: (T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T)) -> Self {
+        Self(value.to_raw())
+    }
+}
+
 impl<T> AsRef<Mat4<T>> for Mat4<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -2575,12 +2598,6 @@ impl<T> AsRef<Mat4<T>> for Mat4<T> {
 impl<T> AsRef<[T]> for Mat4<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl<T: Float> Default for Mat4<T> {
-    fn default() -> Self {
-        Self::new_identity()
     }
 }
 
@@ -2640,7 +2657,7 @@ mod tests {
     #[test]
     fn from_slice() {
         assert_eq!(
-            Mat4::from_slice(&[
+            Mat4::from_slice([
                 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
                 16.0
             ])

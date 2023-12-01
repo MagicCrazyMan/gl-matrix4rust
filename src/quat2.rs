@@ -821,8 +821,13 @@ impl<T: Float> Quat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice(slice: &[T; 8]) -> Self {
-        Self(slice.clone())
+    pub fn from_slice(slice: [T; 8]) -> Self {
+        Self(slice)
+    }
+
+    #[inline(always)]
+    pub fn from_as_quat2<Q: AsQuat2<T>>(q: Q) -> Self {
+        Self(q.to_raw())
     }
 
     #[inline(always)]
@@ -1006,6 +1011,12 @@ impl<T: Float> AsQuat2<T> for Quat2<T> {
     }
 }
 
+impl<T: Float> Default for Quat2<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float, Q: AsQuat2<T>> Add<Q> for Quat2<T> {
     type Output = Self;
 
@@ -1109,6 +1120,18 @@ macro_rules! float_implementations {
 
 float_implementations!(f16, f32, f64);
 
+impl<T: Float> From<[T; 8]> for Quat2<T> {
+    fn from(value: [T; 8]) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Float> From<(T, T, T, T, T, T, T, T)> for Quat2<T> {
+    fn from(value: (T, T, T, T, T, T, T, T)) -> Self {
+        Self(value.to_raw())
+    }
+}
+
 impl<T> AsRef<Quat2<T>> for Quat2<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -1118,12 +1141,6 @@ impl<T> AsRef<Quat2<T>> for Quat2<T> {
 impl<T> AsRef<[T]> for Quat2<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl<T: Float> Default for Quat2<T> {
-    fn default() -> Self {
-        Self::new_identity()
     }
 }
 
@@ -1169,7 +1186,7 @@ mod tests {
     #[test]
     fn from_slice() {
         assert_eq!(
-            Quat2::from_slice(&[3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]).to_raw(),
+            Quat2::from_slice([3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]).to_raw(),
             [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         );
     }

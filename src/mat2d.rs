@@ -415,8 +415,13 @@ impl<T: Float> Mat2d<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice(slice: &[T; 6]) -> Self {
-        Self(slice.clone())
+    pub fn from_slice(slice: [T; 6]) -> Self {
+        Self(slice)
+    }
+
+    #[inline(always)]
+    pub fn from_as_mat2d<M: AsMat2d<T>>(m: M) -> Self {
+        Self(m.to_raw())
     }
 
     #[inline(always)]
@@ -515,6 +520,12 @@ impl<T: Float> AsMat2d<T> for Mat2d<T> {
     }
 }
 
+impl<T: Float> Default for Mat2d<T> {
+    fn default() -> Self {
+        Self::new_identity()
+    }
+}
+
 impl<T: Float, M: AsMat2d<T>> Add<M> for Mat2d<T> {
     type Output = Self;
 
@@ -601,6 +612,18 @@ macro_rules! float_implementations {
 
 float_implementations!(f16, f32, f64);
 
+impl<T: Float> From<[T; 6]> for Mat2d<T> {
+    fn from(value: [T; 6]) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Float> From<(T, T, T, T, T, T)> for Mat2d<T> {
+    fn from(value: (T, T, T, T, T, T)) -> Self {
+        Self(value.to_raw())
+    }
+}
+
 impl<T> AsRef<Mat2d<T>> for Mat2d<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -610,12 +633,6 @@ impl<T> AsRef<Mat2d<T>> for Mat2d<T> {
 impl<T> AsRef<[T]> for Mat2d<T> {
     fn as_ref(&self) -> &[T] {
         &self.0
-    }
-}
-
-impl<T: Float> Default for Mat2d<T> {
-    fn default() -> Self {
-        Self::new_identity()
     }
 }
 
@@ -661,7 +678,7 @@ mod tests {
     #[test]
     fn from_slice() {
         assert_eq!(
-            Mat2d::from_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).to_raw(),
+            Mat2d::from_slice([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).to_raw(),
             [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
         );
     }

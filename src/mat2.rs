@@ -342,8 +342,13 @@ impl<T: Float> Mat2<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice(slice: &[T; 4]) -> Self {
-        Self(slice.clone())
+    pub fn from_slice(slice: [T; 4]) -> Self {
+        Self(slice)
+    }
+
+    #[inline(always)]
+    pub fn from_as_mat2<M: AsMat2<T>>(m: M) -> Self {
+        Self(m.to_raw())
     }
 
     #[inline(always)]
@@ -490,6 +495,18 @@ macro_rules! float_implementations {
 
 float_implementations!(f16, f32, f64);
 
+impl<T: Float> From<[T; 4]> for Mat2<T> {
+    fn from(value: [T; 4]) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Float> From<(T, T, T, T)> for Mat2<T> {
+    fn from(value: (T, T, T, T)) -> Self {
+        Self(value.to_raw())
+    }
+}
+
 impl<T> AsRef<Self> for Mat2<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -541,7 +558,7 @@ mod tests {
     #[test]
     fn from_slice() {
         assert_eq!(
-            Mat2::from_slice(&[1.0, 2.0, 3.0, 4.0]).to_raw(),
+            Mat2::from_slice([1.0, 2.0, 3.0, 4.0]).to_raw(),
             [1.0, 2.0, 3.0, 4.0,]
         );
     }

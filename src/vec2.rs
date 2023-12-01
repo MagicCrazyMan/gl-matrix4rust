@@ -385,8 +385,13 @@ impl<T: Float> Vec2<T> {
     }
 
     #[inline(always)]
-    pub fn from_slice(slice: &[T; 2]) -> Self {
-        Self(slice.clone())
+    pub fn from_slice(slice: [T; 2]) -> Self {
+        Self(slice)
+    }
+
+    #[inline(always)]
+    pub fn from_as_vec2<V: AsVec2<T>>(v: V) -> Self {
+        Self(v.to_raw())
     }
 
     #[inline(always)]
@@ -618,6 +623,18 @@ macro_rules! float_implementations {
 
 float_implementations!(f16, f32, f64);
 
+impl<T: Float> From<[T; 2]> for Vec2<T> {
+    fn from(value: [T; 2]) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Float> From<(T, T)> for Vec2<T> {
+    fn from(value: (T, T)) -> Self {
+        Self(value.to_raw())
+    }
+}
+
 impl<T> AsRef<Vec2<T>> for Vec2<T> {
     fn as_ref(&self) -> &Self {
         self
@@ -668,7 +685,7 @@ mod tests {
 
     #[test]
     fn from_slice() {
-        assert_eq!(Vec2::from_slice(&[3.0, 4.0]).to_raw(), [3.0, 4.0]);
+        assert_eq!(Vec2::from_slice([3.0, 4.0]).to_raw(), [3.0, 4.0]);
     }
 
     #[test]
