@@ -633,6 +633,21 @@ pub struct Mat3<T = f64>(pub [T; 9]);
 
 impl<T: Float> Mat3<T> {
     #[inline(always)]
+    pub const fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m20: T,
+        m21: T,
+        m22: T,
+    ) -> Self {
+        Self([m00, m01, m02, m10, m11, m12, m20, m21, m22])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 9])
     }
@@ -1104,7 +1119,7 @@ mod tests {
         error::Error,
         mat3::AsMat3,
         mat4::{AsMat4, Mat4},
-        quat::{AsQuat, Quat},
+        quat::Quat,
         vec3::AsVec3,
     };
 

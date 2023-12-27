@@ -10,6 +10,8 @@ pub mod quat2;
 pub mod vec2;
 pub mod vec3;
 pub mod vec4;
+#[cfg(target_family = "wasm")]
+pub mod wasm32;
 
 #[inline(always)]
 pub fn epsilon<T: Float>() -> T {

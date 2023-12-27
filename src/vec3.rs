@@ -6,7 +6,7 @@ use std::{
 use half::f16;
 use num_traits::Float;
 
-use crate::{epsilon, mat3::AsMat3, mat4::AsMat4, quat::AsQuat};
+use crate::{epsilon, mat3::AsMat3, mat4::AsMat4, quat::AsQuat, quat2::AsQuat2};
 
 pub trait AsVec3<T: Float> {
     fn from_values(x: T, y: T, z: T) -> Self;
@@ -366,6 +366,42 @@ pub trait AsVec3<T: Float> {
     }
 
     #[inline(always)]
+    fn transform_quat2<Q: AsQuat2<T> + ?Sized>(&self, q: &Q) -> Self
+    where
+        Self: Sized,
+    {
+        // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
+        let qx = q.x1();
+        let qy = q.y1();
+        let qz = q.z1();
+        let qw = q.w1();
+        let x = self.x();
+        let y = self.y();
+        let z = self.z();
+        // var qvec = [qx, qy, qz];
+        // var uv = vec3.cross([], qvec, a);
+        let mut uvx = qy * z - qz * y;
+        let mut uvy = qz * x - qx * z;
+        let mut uvz = qx * y - qy * x;
+        // var uuv = vec3.cross([], qvec, uv);
+        let mut uuvx = qy * uvz - qz * uvy;
+        let mut uuvy = qz * uvx - qx * uvz;
+        let mut uuvz = qx * uvy - qy * uvx;
+        // vec3.scale(uv, uv, 2 * w);
+        let w2 = qw * T::from(2.0).unwrap();
+        uvx = uvx * w2;
+        uvy = uvy * w2;
+        uvz = uvz * w2;
+        // vec3.scale(uuv, uuv, 2);
+        uuvx = uuvx * T::from(2.0).unwrap();
+        uuvy = uuvy * T::from(2.0).unwrap();
+        uuvz = uuvz * T::from(2.0).unwrap();
+        // return vec3.add(out, a, vec3.add(out, uv, uuv));
+
+        Self::from_values(x + uvx + uuvx, y + uvy + uuvy, z + uvz + uuvz)
+    }
+
+    #[inline(always)]
     fn transform_mat4<M: AsMat4<T> + ?Sized>(&self, m: &M) -> Self
     where
         Self: Sized,
@@ -568,6 +604,11 @@ pub struct Vec3<T = f64>(pub [T; 3]);
 
 impl<T: Float> Vec3<T> {
     #[inline(always)]
+    pub const fn from_values(x: T, y: T, z: T) -> Self {
+        Self([x, y, z])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 3])
     }
@@ -630,7 +671,7 @@ impl<T: Float> AsVec3<T> for Vec3<T> {
 
 impl Vec3<f64> {
     #[inline(always)]
-    pub fn random(&self, scale: Option<f64>) -> Self {
+    pub fn random(scale: Option<f64>) -> Self {
         let scale = match scale {
             Some(scale) => scale,
             None => 1.0,
@@ -646,7 +687,7 @@ impl Vec3<f64> {
 
 impl Vec3<f32> {
     #[inline(always)]
-    pub fn random(&self, scale: Option<f32>) -> Self {
+    pub fn random(scale: Option<f32>) -> Self {
         let scale = match scale {
             Some(scale) => scale,
             None => 1.0,
@@ -662,7 +703,7 @@ impl Vec3<f32> {
 
 impl Vec3<f16> {
     #[inline(always)]
-    pub fn random(&self, scale: Option<f16>) -> Self {
+    pub fn random(scale: Option<f16>) -> Self {
         let scale = match scale {
             Some(scale) => scale,
             None => f16::from_f32_const(1.0),
@@ -866,9 +907,9 @@ impl<T: Display> Display for Vec3<T> {
 mod tests {
     use crate::{
         error::Error,
-        mat3::{AsMat3, Mat3},
-        mat4::{AsMat4, Mat4},
-        quat::{AsQuat, Quat},
+        mat3::Mat3,
+        mat4::Mat4,
+        quat::Quat,
         vec3::{AsVec3, Vec3},
     };
 

@@ -797,6 +797,11 @@ pub struct Quat2<T = f64>(pub [T; 8]);
 
 impl<T: Float> Quat2<T> {
     #[inline(always)]
+    pub const fn from_values(x1: T, y1: T, z1: T, w1: T, x2: T, y2: T, z2: T, w2: T) -> Self {
+        Self([x1, y1, z1, w1, x2, y2, z2, w2])
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 8] {
         &self.0
     }

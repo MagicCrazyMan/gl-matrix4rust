@@ -538,6 +538,11 @@ pub struct Quat<T = f64>(pub [T; 4]);
 
 impl<T: Float> Quat<T> {
     #[inline(always)]
+    pub const fn from_values(x: T, y: T, z: T, w: T) -> Self {
+        Self([x, y, z, w])
+    }
+
+    #[inline(always)]
     pub fn raw(&self) -> &[T; 4] {
         &self.0
     }

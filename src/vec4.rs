@@ -456,6 +456,11 @@ pub struct Vec4<T = f64>(pub [T; 4]);
 
 impl<T: Float> Vec4<T> {
     #[inline(always)]
+    pub const fn from_values(x: T, y: T, z: T, w: T) -> Self {
+        Self([x, y, z, w])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 4])
     }

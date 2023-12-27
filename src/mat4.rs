@@ -1428,6 +1428,30 @@ pub struct Mat4<T = f64>(pub [T; 16]);
 
 impl<T: Float> Mat4<T> {
     #[inline(always)]
+    pub const fn from_values(
+        m00: T,
+        m01: T,
+        m02: T,
+        m03: T,
+        m10: T,
+        m11: T,
+        m12: T,
+        m13: T,
+        m20: T,
+        m21: T,
+        m22: T,
+        m23: T,
+        m30: T,
+        m31: T,
+        m32: T,
+        m33: T,
+    ) -> Self {
+        Self([
+            m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33,
+        ])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 16])
     }
@@ -1633,14 +1657,14 @@ impl<T: Float> Mat4<T> {
     #[inline(always)]
     pub fn from_rotation_translation<Q, V>(q: &Q, v: &V) -> Self
     where
-        Q: AsQuat2<T> + ?Sized,
+        Q: AsQuat<T> + ?Sized,
         V: AsVec3<T> + ?Sized,
     {
         // Quaternion math
-        let x = q.x1();
-        let y = q.y1();
-        let z = q.z1();
-        let w = q.w1();
+        let x = q.x();
+        let y = q.y();
+        let z = q.z();
+        let w = q.w();
         let x2 = x + x;
         let y2 = y + y;
         let z2 = z + z;
@@ -1701,7 +1725,7 @@ impl<T: Float> Mat4<T> {
             translation.0[1] = (ay * bw + aw * by + az * bx - ax * bz) * T::from(2.0).unwrap();
             translation.0[2] = (az * bw + aw * bz + ax * by - ay * bx) * T::from(2.0).unwrap();
         }
-        Self::from_rotation_translation(a, &translation)
+        Self::from_rotation_translation(&(a.x1(), a.y1(), a.z1(), a.w1()), &translation)
     }
 
     #[inline(always)]
@@ -2615,11 +2639,7 @@ impl<T: Display> Display for Mat4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        error::Error,
-        mat4::AsMat4,
-        vec3::{AsVec3, Vec3},
-    };
+    use crate::{error::Error, mat4::AsMat4, vec3::Vec3};
 
     use super::Mat4;
 

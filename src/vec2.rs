@@ -6,14 +6,7 @@ use std::{
 use half::f16;
 use num_traits::Float;
 
-use crate::{
-    epsilon,
-    mat2::AsMat2,
-    mat2d::AsMat2d,
-    mat3::AsMat3,
-    mat4::AsMat4,
-    vec3::{AsVec3, Vec3},
-};
+use crate::{epsilon, mat2::AsMat2, mat2d::AsMat2d, mat3::AsMat3, mat4::AsMat4, vec3::Vec3};
 
 pub trait AsVec2<T: Float> {
     fn from_values(x: T, y: T) -> Self;
@@ -380,6 +373,11 @@ pub struct Vec2<T = f64>(pub [T; 2]);
 
 impl<T: Float> Vec2<T> {
     #[inline(always)]
+    pub const fn from_values(x: T, y: T) -> Self {
+        Self([x, y])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 2])
     }
@@ -661,12 +659,7 @@ impl<T: Display> Display for Vec2<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        error::Error,
-        mat2::{AsMat2, Mat2},
-        mat2d::{AsMat2d, Mat2d},
-        vec2::AsVec2,
-    };
+    use crate::{error::Error, mat2::Mat2, mat2d::Mat2d, vec2::AsVec2};
 
     use super::Vec2;
 

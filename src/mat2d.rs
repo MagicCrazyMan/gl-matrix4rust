@@ -398,6 +398,11 @@ pub struct Mat2d<T = f64>(pub [T; 6]);
 
 impl<T: Float> Mat2d<T> {
     #[inline(always)]
+    pub const fn from_values(a: T, b: T, c: T, d: T, tx: T, ty: T) -> Self {
+        Self([a, b, c, d, tx, ty])
+    }
+
+    #[inline(always)]
     pub fn new() -> Self {
         Self([T::zero(); 6])
     }
