@@ -1,4 +1,4 @@
-`gl-matrix4rust` is a Rust porting version of [`gl-matrix`](https://github.com/toji/gl-matrix). This project is experimental and under developing along with project [`atoy`](https://github.com/MagicCrazyMan/atoy). The implementation of this project may changes during the development of project `atoy`.
+`gl-matrix4rust` is a Rust porting version of [`gl-matrix`](https://github.com/toji/gl-matrix). This project is experimental and keeps developing along with project [`atoy`](https://github.com/MagicCrazyMan/atoy). The implementation of this project may changes during the development of project `atoy`.
 
 Checks more details from [`gl-matrix`](https://github.com/toji/gl-matrix). More information and wiki about this project will be added when this project stabilize.
 
