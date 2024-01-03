@@ -5,6 +5,7 @@ use std::{
 
 use half::f16;
 use num_traits::{Float, FloatConst};
+use rand::distributions::{Distribution, Standard};
 
 use crate::{
     epsilon,
@@ -825,6 +826,54 @@ impl Quat<f16> {
             sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).sin(),
             sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).cos(),
         ])
+    }
+}
+
+impl Distribution<Quat<f64>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Quat<f64> {
+        let u1 = rng.gen::<f64>();
+        let u2 = rng.gen::<f64>();
+        let u3 = rng.gen::<f64>();
+        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Quat::from_values(
+            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).sin(),
+            sqrt1_minus_u1 * (2.0 * std::f64::consts::PI * u2).cos(),
+            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).sin(),
+            sqrt_u1 * (2.0 * std::f64::consts::PI * u3).cos(),
+        )
+    }
+}
+
+impl Distribution<Quat<f32>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Quat<f32> {
+        let u1 = rng.gen::<f32>();
+        let u2 = rng.gen::<f32>();
+        let u3 = rng.gen::<f32>();
+        let sqrt1_minus_u1 = (1.0 - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Quat::from_values(
+            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).sin(),
+            sqrt1_minus_u1 * (2.0 * std::f32::consts::PI * u2).cos(),
+            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).sin(),
+            sqrt_u1 * (2.0 * std::f32::consts::PI * u3).cos(),
+        )
+    }
+}
+
+impl Distribution<Quat<f16>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Quat<f16> {
+        let u1 = rng.gen::<f16>();
+        let u2 = rng.gen::<f16>();
+        let u3 = rng.gen::<f16>();
+        let sqrt1_minus_u1 = (f16::from_f32_const(1.0) - u1).sqrt();
+        let sqrt_u1 = u1.sqrt();
+        Quat::from_values(
+            sqrt1_minus_u1 * (f16::from_f32_const(2.0) * f16::PI * u2).sin(),
+            sqrt1_minus_u1 * (f16::from_f32_const(2.0) * f16::PI * u2).cos(),
+            sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).sin(),
+            sqrt_u1 * (f16::from_f32_const(2.0) * f16::PI * u3).cos(),
+        )
     }
 }
 

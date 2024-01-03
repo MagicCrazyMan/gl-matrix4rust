@@ -5,6 +5,7 @@ use std::{
 
 use half::f16;
 use num_traits::Float;
+use rand::distributions::{Distribution, Standard};
 
 use crate::{epsilon, mat2::AsMat2, mat2d::AsMat2d, mat3::AsMat3, mat4::AsMat4, vec3::Vec3};
 
@@ -466,6 +467,33 @@ impl Vec2<f16> {
         let r = rand::random::<f16>() * f16::from_f32_const(2.0) * f16::PI;
 
         Self([r.cos() * scale, r.sin() * scale])
+    }
+}
+
+impl Distribution<Vec2<f64>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec2<f64> {
+        let scale = 1.0;
+        let r = rng.gen::<f64>() * 2.0 * std::f64::consts::PI;
+
+        Vec2::from_values(r.cos() * scale, r.sin() * scale)
+    }
+}
+
+impl Distribution<Vec2<f32>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec2<f32> {
+        let scale = 1.0;
+        let r = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
+
+        Vec2::from_values(r.cos() * scale, r.sin() * scale)
+    }
+}
+
+impl Distribution<Vec2<f16>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec2<f16> {
+        let scale = f16::from_f32_const(1.0);
+        let r = rng.gen::<f16>() * f16::from_f32_const(2.0) * f16::PI;
+
+        Vec2::from_values(r.cos() * scale, r.sin() * scale)
     }
 }
 

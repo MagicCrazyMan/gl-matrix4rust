@@ -5,6 +5,7 @@ use std::{
 
 use half::f16;
 use num_traits::Float;
+use rand::distributions::{Distribution, Standard};
 
 use crate::{epsilon, mat3::AsMat3, mat4::AsMat4, quat::AsQuat, quat2::AsQuat2};
 
@@ -714,6 +715,39 @@ impl Vec3<f16> {
         let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
 
         Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+    }
+}
+
+impl Distribution<Vec3<f64>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f64> {
+        let scale = 1.0;
+        let r = rng.gen::<f64>() * 2.0 * std::f64::consts::PI;
+        let z = rng.gen::<f64>() * 2.0 - 1.0;
+        let z_scale = (1.0 - z * z).sqrt() * scale;
+
+        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
+    }
+}
+
+impl Distribution<Vec3<f32>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f32> {
+        let scale = 1.0;
+        let r = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
+        let z = rng.gen::<f32>() * 2.0 - 1.0;
+        let z_scale = (1.0 - z * z).sqrt() * scale;
+
+        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
+    }
+}
+
+impl Distribution<Vec3<f16>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f16> {
+        let scale = f16::from_f32_const(1.0);
+        let r = rng.gen::<f16>() * f16::from_f32_const(2.0) * f16::PI;
+        let z = rng.gen::<f16>() * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
+
+        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
     }
 }
 

@@ -5,6 +5,7 @@ use std::{
 
 use half::f16;
 use num_traits::Float;
+use rand::distributions::{Distribution, Standard};
 
 use crate::{epsilon, mat4::AsMat4, quat::AsQuat};
 
@@ -636,6 +637,92 @@ impl Vec4<f16> {
         let d = ((f16::from_f32_const(1.0) - s1) / s2).sqrt();
 
         Self([scale * v1, scale * v2, scale * v3 * d, scale * v4 * d])
+    }
+}
+
+impl Distribution<Vec4<f64>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec4<f64> {
+        let scale = 1.0;
+
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rng.gen::<f64>();
+        v1 = rand * 2.0 - 1.0;
+        v2 = (4.0 * rng.gen::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rng.gen::<f64>();
+        v3 = rand * 2.0 - 1.0;
+        v4 = (4.0 * rng.gen::<f64>() - 2.0) * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((1.0 - s1) / s2).sqrt();
+
+        Vec4::from_values(scale * v1, scale * v2, scale * v3 * d, scale * v4 * d)
+    }
+}
+
+impl Distribution<Vec4<f32>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec4<f32> {
+        let scale = 1.0;
+
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rng.gen::<f32>();
+        v1 = rand * 2.0 - 1.0;
+        v2 = (4.0 * rng.gen::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rng.gen::<f32>();
+        v3 = rand * 2.0 - 1.0;
+        v4 = (4.0 * rng.gen::<f32>() - 2.0) * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((1.0 - s1) / s2).sqrt();
+
+        Vec4::from_values(scale * v1, scale * v2, scale * v3 * d, scale * v4 * d)
+    }
+}
+
+impl Distribution<Vec4<f16>> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec4<f16> {
+        let scale = f16::from_f32_const(1.0);
+
+        let v1;
+        let v2;
+        let v3;
+        let v4;
+        let s1;
+        let s2;
+        let mut rand;
+
+        rand = rng.gen::<f16>();
+        v1 = rand * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        v2 = (f16::from_f32_const(4.0) * rng.gen::<f16>() - f16::from_f32_const(2.0))
+            * (rand * -rand + rand).sqrt();
+        s1 = v1 * v1 + v2 * v2;
+
+        rand = rng.gen::<f16>();
+        v3 = rand * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
+        v4 = (f16::from_f32_const(4.0) * rng.gen::<f16>() - f16::from_f32_const(2.0))
+            * (rand * -rand + rand).sqrt();
+        s2 = v3 * v3 + v4 * v4;
+
+        let d = ((f16::from_f32_const(1.0) - s1) / s2).sqrt();
+
+        Vec4::from_values(scale * v1, scale * v2, scale * v3 * d, scale * v4 * d)
     }
 }
 
