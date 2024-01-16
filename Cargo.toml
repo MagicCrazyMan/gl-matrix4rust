@@ -11,3 +11,6 @@ edition = "2021"
 [dependencies]
 getrandom = { version = "0.2.11", features = ["js"] }
 rand = "0.8.5"
+
+[features]
+gl = []

@@ -3017,6 +3017,39 @@ math! {
     (f64, super::EPSILON_F64, 0.0f64, 0.25f64, 1.0f64, 2.0f64)
 }
 
+#[cfg(feature = "gl")]
+impl super::GLF32<16> for Mat4<f32> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 16] {
+        self.0.clone()
+    }
+}
+
+#[cfg(feature = "gl")]
+impl super::GLF32<16> for Mat4<f64> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 16] {
+        [
+            self.0[0] as f32,
+            self.0[1] as f32,
+            self.0[2] as f32,
+            self.0[3] as f32,
+            self.0[4] as f32,
+            self.0[5] as f32,
+            self.0[6] as f32,
+            self.0[7] as f32,
+            self.0[8] as f32,
+            self.0[9] as f32,
+            self.0[10] as f32,
+            self.0[11] as f32,
+            self.0[12] as f32,
+            self.0[13] as f32,
+            self.0[14] as f32,
+            self.0[15] as f32,
+        ]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{error::Error, quat::Quat, vec3::Vec3, ApproximateEq};

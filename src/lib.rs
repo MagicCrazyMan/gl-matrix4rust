@@ -30,8 +30,36 @@ impl ApproximateEq for f64 {
     }
 }
 
-// pub trait ToWebGLData<const N: usize, const C: usize> {
-//     fn to_gl(&self) -> [f32; N];
+#[cfg(feature = "gl")]
+pub trait GLF32<const N: usize> {
+    fn gl_f32(&self) -> [f32; N];
+}
 
-//     fn to_gl_binary(&self) -> [u8; C];
-// }
+#[cfg(feature = "gl")]
+pub trait GLU8<const N: usize> {
+    fn gl_u8(&self) -> [u8; N];
+}
+
+macro_rules! gl_f32_to_u8 {
+    ($(($f32size: tt, $u8size: tt)),+) => {
+        $(
+            impl<T: GLF32<$f32size>> GLU8<$u8size> for T {
+                #[inline(always)]
+                fn gl_u8(&self) -> [u8; $u8size] {
+                    unsafe { std::mem::transmute::<[f32; $f32size], [u8; $u8size]>(self.gl_f32()) }
+                }
+            }
+        )+
+    };
+}
+
+#[cfg(feature = "gl")]
+gl_f32_to_u8! {
+    (2, 8),
+    (3, 12),
+    (4, 16),
+    (6, 24),
+    (8, 32),
+    (9, 36),
+    (16, 64)
+}

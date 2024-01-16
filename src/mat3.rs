@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign, Div, DivAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     slice::SliceIndex,
 };
 
@@ -1310,6 +1310,32 @@ math! {
     (f64, super::EPSILON_F64, 0.0f64, 1.0f64)
 }
 
+#[cfg(feature = "gl")]
+impl super::GLF32<9> for Mat3<f32> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 9] {
+        self.0.clone()
+    }
+}
+
+#[cfg(feature = "gl")]
+impl super::GLF32<9> for Mat3<f64> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 9] {
+        [
+            self.0[0] as f32,
+            self.0[1] as f32,
+            self.0[2] as f32,
+            self.0[3] as f32,
+            self.0[4] as f32,
+            self.0[5] as f32,
+            self.0[6] as f32,
+            self.0[7] as f32,
+            self.0[8] as f32,
+        ]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{error::Error, mat4::Mat4, quat::Quat, vec3::Vec3, ApproximateEq};
@@ -1378,17 +1404,8 @@ mod tests {
             .rotate_x(std::f64::consts::PI / 2.0);
 
         assert_eq!(
-            Mat3::<f64>::normal_matrix_from_mat4(&mat4)?.approximate_eq(&Mat3::new(
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                -1.0,
-                0.0,
-            )),
+            Mat3::<f64>::normal_matrix_from_mat4(&mat4)?
+                .approximate_eq(&Mat3::new(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, 0.0,)),
             true
         );
 

@@ -747,6 +747,22 @@ math! {
     (f64, super::EPSILON_F64, 0.0f64, 1.0f64, std::f64::consts::PI)
 }
 
+#[cfg(feature = "gl")]
+impl super::GLF32<2> for Vec2<f32> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 2] {
+        self.0.clone()
+    }
+}
+
+#[cfg(feature = "gl")]
+impl super::GLF32<2> for Vec2<f64> {
+    #[inline(always)]
+    fn gl_f32(&self) -> [f32; 2] {
+        [self.0[0] as f32, self.0[1] as f32]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{mat2::Mat2, mat2d::Mat2d, vec3::Vec3, ApproximateEq};
