@@ -1,1262 +1,1863 @@
 use std::{
-    fmt::Display,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+    fmt::{Debug, Display},
+    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
+    slice::SliceIndex,
 };
 
-use half::f16;
-use num_traits::Float;
-use rand::distributions::{Distribution, Standard};
+use crate::{mat3::Mat3, mat4::Mat4, quat::Quat, ApproximateEq};
 
-use crate::{epsilon, mat3::AsMat3, mat4::AsMat4, quat::AsQuat, quat2::AsQuat2};
+pub struct Vec3<T = f64>([T; 3]);
 
-pub trait AsVec3<T: Float> {
-    fn from_values(x: T, y: T, z: T) -> Self;
-
-    fn x(&self) -> T;
-
-    fn y(&self) -> T;
-
-    fn z(&self) -> T;
-
-    fn set_x(&mut self, x: T) -> &mut Self;
-
-    fn set_y(&mut self, y: T) -> &mut Self;
-
-    fn set_z(&mut self, z: T) -> &mut Self;
-
+impl<T: Debug> Debug for Vec3<T> {
     #[inline(always)]
-    fn to_raw(&self) -> [T; 3] {
-        [self.x(), self.y(), self.z()]
-    }
-
-    #[inline(always)]
-    fn to_gl(&self) -> [f32; 3] {
-        [
-            T::to_f32(&self.x()).unwrap(),
-            T::to_f32(&self.y()).unwrap(),
-            T::to_f32(&self.z()).unwrap(),
-        ]
-    }
-
-    #[inline(always)]
-    fn to_gl_binary(&self) -> [u8; 12] {
-        unsafe { std::mem::transmute_copy::<[f32; 3], [u8; 12]>(&self.to_gl()) }
-    }
-
-    #[inline(always)]
-    fn copy<V: AsVec3<T> + ?Sized>(&mut self, b: &V) -> &mut Self {
-        self.set_x(b.x()).set_y(b.y()).set_z(b.z())
-    }
-
-    #[inline(always)]
-    fn set(&mut self, x: T, y: T, z: T) -> &mut Self {
-        self.set_x(x).set_y(y).set_z(z)
-    }
-
-    #[inline(always)]
-    fn set_slice(&mut self, [x, y, z]: &[T; 3]) -> &mut Self {
-        self.set_x(*x).set_y(*y).set_z(*z)
-    }
-
-    #[inline(always)]
-    fn set_zero(&mut self) -> &mut Self {
-        self.set_x(T::zero()).set_y(T::zero()).set_z(T::zero())
-    }
-
-    #[inline(always)]
-    fn ceil(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.ceil(), y.ceil(), z.ceil())
-    }
-
-    #[inline(always)]
-    fn floor(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.floor(), y.floor(), z.floor())
-    }
-
-    #[inline(always)]
-    fn round(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.round(), y.round(), z.round())
-    }
-
-    #[inline(always)]
-    fn min<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.min(b.x()), y.min(b.y()), z.min(b.z()))
-    }
-
-    #[inline(always)]
-    fn max<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.max(b.x()), y.max(b.y()), z.max(b.z()))
-    }
-
-    #[inline(always)]
-    fn scale(&self, scale: T) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x * scale, y * scale, z * scale)
-    }
-
-    #[inline(always)]
-    fn squared_distance<V: AsVec3<T> + ?Sized>(&self, b: &V) -> T {
-        let x = b.x() - self.x();
-        let y = b.y() - self.y();
-        let z = b.z() - self.z();
-        x * x + y * y + z * z
-    }
-
-    #[inline(always)]
-    fn distance<V: AsVec3<T> + ?Sized>(&self, b: &V) -> T {
-        self.squared_distance(b).sqrt()
-    }
-
-    #[inline(always)]
-    fn squared_length(&self) -> T {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-        x * x + y * y + z * z
-    }
-
-    #[inline(always)]
-    fn length(&self) -> T {
-        self.squared_length().sqrt()
-    }
-
-    #[inline(always)]
-    fn negate(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x.neg(), y.neg(), z.neg())
-    }
-
-    #[inline(always)]
-    fn inverse(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(T::one() / x, T::one() / y, T::one() / z)
-    }
-
-    #[inline(always)]
-    fn normalize(&self) -> Self
-    where
-        Self: Sized,
-    {
-        let mut len = self.squared_length();
-        if len > T::zero() {
-            len = T::one() / len.sqrt();
-        }
-
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(x * len, y * len, z * len)
-    }
-
-    #[inline(always)]
-    fn dot<V: AsVec3<T> + ?Sized>(&self, b: &V) -> T {
-        self.x() * b.x() + self.y() * b.y() + self.z() * b.z()
-    }
-
-    #[inline(always)]
-    fn cross<V: AsVec3<T> + ?Sized>(&self, b: &V) -> Self
-    where
-        Self: Sized,
-    {
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-        let bx = b.x();
-        let by = b.y();
-        let bz = b.z();
-
-        Self::from_values(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
-    }
-
-    #[inline(always)]
-    fn lerp<V: AsVec3<T> + ?Sized>(&self, b: &V, t: T) -> Self
-    where
-        Self: Sized,
-    {
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-
-        Self::from_values(
-            ax + t * (b.x() - ax),
-            ay + t * (b.y() - ay),
-            az + t * (b.z() - az),
-        )
-    }
-
-    #[inline(always)]
-    fn slerp<V: AsVec3<T> + ?Sized>(&self, b: &V, t: T) -> Self
-    where
-        Self: Sized,
-    {
-        let angle = self.dot(b).max(-T::one()).min(T::one()).acos();
-        let sin_total = angle.sin();
-
-        let ratio_a = ((T::one() - t) * angle).sin() / sin_total;
-        let ratio_b = (t * angle).sin() / sin_total;
-
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-
-        Self::from_values(
-            ratio_a * ax + ratio_b * b.x(),
-            ratio_a * ay + ratio_b * b.y(),
-            ratio_a * az + ratio_b * b.z(),
-        )
-    }
-
-    #[inline(always)]
-    fn hermite<V1, V2, V3>(&self, b: &V1, c: &V2, d: &V3, t: T) -> Self
-    where
-        Self: Sized,
-
-        V1: AsVec3<T> + ?Sized,
-        V2: AsVec3<T> + ?Sized,
-        V3: AsVec3<T> + ?Sized,
-    {
-        let factor_times2 = t * t;
-        let factor1 =
-            factor_times2 * (T::from(2.0).unwrap() * t - T::from(3.0).unwrap()) + T::one();
-        let factor2 = factor_times2 * (t - T::from(2.0).unwrap()) + t;
-        let factor3 = factor_times2 * (t - T::one());
-        let factor4 = factor_times2 * (T::from(3.0).unwrap() - T::from(2.0).unwrap() * t);
-
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-
-        Self::from_values(
-            ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
-            ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
-            az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
-        )
-    }
-
-    #[inline(always)]
-    fn bezier<V1, V2, V3>(&self, b: &V1, c: &V2, d: &V3, t: T) -> Self
-    where
-        Self: Sized,
-        V1: AsVec3<T> + ?Sized,
-        V2: AsVec3<T> + ?Sized,
-        V3: AsVec3<T> + ?Sized,
-    {
-        let inverse_factor = T::one() - t;
-        let inverse_factor_times_two = inverse_factor * inverse_factor;
-        let factor_times2 = t * t;
-        let factor1 = inverse_factor_times_two * inverse_factor;
-        let factor2 = T::from(3.0).unwrap() * t * inverse_factor_times_two;
-        let factor3 = T::from(3.0).unwrap() * factor_times2 * inverse_factor;
-        let factor4 = factor_times2 * t;
-
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-
-        Self::from_values(
-            ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
-            ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
-            az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
-        )
-    }
-
-    #[inline(always)]
-    fn transform_mat3<M: AsMat3<T> + ?Sized>(&self, m: &M) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        Self::from_values(
-            x * m.m00() + y * m.m10() + z * m.m20(),
-            x * m.m01() + y * m.m11() + z * m.m21(),
-            x * m.m02() + y * m.m12() + z * m.m22(),
-        )
-    }
-
-    #[inline(always)]
-    fn transform_quat<Q: AsQuat<T> + ?Sized>(&self, q: &Q) -> Self
-    where
-        Self: Sized,
-    {
-        // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
-        let qx = q.x();
-        let qy = q.y();
-        let qz = q.z();
-        let qw = q.w();
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-        // var qvec = [qx, qy, qz];
-        // var uv = vec3.cross([], qvec, a);
-        let mut uvx = qy * z - qz * y;
-        let mut uvy = qz * x - qx * z;
-        let mut uvz = qx * y - qy * x;
-        // var uuv = vec3.cross([], qvec, uv);
-        let mut uuvx = qy * uvz - qz * uvy;
-        let mut uuvy = qz * uvx - qx * uvz;
-        let mut uuvz = qx * uvy - qy * uvx;
-        // vec3.scale(uv, uv, 2 * w);
-        let w2 = qw * T::from(2.0).unwrap();
-        uvx = uvx * w2;
-        uvy = uvy * w2;
-        uvz = uvz * w2;
-        // vec3.scale(uuv, uuv, 2);
-        uuvx = uuvx * T::from(2.0).unwrap();
-        uuvy = uuvy * T::from(2.0).unwrap();
-        uuvz = uuvz * T::from(2.0).unwrap();
-        // return vec3.add(out, a, vec3.add(out, uv, uuv));
-
-        Self::from_values(x + uvx + uuvx, y + uvy + uuvy, z + uvz + uuvz)
-    }
-
-    #[inline(always)]
-    fn transform_quat2<Q: AsQuat2<T> + ?Sized>(&self, q: &Q) -> Self
-    where
-        Self: Sized,
-    {
-        // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
-        let qx = q.x1();
-        let qy = q.y1();
-        let qz = q.z1();
-        let qw = q.w1();
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-        // var qvec = [qx, qy, qz];
-        // var uv = vec3.cross([], qvec, a);
-        let mut uvx = qy * z - qz * y;
-        let mut uvy = qz * x - qx * z;
-        let mut uvz = qx * y - qy * x;
-        // var uuv = vec3.cross([], qvec, uv);
-        let mut uuvx = qy * uvz - qz * uvy;
-        let mut uuvy = qz * uvx - qx * uvz;
-        let mut uuvz = qx * uvy - qy * uvx;
-        // vec3.scale(uv, uv, 2 * w);
-        let w2 = qw * T::from(2.0).unwrap();
-        uvx = uvx * w2;
-        uvy = uvy * w2;
-        uvz = uvz * w2;
-        // vec3.scale(uuv, uuv, 2);
-        uuvx = uuvx * T::from(2.0).unwrap();
-        uuvy = uuvy * T::from(2.0).unwrap();
-        uuvz = uuvz * T::from(2.0).unwrap();
-        // return vec3.add(out, a, vec3.add(out, uv, uuv));
-
-        Self::from_values(x + uvx + uuvx, y + uvy + uuvy, z + uvz + uuvz)
-    }
-
-    #[inline(always)]
-    fn transform_mat4<M: AsMat4<T> + ?Sized>(&self, m: &M) -> Self
-    where
-        Self: Sized,
-    {
-        let x = self.x();
-        let y = self.y();
-        let z = self.z();
-
-        let [m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15] =
-            m.to_raw();
-
-        let mut w = m03 * x + m07 * y + m11 * z + m15;
-        w = if w == T::zero() { T::one() } else { w };
-
-        Self::from_values(
-            (m00 * x + m04 * y + m08 * z + m12) / w,
-            (m01 * x + m05 * y + m09 * z + m13) / w,
-            (m02 * x + m06 * y + m10 * z + m14) / w,
-        )
-    }
-
-    #[inline(always)]
-    fn rotate_x<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
-    where
-        Self: Sized,
-    {
-        let mut p = [T::zero(); 3];
-        let mut r = [T::zero(); 3];
-
-        //Translate point to the origin
-        p[0] = self.x() - b.x();
-        p[1] = self.y() - b.y();
-        p[2] = self.z() - b.z();
-
-        //perform rotation
-        r[0] = p[0];
-        r[1] = p[1] * rad.cos() - p[2] * rad.sin();
-        r[2] = p[1] * rad.sin() + p[2] * rad.cos();
-
-        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
-    }
-
-    #[inline(always)]
-    fn rotate_y<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
-    where
-        Self: Sized,
-    {
-        let mut p = [T::zero(); 3];
-        let mut r = [T::zero(); 3];
-
-        //Translate point to the origin
-        p[0] = self.x() - b.x();
-        p[1] = self.y() - b.y();
-        p[2] = self.z() - b.z();
-
-        //perform rotation
-        r[0] = p[2] * rad.sin() + p[0] * rad.cos();
-        r[1] = p[1];
-        r[2] = p[2] * rad.cos() - p[0] * rad.sin();
-
-        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
-    }
-
-    #[inline(always)]
-    fn rotate_z<V: AsVec3<T> + ?Sized>(&self, b: &V, rad: T) -> Self
-    where
-        Self: Sized,
-    {
-        let mut p = [T::zero(); 3];
-        let mut r = [T::zero(); 3];
-
-        //Translate point to the origin
-        p[0] = self.x() - b.x();
-        p[1] = self.y() - b.y();
-        p[2] = self.z() - b.z();
-
-        //perform rotation
-        r[0] = p[0] * rad.cos() - p[1] * rad.sin();
-        r[1] = p[0] * rad.sin() + p[1] * rad.cos();
-        r[2] = p[2];
-
-        Self::from_values(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
-    }
-
-    #[inline(always)]
-    fn angle<V: AsVec3<T> + ?Sized>(&self, b: &V) -> T {
-        let ax = self.x();
-        let ay = self.y();
-        let az = self.z();
-        let bx = b.x();
-        let by = b.y();
-        let bz = b.z();
-        let mag = ((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)).sqrt();
-        let cosine = if mag == T::zero() {
-            mag
-        } else {
-            self.dot(b) / mag
-        };
-        // Math.min(Math.max(cosine, -1), 1) clamps the cosine between -1 and 1
-        cosine.max(-T::one()).min(T::one()).acos()
-    }
-
-    #[inline(always)]
-    fn approximate_eq<V: AsVec3<T> + ?Sized>(&self, b: &V) -> bool {
-        let a0 = self.x();
-        let a1 = self.y();
-        let a2 = self.z();
-        let b0 = b.x();
-        let b1 = b.y();
-        let b2 = b.z();
-
-        (a0 - b0).abs() <= epsilon::<T>() * T::one().max(a0.abs()).max(b0.abs())
-            && (a1 - b1).abs() <= epsilon::<T>() * T::one().max(a1.abs()).max(b1.abs())
-            && (a2 - b2).abs() <= epsilon::<T>() * T::one().max(a2.abs()).max(b2.abs())
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Vec3").field(&self.0).finish()
     }
 }
 
-impl<T: Float> AsVec3<T> for [T; 3] {
-    #[inline(always)]
-    fn from_values(x: T, y: T, z: T) -> Self {
-        [x, y, z]
-    }
+impl<T: Copy> Copy for Vec3<T> {}
 
+impl<T: Clone> Clone for Vec3<T> {
     #[inline(always)]
-    fn x(&self) -> T {
-        self[0]
-    }
-
-    #[inline(always)]
-    fn y(&self) -> T {
-        self[1]
-    }
-
-    #[inline(always)]
-    fn z(&self) -> T {
-        self[2]
-    }
-
-    #[inline(always)]
-    fn set_x(&mut self, x: T) -> &mut Self {
-        self[0] = x;
-        self
-    }
-
-    #[inline(always)]
-    fn set_y(&mut self, y: T) -> &mut Self {
-        self[1] = y;
-        self
-    }
-
-    #[inline(always)]
-    fn set_z(&mut self, z: T) -> &mut Self {
-        self[2] = z;
-        self
+    fn clone(&self) -> Self {
+        Self([self.0[0].clone(), self.0[1].clone(), self.0[2].clone()])
     }
 }
 
-impl<T: Float> AsVec3<T> for (T, T, T) {
+impl<T: PartialEq> PartialEq for Vec3<T> {
     #[inline(always)]
-    fn from_values(x: T, y: T, z: T) -> Self {
-        (x, y, z)
-    }
-
-    #[inline(always)]
-    fn x(&self) -> T {
-        self.0
-    }
-
-    #[inline(always)]
-    fn y(&self) -> T {
-        self.1
-    }
-
-    #[inline(always)]
-    fn z(&self) -> T {
-        self.2
-    }
-
-    #[inline(always)]
-    fn set_x(&mut self, x: T) -> &mut Self {
-        self.0 = x;
-        self
-    }
-
-    #[inline(always)]
-    fn set_y(&mut self, y: T) -> &mut Self {
-        self.1 = y;
-        self
-    }
-
-    #[inline(always)]
-    fn set_z(&mut self, z: T) -> &mut Self {
-        self.2 = z;
-        self
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Vec3<T = f64>(pub [T; 3]);
-
-impl<T: Float> Vec3<T> {
-    #[inline(always)]
-    pub const fn from_values(x: T, y: T, z: T) -> Self {
-        Self([x, y, z])
-    }
-
-    #[inline(always)]
-    pub fn new() -> Self {
-        Self([T::zero(); 3])
-    }
-
-    #[inline(always)]
-    pub fn from_slice(slice: [T; 3]) -> Self {
-        Self(slice)
-    }
-
-    #[inline(always)]
-    pub fn from_as_vec3<V: AsVec3<T>>(v: V) -> Self {
-        Self(v.to_raw())
-    }
-
-    #[inline(always)]
-    pub fn raw(&self) -> &[T; 3] {
-        &self.0
-    }
-}
-
-impl<T: Float> AsVec3<T> for Vec3<T> {
-    #[inline(always)]
-    fn from_values(x: T, y: T, z: T) -> Self {
-        Self([x, y, z])
-    }
-
-    #[inline(always)]
-    fn x(&self) -> T {
-        self.0[0]
-    }
-
-    #[inline(always)]
-    fn y(&self) -> T {
-        self.0[1]
-    }
-
-    #[inline(always)]
-    fn z(&self) -> T {
-        self.0[2]
-    }
-
-    #[inline(always)]
-    fn set_x(&mut self, x: T) -> &mut Self {
-        self.0[0] = x;
-        self
-    }
-
-    #[inline(always)]
-    fn set_y(&mut self, y: T) -> &mut Self {
-        self.0[1] = y;
-        self
-    }
-
-    #[inline(always)]
-    fn set_z(&mut self, z: T) -> &mut Self {
-        self.0[2] = z;
-        self
-    }
-}
-
-impl Vec3<f64> {
-    #[inline(always)]
-    pub fn random(scale: Option<f64>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        let r = rand::random::<f64>() * 2.0 * std::f64::consts::PI;
-        let z = rand::random::<f64>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
-
-        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
-    }
-}
-
-impl Vec3<f32> {
-    #[inline(always)]
-    pub fn random(scale: Option<f32>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => 1.0,
-        };
-
-        let r = rand::random::<f32>() * 2.0 * std::f32::consts::PI;
-        let z = rand::random::<f32>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
-
-        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
-    }
-}
-
-impl Vec3<f16> {
-    #[inline(always)]
-    pub fn random(scale: Option<f16>) -> Self {
-        let scale = match scale {
-            Some(scale) => scale,
-            None => f16::from_f32_const(1.0),
-        };
-
-        let r = rand::random::<f16>() * f16::from_f32_const(2.0) * f16::PI;
-        let z = rand::random::<f16>() * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
-        let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
-
-        Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
-    }
-}
-
-impl Distribution<Vec3<f64>> for Standard {
-    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f64> {
-        let scale = 1.0;
-        let r = rng.gen::<f64>() * 2.0 * std::f64::consts::PI;
-        let z = rng.gen::<f64>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
-
-        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
-    }
-}
-
-impl Distribution<Vec3<f32>> for Standard {
-    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f32> {
-        let scale = 1.0;
-        let r = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
-        let z = rng.gen::<f32>() * 2.0 - 1.0;
-        let z_scale = (1.0 - z * z).sqrt() * scale;
-
-        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
-    }
-}
-
-impl Distribution<Vec3<f16>> for Standard {
-    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<f16> {
-        let scale = f16::from_f32_const(1.0);
-        let r = rng.gen::<f16>() * f16::from_f32_const(2.0) * f16::PI;
-        let z = rng.gen::<f16>() * f16::from_f32_const(2.0) - f16::from_f32_const(1.0);
-        let z_scale = (f16::from_f32_const(1.0) - z * z).sqrt() * scale;
-
-        Vec3::from_values(r.cos() * z_scale, r.sin() * z_scale, z * scale)
-    }
-}
-
-impl<T: Float> Default for Vec3<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: Float, V: AsVec3<T>> Add<V> for Vec3<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn add(self, b: V) -> Self {
-        Self([self.0[0] + b.x(), self.0[1] + b.y(), self.0[2] + b.z()])
-    }
-}
-
-impl<T: Float, V: AsVec3<T>> Sub<V> for Vec3<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn sub(self, b: V) -> Self {
-        Self([self.0[0] - b.x(), self.0[1] - b.y(), self.0[2] - b.z()])
-    }
-}
-
-impl<T: Float, V: AsVec3<T>> Mul<V> for Vec3<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn mul(self, b: V) -> Self {
-        Self([self.0[0] * b.x(), self.0[1] * b.y(), self.0[2] * b.z()])
-    }
-}
-
-impl<T: Float, V: AsVec3<T>> Div<V> for Vec3<T> {
-    type Output = Self;
-
-    #[inline(always)]
-    fn div(self, b: V) -> Self {
-        Self([self.0[0] / b.x(), self.0[1] / b.y(), self.0[2] / b.z()])
-    }
-}
-
-impl<T: Float + AddAssign, V: AsVec3<T>> AddAssign<V> for Vec3<T> {
-    fn add_assign(&mut self, rhs: V) {
-        self.0[0] += rhs.x();
-        self.0[1] += rhs.y();
-        self.0[2] += rhs.z();
-    }
-}
-
-impl<T: Float + SubAssign, V: AsVec3<T>> SubAssign<V> for Vec3<T> {
-    fn sub_assign(&mut self, rhs: V) {
-        self.0[0] -= rhs.x();
-        self.0[1] -= rhs.y();
-        self.0[2] -= rhs.z();
-    }
-}
-
-impl<T: Float + MulAssign, V: AsVec3<T>> MulAssign<V> for Vec3<T> {
-    fn mul_assign(&mut self, rhs: V) {
-        self.0[0] *= rhs.x();
-        self.0[1] *= rhs.y();
-        self.0[2] *= rhs.z();
-    }
-}
-
-impl<T: Float + DivAssign, V: AsVec3<T>> DivAssign<V> for Vec3<T> {
-    fn div_assign(&mut self, rhs: V) {
-        self.0[0] /= rhs.x();
-        self.0[1] /= rhs.y();
-        self.0[2] /= rhs.z();
-    }
-}
-
-macro_rules! float_implementations {
-    ($($float: tt),+) => {
-        $(
-            impl Add<$float> for Vec3<$float> {
-                type Output = Self;
-
-                #[inline(always)]
-                fn add(self, b: $float) -> Self::Output {
-                    Self([self.0[0] + b, self.0[1] + b, self.0[2] + b])
-                }
-            }
-
-            impl Sub<$float> for Vec3<$float> {
-                type Output = Self;
-
-                #[inline(always)]
-                fn sub(self, b: $float) -> Self::Output {
-                    Self([self.0[0] - b, self.0[1] - b, self.0[2] - b])
-                }
-            }
-
-            impl Mul<$float> for Vec3<$float> {
-                type Output = Self;
-
-                #[inline(always)]
-                fn mul(self, b: $float) -> Self::Output {
-                    Self([self.0[0] * b, self.0[1] * b, self.0[2] * b])
-                }
-            }
-
-            impl Div<$float> for Vec3<$float> {
-                type Output = Self;
-
-                #[inline(always)]
-                fn div(self, b: $float) -> Self::Output {
-                    Self([self.0[0] / b, self.0[1] / b, self.0[2] / b])
-                }
-            }
-
-            impl AddAssign<$float> for Vec3<$float> {
-                fn add_assign(&mut self, rhs: $float) {
-                    self.0[0] += rhs;
-                    self.0[1] += rhs;
-                    self.0[2] += rhs;
-                }
-            }
-
-            impl SubAssign<$float> for Vec3<$float> {
-                fn sub_assign(&mut self, rhs: $float) {
-                    self.0[0] -= rhs;
-                    self.0[1] -= rhs;
-                    self.0[2] -= rhs;
-                }
-            }
-
-            impl MulAssign<$float> for Vec3<$float> {
-                fn mul_assign(&mut self, rhs: $float) {
-                    self.0[0] *= rhs;
-                    self.0[1] *= rhs;
-                    self.0[2] *= rhs;
-                }
-            }
-
-            impl DivAssign<$float> for Vec3<$float> {
-                fn div_assign(&mut self, rhs: $float) {
-                    self.0[0] /= rhs;
-                    self.0[1] /= rhs;
-                    self.0[2] /= rhs;
-                }
-            }
-        )+
-    };
-}
-
-float_implementations!(f16, f32, f64);
-
-impl<T: Float> From<[T; 3]> for Vec3<T> {
-    fn from(value: [T; 3]) -> Self {
-        Self(value)
-    }
-}
-
-impl<T: Float> From<(T, T, T)> for Vec3<T> {
-    fn from(value: (T, T, T)) -> Self {
-        Self(value.to_raw())
-    }
-}
-
-impl<T> AsRef<Self> for Vec3<T> {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl<T> AsRef<[T]> for Vec3<T> {
-    fn as_ref(&self) -> &[T] {
-        &self.0
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
 impl<T: Display> Display for Vec3<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = self
-            .0
-            .iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        f.write_fmt(format_args!("vec3({})", value))
+        f.write_fmt(format_args!(
+            "vec3({}, {}, {})",
+            self.0[0], self.0[1], self.0[2]
+        ))
     }
+}
+
+impl<T> Vec3<T> {
+    #[inline(always)]
+    pub const fn new(x: T, y: T, z: T) -> Self {
+        Self([x, y, z])
+    }
+
+    #[inline(always)]
+    pub const fn from_slice(values: [T; 3]) -> Self {
+        Self(values)
+    }
+}
+
+impl<T> Vec3<T> {
+    #[inline(always)]
+    pub fn raw(&self) -> &[T; 3] {
+        &self.0
+    }
+
+    #[inline(always)]
+    pub fn raw_mut(&mut self) -> &mut [T; 3] {
+        &mut self.0
+    }
+
+    #[inline(always)]
+    pub fn x(&self) -> &T {
+        &self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn y(&self) -> &T {
+        &self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn z(&self) -> &T {
+        &self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn r(&self) -> &T {
+        &self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn g(&self) -> &T {
+        &self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn b(&self) -> &T {
+        &self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn s(&self) -> &T {
+        &self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn t(&self) -> &T {
+        &self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn u(&self) -> &T {
+        &self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn x_mut(&mut self) -> &mut T {
+        &mut self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn y_mut(&mut self) -> &mut T {
+        &mut self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn z_mut(&mut self) -> &mut T {
+        &mut self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn r_mut(&mut self) -> &mut T {
+        &mut self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn g_mut(&mut self) -> &mut T {
+        &mut self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn b_mut(&mut self) -> &mut T {
+        &mut self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn s_mut(&mut self) -> &mut T {
+        &mut self.0[0]
+    }
+
+    #[inline(always)]
+    pub fn t_mut(&mut self) -> &mut T {
+        &mut self.0[1]
+    }
+
+    #[inline(always)]
+    pub fn u_mut(&mut self) -> &mut T {
+        &mut self.0[2]
+    }
+
+    #[inline(always)]
+    pub fn set_x(&mut self, x: T) {
+        self.0[0] = x;
+    }
+
+    #[inline(always)]
+    pub fn set_y(&mut self, y: T) {
+        self.0[1] = y;
+    }
+
+    #[inline(always)]
+    pub fn set_z(&mut self, z: T) {
+        self.0[2] = z;
+    }
+
+    #[inline(always)]
+    pub fn set_r(&mut self, r: T) {
+        self.0[0] = r;
+    }
+
+    #[inline(always)]
+    pub fn set_g(&mut self, g: T) {
+        self.0[1] = g;
+    }
+
+    #[inline(always)]
+    pub fn set_b(&mut self, b: T) {
+        self.0[2] = b;
+    }
+
+    #[inline(always)]
+    pub fn set_s(&mut self, s: T) {
+        self.0[0] = s;
+    }
+
+    #[inline(always)]
+    pub fn set_t(&mut self, t: T) {
+        self.0[1] = t;
+    }
+
+    #[inline(always)]
+    pub fn set_u(&mut self, u: T) {
+        self.0[2] = u;
+    }
+
+    #[inline(always)]
+    pub fn set(&mut self, x: T, y: T, z: T) {
+        self.0[0] = x;
+        self.0[1] = y;
+        self.0[2] = z;
+    }
+}
+
+impl<T, I> Index<I> for Vec3<T>
+where
+    I: SliceIndex<[T], Output = T>,
+{
+    type Output = T;
+
+    #[inline(always)]
+    fn index(&self, index: I) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl<T, I> IndexMut<I> for Vec3<T>
+where
+    I: SliceIndex<[T], Output = T>,
+{
+    #[inline(always)]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+macro_rules! basic_constructors {
+    ($(($t: ident, $zero: expr)),+) => {
+       $(
+        impl Vec3<$t> {
+            #[inline(always)]
+            pub const fn new_zero() -> Self {
+                Self([$zero, $zero, $zero])
+            }
+        }
+
+        #[cfg(feature = "rand")]
+        impl rand::distributions::Distribution<Vec3<$t>> for rand::distributions::Standard {
+            fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> Vec3<$t> {
+                Vec3::new(
+                    rng.gen::<$t>(),
+                    rng.gen::<$t>(),
+                    rng.gen::<$t>(),
+                )
+            }
+        }
+       )+
+    };
+}
+
+macro_rules! decimal_constructors {
+    ($(($t: ident, $one: expr, $two: expr, $pi: expr)),+) => {
+       $(
+        impl Vec3<$t> {
+            #[inline(always)]
+            pub fn random() -> Self {
+                let r = rand::random::<$t>() * $two * $pi;
+                let z = rand::random::<$t>() * $two - $one;
+                let z_scale = ($one - z * z).sqrt();
+
+                Self([r.cos() * z_scale, r.sin() * z_scale, z])
+            }
+
+            #[inline(always)]
+            pub fn random_with_scale(scale: $t) -> Self {
+                let r = rand::random::<$t>() * $two * $pi;
+                let z = rand::random::<$t>() * $two - $one;
+                let z_scale = ($one - z * z).sqrt() * scale;
+
+                Self([r.cos() * z_scale, r.sin() * z_scale, z * scale])
+            }
+        }
+       )+
+    };
+}
+
+macro_rules! neg {
+    ($($t: ident),+) => {
+       $(
+        impl Neg for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn neg(mut self) -> Self::Output {
+                self.0[0] = -self.0[0];
+                self.0[1] = -self.0[1];
+                self.0[2] = -self.0[2];
+                self
+            }
+        }
+       )+
+    };
+}
+
+macro_rules! math {
+    ($(($t: ident, $epsilon: expr, $zero: expr, $one: expr, $two: expr, $three: expr, $pi: expr)),+) => {
+       $(
+        impl Add for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn add(mut self, rhs: Self) -> Self::Output {
+                self.0[0] = self.0[0] + rhs.0[0];
+                self.0[1] = self.0[1] + rhs.0[1];
+                self.0[2] = self.0[2] + rhs.0[2];
+                self
+            }
+        }
+
+        impl Add<$t> for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn add(mut self, rhs: $t) -> Self::Output {
+                self.0[0] = self.0[0] + rhs;
+                self.0[1] = self.0[1] + rhs;
+                self.0[2] = self.0[2] + rhs;
+                self
+            }
+        }
+
+        impl Add<Vec3<$t>> for $t {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn add(self, mut rhs: Vec3<$t>) -> Self::Output {
+                rhs.0[0] = self + rhs.0[0];
+                rhs.0[1] = self + rhs.0[1];
+                rhs.0[2] = self + rhs.0[2];
+                rhs
+            }
+        }
+
+        impl AddAssign for Vec3<$t> {
+            #[inline(always)]
+            fn add_assign(&mut self, rhs: Self) {
+                self.0[0] += rhs.0[0];
+                self.0[1] += rhs.0[1];
+                self.0[2] += rhs.0[2];
+            }
+        }
+
+        impl AddAssign<$t> for Vec3<$t> {
+            #[inline(always)]
+            fn add_assign(&mut self, rhs: $t) {
+                self.0[0] += rhs;
+                self.0[1] += rhs;
+                self.0[2] += rhs;
+            }
+        }
+
+        impl Sub for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn sub(mut self, rhs: Self) -> Self::Output {
+                self.0[0] = self.0[0] - rhs.0[0];
+                self.0[1] = self.0[1] - rhs.0[1];
+                self.0[2] = self.0[2] - rhs.0[2];
+                self
+            }
+        }
+
+        impl Sub<$t> for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn sub(mut self, rhs: $t) -> Self::Output {
+                self.0[0] = self.0[0] - rhs;
+                self.0[1] = self.0[1] - rhs;
+                self.0[2] = self.0[2] - rhs;
+                self
+            }
+        }
+
+        impl Sub<Vec3<$t>> for $t {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn sub(self, mut rhs: Vec3<$t>) -> Self::Output {
+                rhs.0[0] = self - rhs.0[0];
+                rhs.0[1] = self - rhs.0[1];
+                rhs.0[2] = self - rhs.0[2];
+                rhs
+            }
+        }
+
+        impl SubAssign for Vec3<$t> {
+            #[inline(always)]
+            fn sub_assign(&mut self, rhs: Self) {
+                self.0[0] -= rhs.0[0];
+                self.0[1] -= rhs.0[1];
+                self.0[2] -= rhs.0[2];
+            }
+        }
+
+        impl SubAssign<$t> for Vec3<$t> {
+            #[inline(always)]
+            fn sub_assign(&mut self, rhs: $t) {
+                self.0[0] -= rhs;
+                self.0[1] -= rhs;
+                self.0[2] -= rhs;
+            }
+        }
+
+        impl Mul for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(mut self, rhs: Self) -> Self::Output {
+                self.0[0] = self.0[0] * rhs.0[0];
+                self.0[1] = self.0[1] * rhs.0[1];
+                self.0[2] = self.0[2] * rhs.0[2];
+                self
+            }
+        }
+
+        impl Mul<$t> for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(mut self, rhs: $t) -> Self::Output {
+                self.0[0] = self.0[0] * rhs;
+                self.0[1] = self.0[1] * rhs;
+                self.0[2] = self.0[2] * rhs;
+                self
+            }
+        }
+
+        impl Mul<Vec3<$t>> for $t {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(self, mut rhs: Vec3<$t>) -> Self::Output {
+                rhs.0[0] = self * rhs.0[0];
+                rhs.0[1] = self * rhs.0[1];
+                rhs.0[2] = self * rhs.0[2];
+                rhs
+            }
+        }
+
+        impl Mul<Vec3<$t>> for Mat3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(self, mut rhs: Vec3<$t>) -> Self::Output {
+                let x = rhs.0[0];
+                let y = rhs.0[1];
+                let z = rhs.0[2];
+
+                rhs.0[0] = x * self.m00() + y * self.m10() + z * self.m20();
+                rhs.0[1] = x * self.m01() + y * self.m11() + z * self.m21();
+                rhs.0[2] = x * self.m02() + y * self.m12() + z * self.m22();
+                rhs
+            }
+        }
+
+        impl Mul<Vec3<$t>> for Mat4<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(self, mut rhs: Vec3<$t>) -> Self::Output {
+                let x = rhs.0[0];
+                let y = rhs.0[1];
+                let z = rhs.0[2];
+
+                let [m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15] = self.raw();
+
+                let mut w = *m03 * x + *m07 * y + *m11 * z + *m15;
+                w = if w == $zero { $one } else { w };
+
+                rhs.0[0] = (*m00 * x + *m04 * y + *m08 * z + *m12) / w;
+                rhs.0[1] = (*m01 * x + *m05 * y + *m09 * z + *m13) / w;
+                rhs.0[2] = (*m02 * x + *m06 * y + *m10 * z + *m14) / w;
+                rhs
+            }
+        }
+
+        impl Mul<Vec3<$t>> for Quat<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(self, mut rhs: Vec3<$t>) -> Self::Output {
+                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
+                let qx = *self.x();
+                let qy = *self.y();
+                let qz = *self.z();
+                let qw = *self.w();
+                let x = rhs.0[0];
+                let y = rhs.0[1];
+                let z = rhs.0[2];
+                // var qvec = [qx, qy, qz];
+                // var uv = vec3.cross([], qvec, a);
+                let mut uvx = qy * z - qz * y;
+                let mut uvy = qz * x - qx * z;
+                let mut uvz = qx * y - qy * x;
+                // var uuv = vec3.cross([], qvec, uv);
+                let mut uuvx = qy * uvz - qz * uvy;
+                let mut uuvy = qz * uvx - qx * uvz;
+                let mut uuvz = qx * uvy - qy * uvx;
+                // vec3.scale(uv, uv, 2 * w);
+                let w2 = qw * $two;
+                uvx = uvx * w2;
+                uvy = uvy * w2;
+                uvz = uvz * w2;
+                // vec3.scale(uuv, uuv, 2);
+                uuvx = uuvx * $two;
+                uuvy = uuvy * $two;
+                uuvz = uuvz * $two;
+                // return vec3.add(out, a, vec3.add(out, uv, uuv));
+
+                rhs.0[0] = x + uvx + uuvx;
+                rhs.0[1] = y + uvy + uuvy;
+                rhs.0[2] = z + uvz + uuvz;
+                rhs
+            }
+        }
+
+        impl Mul<Quat<$t>> for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn mul(mut self, rhs: Quat<$t>) -> Self::Output {
+                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
+                let qx = *rhs.x();
+                let qy = *rhs.y();
+                let qz = *rhs.z();
+                let qw = *rhs.w();
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+                // var qvec = [qx, qy, qz];
+                // var uv = vec3.cross([], qvec, a);
+                let mut uvx = qy * z - qz * y;
+                let mut uvy = qz * x - qx * z;
+                let mut uvz = qx * y - qy * x;
+                // var uuv = vec3.cross([], qvec, uv);
+                let mut uuvx = qy * uvz - qz * uvy;
+                let mut uuvy = qz * uvx - qx * uvz;
+                let mut uuvz = qx * uvy - qy * uvx;
+                // vec3.scale(uv, uv, 2 * w);
+                let w2 = qw * $two;
+                uvx = uvx * w2;
+                uvy = uvy * w2;
+                uvz = uvz * w2;
+                // vec3.scale(uuv, uuv, 2);
+                uuvx = uuvx * $two;
+                uuvy = uuvy * $two;
+                uuvz = uuvz * $two;
+                // return vec3.add(out, a, vec3.add(out, uv, uuv));
+
+                self.0[0] = x + uvx + uuvx;
+                self.0[1] = y + uvy + uuvy;
+                self.0[2] = z + uvz + uuvz;
+                self
+            }
+        }
+
+        impl MulAssign for Vec3<$t> {
+            #[inline(always)]
+            fn mul_assign(&mut self, rhs: Self) {
+                self.0[0] *= rhs.0[0];
+                self.0[1] *= rhs.0[1];
+                self.0[2] *= rhs.0[2];
+            }
+        }
+
+        impl MulAssign<$t> for Vec3<$t> {
+            #[inline(always)]
+            fn mul_assign(&mut self, rhs: $t) {
+                self.0[0] *= rhs;
+                self.0[1] *= rhs;
+                self.0[2] *= rhs;
+            }
+        }
+
+        impl Div for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn div(mut self, rhs: Self) -> Self::Output {
+                self.0[0] = self.0[0] / rhs.0[0];
+                self.0[1] = self.0[1] / rhs.0[1];
+                self.0[2] = self.0[2] / rhs.0[2];
+                self
+            }
+        }
+
+        impl Div<$t> for Vec3<$t> {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn div(mut self, rhs: $t) -> Self::Output {
+                self.0[0] = self.0[0] / rhs;
+                self.0[1] = self.0[1] / rhs;
+                self.0[2] = self.0[2] / rhs;
+                self
+            }
+        }
+
+        impl Div<Vec3<$t>> for $t {
+            type Output = Vec3<$t>;
+
+            #[inline(always)]
+            fn div(self, mut rhs: Vec3<$t>) -> Self::Output {
+                rhs.0[0] = self / rhs.0[0];
+                rhs.0[1] = self / rhs.0[1];
+                rhs.0[2] = self / rhs.0[2];
+                rhs
+            }
+        }
+
+        impl DivAssign for Vec3<$t> {
+            #[inline(always)]
+            fn div_assign(&mut self, rhs: Self) {
+                self.0[0] /= rhs.0[0];
+                self.0[1] /= rhs.0[1];
+                self.0[2] /= rhs.0[2];
+            }
+        }
+
+        impl DivAssign<$t> for Vec3<$t> {
+            #[inline(always)]
+            fn div_assign(&mut self, rhs: $t) {
+                self.0[0] /= rhs;
+                self.0[1] /= rhs;
+                self.0[2] /= rhs;
+            }
+        }
+
+        impl Vec3<$t> {
+            #[inline(always)]
+            pub fn min(&self, other: &Self) -> Self {
+                Self::new(
+                    self.0[0].min(other.0[0]),
+                    self.0[1].min(other.0[1]),
+                    self.0[2].min(other.0[2])
+                )
+            }
+
+            #[inline(always)]
+            pub fn min_in_place(&mut self, other: &Self) -> &mut Self {
+                self.0[0] = self.0[0].min(other.0[0]);
+                self.0[1] = self.0[1].min(other.0[1]);
+                self.0[2] = self.0[2].min(other.0[2]);
+                self
+            }
+
+            #[inline(always)]
+            pub fn max(&self, other: &Self) -> Self {
+                Self::new(
+                    self.0[0].max(other.0[0]),
+                    self.0[1].max(other.0[1]),
+                    self.0[2].max(other.0[2])
+                )
+            }
+
+            #[inline(always)]
+            pub fn max_in_place(&mut self, other: &Self) -> &mut Self {
+                self.0[0] = self.0[0].max(other.0[0]);
+                self.0[1] = self.0[1].max(other.0[1]);
+                self.0[2] = self.0[2].max(other.0[2]);
+                self
+            }
+
+            #[inline(always)]
+            pub fn ceil(&self) -> Self {
+                Self::new(
+                    self.0[0].ceil(),
+                    self.0[1].ceil(),
+                    self.0[2].ceil()
+                )
+            }
+
+            #[inline(always)]
+            pub fn ceil_in_place(&mut self) -> &mut  Self {
+                self.0[0] = self.0[0].ceil();
+                self.0[1] = self.0[1].ceil();
+                self.0[2] = self.0[2].ceil();
+                self
+            }
+
+            #[inline(always)]
+            pub fn floor(&self) -> Self {
+                Self::new(
+                    self.0[0].floor(),
+                    self.0[1].floor(),
+                    self.0[2].floor()
+                )
+            }
+
+            #[inline(always)]
+            pub fn floor_in_place(&mut self) -> &mut  Self {
+                self.0[0] = self.0[0].floor();
+                self.0[1] = self.0[1].floor();
+                self.0[2] = self.0[2].floor();
+                self
+            }
+
+            #[inline(always)]
+            pub fn round(&self) -> Self {
+                Self::new(
+                    self.0[0].round(),
+                    self.0[1].round(),
+                    self.0[2].round()
+                )
+            }
+
+            #[inline(always)]
+            pub fn round_in_place(&mut self) -> &mut  Self {
+                self.0[0] = self.0[0].round();
+                self.0[1] = self.0[1].round();
+                self.0[2] = self.0[2].round();
+                self
+            }
+
+            #[inline(always)]
+            pub fn squared_distance(&self, b: &Self) -> $t {
+                let x = b.x() - self.x();
+                let y = b.y() - self.y();
+                let z = b.y() - self.y();
+                x * x + y * y + z * z
+            }
+
+            #[inline(always)]
+            pub fn distance(&self, b: &Self) -> $t {
+                self.squared_distance(b).sqrt()
+            }
+
+            #[inline(always)]
+            pub fn squared_length(&self) -> $t {
+                let x = self.x();
+                let y = self.y();
+                let z = self.z();
+                x * x + y * y + z * z
+            }
+
+            #[inline(always)]
+            pub fn length(&self) -> $t {
+                self.squared_length().sqrt()
+            }
+
+            #[inline(always)]
+            pub fn inverse(&self) -> Self {
+                let x = self.x();
+                let y = self.y();
+                let z = self.z();
+
+                Self::new($one / x, $one / y, $one / z)
+            }
+
+            #[inline(always)]
+            pub fn inverse_in_place(&mut self) -> &mut Self {
+                self.0[0] = $one / self.0[0];
+                self.0[1] = $one / self.0[1];
+                self.0[2] = $one / self.0[2];
+                self
+            }
+
+            #[inline(always)]
+            pub fn normalize(&self) -> Self {
+                let mut len = self.squared_length();
+                if len > $zero {
+                    len = $one / len.sqrt();
+                }
+
+                Self::new(self.x() * len, self.y() * len, self.z() * len)
+            }
+
+            #[inline(always)]
+            pub fn normalize_in_place(&mut self) -> &mut Self {
+                let mut len = self.squared_length();
+                if len > $zero {
+                    len = $one / len.sqrt();
+                }
+
+                self.0[0] *= len;
+                self.0[1] *= len;
+                self.0[2] *= len;
+                self
+            }
+
+            #[inline(always)]
+            pub fn dot(&self, b: &Self) -> $t {
+                self.x() * b.x() + self.y() * b.y() + self.z() * b.z()
+            }
+
+            #[inline(always)]
+            pub fn cross(&self, b: &Self) -> Self {
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+                let bx = b.x();
+                let by = b.y();
+                let bz = b.z();
+
+                Self::new(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
+            }
+
+            #[inline(always)]
+            pub fn lerp(&self, b: &Self, t: $t) -> Self {
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+
+                Self::new(
+                    ax + t * (b.x() - ax),
+                    ay + t * (b.y() - ay),
+                    az + t * (b.z() - az)
+                )
+            }
+
+            #[inline(always)]
+            pub fn slerp(&self, b: &Self, t: $t) -> Self {
+                let angle = self.dot(b).max(-$one).min($one).acos();
+                let sin_total = angle.sin();
+
+                let ratio_a = (($one - t) * angle).sin() / sin_total;
+                let ratio_b = (t * angle).sin() / sin_total;
+
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+
+                Self::new(
+                    ratio_a * ax + ratio_b * b.x(),
+                    ratio_a * ay + ratio_b * b.y(),
+                    ratio_a * az + ratio_b * b.z(),
+                )
+            }
+
+            #[inline(always)]
+            pub fn hermite(&self, b: &Self, c: &Self, d: &Self, t: $t) -> Self {
+                let factor_times2 = t * t;
+                let factor1 =
+                    factor_times2 * ($two * t - $three) + $one;
+                let factor2 = factor_times2 * (t - $two) + t;
+                let factor3 = factor_times2 * (t - $one);
+                let factor4 = factor_times2 * ($three - $two * t);
+
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+
+                Self::new(
+                    ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
+                    ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
+                    az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
+                )
+            }
+
+            #[inline(always)]
+            pub fn bezier<V1, V2, V3>(&self, b: &Self, c: &Self, d: &Self, t: $t) -> Self {
+                let inverse_factor = $one - t;
+                let inverse_factor_times_two = inverse_factor * inverse_factor;
+                let factor_times2 = t * t;
+                let factor1 = inverse_factor_times_two * inverse_factor;
+                let factor2 = $three * t * inverse_factor_times_two;
+                let factor3 = $three * factor_times2 * inverse_factor;
+                let factor4 = factor_times2 * t;
+
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+
+                Self::new(
+                    ax * factor1 + b.x() * factor2 + c.x() * factor3 + d.x() * factor4,
+                    ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
+                    az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
+                )
+            }
+
+            #[inline(always)]
+            pub fn rotate_x(&self, b: &Self, rad: $t) -> Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[0];
+                r[1] = p[1] * rad.cos() - p[2] * rad.sin();
+                r[2] = p[1] * rad.sin() + p[2] * rad.cos();
+
+                Self::new(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
+            }
+
+            #[inline(always)]
+            pub fn rotate_x_in_place(&mut self, b: &Self, rad: $t) -> &mut Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[0];
+                r[1] = p[1] * rad.cos() - p[2] * rad.sin();
+                r[2] = p[1] * rad.sin() + p[2] * rad.cos();
+
+                self.0[0] = r[0] + b.x();
+                self.0[1] = r[1] + b.y();
+                self.0[2] = r[2] + b.z();
+                self
+            }
+
+            #[inline(always)]
+            pub fn rotate_y(&self, b: &Self, rad: $t) -> Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[2] * rad.sin() + p[0] * rad.cos();
+                r[1] = p[1];
+                r[2] = p[2] * rad.cos() - p[0] * rad.sin();
+
+                Self::new(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
+            }
+
+            #[inline(always)]
+            pub fn rotate_y_in_place(&mut self, b: &Self, rad: $t) -> &mut Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[2] * rad.sin() + p[0] * rad.cos();
+                r[1] = p[1];
+                r[2] = p[2] * rad.cos() - p[0] * rad.sin();
+
+                self.0[0] = r[0] + b.x();
+                self.0[1] = r[1] + b.y();
+                self.0[2] = r[2] + b.z();
+                self
+            }
+
+            #[inline(always)]
+            pub fn rotate_z(&self, b: &Self, rad: $t) -> Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[0] * rad.cos() - p[1] * rad.sin();
+                r[1] = p[0] * rad.sin() + p[1] * rad.cos();
+                r[2] = p[2];
+
+                Self::new(r[0] + b.x(), r[1] + b.y(), r[2] + b.z())
+            }
+
+            #[inline(always)]
+            pub fn rotate_z_in_place(&mut self, b: &Self, rad: $t) -> &mut Self {
+                let mut p = [$zero; 3];
+                let mut r = [$zero; 3];
+
+                //Translate point to the origin
+                p[0] = self.x() - b.x();
+                p[1] = self.y() - b.y();
+                p[2] = self.z() - b.z();
+
+                //perform rotation
+                r[0] = p[0] * rad.cos() - p[1] * rad.sin();
+                r[1] = p[0] * rad.sin() + p[1] * rad.cos();
+                r[2] = p[2];
+
+                self.0[0] = r[0] + b.x();
+                self.0[1] = r[1] + b.y();
+                self.0[2] = r[2] + b.z();
+                self
+            }
+
+            #[inline(always)]
+            pub fn angle(&self, b: &Self) -> $t {
+                let ax = self.x();
+                let ay = self.y();
+                let az = self.z();
+                let bx = b.x();
+                let by = b.y();
+                let bz = b.z();
+                let mag = ((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz)).sqrt();
+                let cosine = if mag == $zero {
+                    mag
+                } else {
+                    self.dot(b) / mag
+                };
+                // Math.min(Math.max(cosine, -1), 1) clamps the cosine between -1 and 1
+                cosine.max(-$one).min($one).acos()
+            }
+
+            #[inline(always)]
+            pub fn set_zero(&mut self) -> &mut Self {
+                self.0[0] = $zero;
+                self.0[1] = $zero;
+                self.0[2] = $zero;
+                self
+            }
+
+            #[inline(always)]
+            pub fn copy(&mut self, b: &Self) -> &mut Self {
+                self.0[0] = b.0[0];
+                self.0[1] = b.0[1];
+                self.0[2] = b.0[2];
+                self
+            }
+        }
+
+        impl ApproximateEq for Vec3<$t> {
+            #[inline(always)]
+            fn approximate_eq(&self, other: &Self) -> bool {
+                let a0 = self.x();
+                let a1 = self.y();
+                let a2 = self.z();
+                let b0 = other.x();
+                let b1 = other.y();
+                let b2 = other.z();
+
+                (a0 - b0).abs() <= $epsilon * $one.max(a0.abs()).max(b0.abs())
+                    && (a1 - b1).abs() <= $epsilon * $one.max(a1.abs()).max(b1.abs())
+                    && (a2 - b2).abs() <= $epsilon * $one.max(a2.abs()).max(b2.abs())
+            }
+        }
+       )+
+    };
+}
+
+basic_constructors! {
+    (u8, 0u8),
+    (u16, 0u16),
+    (u32, 0u32),
+    (u64, 0u64),
+    (u128, 0u128),
+    (usize, 0usize),
+    (i8, 0i8),
+    (i16, 0i16),
+    (i32, 0i32),
+    (i64, 0i64),
+    (i128, 0i128),
+    (isize, 0isize),
+    (f32, 0.0f32),
+    (f64, 0.0f64)
+}
+decimal_constructors! {
+    (f32, 1.0f32, 2.0f32, std::f32::consts::PI),
+    (f64, 1.0f64, 2.0f64, std::f64::consts::PI)
+}
+neg!(i8, i16, i32, i64, i128, isize, f32, f64);
+math! {
+    (f32, super::EPSILON_F32, 0.0f32, 1.0f32, 2.0f32, 3.0f32, std::f32::consts::PI),
+    (f64, super::EPSILON_F64, 0.0f64, 1.0f64, 2.0f64, 3.0f64, std::f64::consts::PI)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        error::Error,
-        mat3::Mat3,
-        mat4::Mat4,
-        quat::Quat,
-        vec3::{AsVec3, Vec3},
-    };
+    use crate::{mat3::Mat3, mat4::Mat4, quat::Quat, ApproximateEq};
 
-    fn vec_a() -> Vec3 {
-        Vec3::from_values(1.0, 2.0, 3.0)
-    }
-
-    fn vec_b() -> Vec3 {
-        Vec3::from_values(4.0, 5.0, 6.0)
-    }
+    use super::Vec3;
 
     #[test]
     fn new() {
-        assert_eq!(Vec3::<f64>::new().to_raw(), [0.0, 0.0, 0.0]);
+        assert_eq!(Vec3::new(2.0, 3.0, 4.0).raw(), &[2.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn new_zero() {
+        assert_eq!(Vec3::<f64>::new_zero().raw(), &[0.0, 0.0, 0.0]);
     }
 
     #[test]
     fn from_slice() {
-        assert_eq!(Vec3::from_slice([3.0, 4.0, 5.0]).to_raw(), [3.0, 4.0, 5.0]);
+        assert_eq!(Vec3::from_slice([2.0, 3.0, 4.0]).raw(), &[2.0, 3.0, 4.0]);
     }
 
     #[test]
-    fn from_values() {
-        assert_eq!(Vec3::from_values(3.0, 4.0, 5.0).to_raw(), [3.0, 4.0, 5.0]);
+    fn raw() {
+        assert_eq!(Vec3::new(2.0, 3.0, 4.0).raw(), &[2.0, 3.0, 4.0]);
     }
 
     #[test]
-    fn ceil() {
+    fn raw_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.raw_mut()) = [11.0, 11.0, 11.0];
+        assert_eq!(vec.raw(), &[11.0, 11.0, 11.0]);
+    }
+
+    #[test]
+    fn x() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).x(), &2.0);
+    }
+
+    #[test]
+    fn y() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).y(), &3.0);
+    }
+
+    #[test]
+    fn z() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).z(), &4.0);
+    }
+
+    #[test]
+    fn x_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.x_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn y_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.y_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn z_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.z_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn set_x() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_x(5.0);
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn set_y() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_y(5.0);
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn set_z() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_z(5.0);
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn r() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).r(), &2.0);
+    }
+
+    #[test]
+    fn g() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).g(), &3.0);
+    }
+
+    #[test]
+    fn b() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).b(), &4.0);
+    }
+
+    #[test]
+    fn r_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.r_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn g_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.g_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn b_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.b_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn set_r() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_r(5.0);
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn set_g() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_g(5.0);
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn set_b() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_b(5.0);
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn s() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).s(), &2.0);
+    }
+
+    #[test]
+    fn t() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).t(), &3.0);
+    }
+
+    #[test]
+    fn u() {
+        assert_eq!(Vec3::<f64>::new(2.0, 3.0, 4.0).u(), &4.0);
+    }
+
+    #[test]
+    fn s_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.s_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn t_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.t_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn u_mut() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        (*vec.u_mut()) = 5.0;
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn set_s() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_s(5.0);
+        assert_eq!(vec.raw(), &[5.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn set_t() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_t(5.0);
+        assert_eq!(vec.raw(), &[2.0, 5.0, 4.0]);
+    }
+
+    #[test]
+    fn set_u() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set_u(5.0);
+        assert_eq!(vec.raw(), &[2.0, 3.0, 5.0]);
+    }
+
+    #[test]
+    fn set() {
+        let mut vec = Vec3::new(2.0, 3.0, 4.0);
+        vec.set(5.0, 5.0, 5.0);
+        assert_eq!(vec.raw(), &[5.0, 5.0, 5.0]);
+    }
+
+    #[test]
+    fn set_zero() {
+        let mut vec = Vec3::<f64>::new(2.0, 3.0, 4.0);
+        vec.set_zero();
+        assert_eq!(vec.raw(), &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn add_vec3_vec3() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
         assert_eq!(
-            Vec3::from_values(
-                std::f64::consts::E,
-                std::f64::consts::PI,
-                std::f64::consts::SQRT_2
-            )
-            .ceil()
-            .to_raw(),
-            [3.0, 4.0, 2.0]
+            (vec0 + vec1).approximate_eq(&Vec3::new(5.0, 7.0, 9.0)),
+            true
         );
     }
 
     #[test]
-    fn floor() {
+    fn add_vec3_scalar() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 1.0;
         assert_eq!(
-            Vec3::from_values(
-                std::f64::consts::E,
-                std::f64::consts::PI,
-                std::f64::consts::SQRT_2
-            )
-            .floor()
-            .to_raw(),
-            [2.0, 3.0, 1.0]
+            (vec + scalar).approximate_eq(&Vec3::new(2.0, 3.0, 4.0)),
+            true
         );
     }
 
     #[test]
-    fn min() -> Result<(), Error> {
+    fn add_scalar_vec3() {
+        let scalar = 1.0;
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
         assert_eq!(
-            Vec3::from_values(1.0, 3.0, 1.0)
-                .min(&[3.0, 1.0, 3.0])
-                .to_raw(),
-            [1.0, 1.0, 1.0]
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn max() -> Result<(), Error> {
-        assert_eq!(
-            Vec3::from_values(1.0, 3.0, 1.0)
-                .max(&[3.0, 1.0, 3.0])
-                .to_raw(),
-            [3.0, 3.0, 3.0]
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn round() -> Result<(), Error> {
-        let vec = Vec3::from_values(
-            std::f64::consts::E,
-            std::f64::consts::PI,
-            std::f64::consts::SQRT_2,
-        )
-        .round();
-        assert_eq!(vec.to_raw(), [3.0, 3.0, 1.0]);
-
-        Ok(())
-    }
-
-    #[test]
-    fn scale() {
-        assert_eq!((vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0]);
-    }
-
-    #[test]
-    fn scale_add() {
-        assert_eq!((vec_a() + vec_b() * 0.5).to_raw(), [3.0, 4.5, 6.0]);
-    }
-
-    #[test]
-    fn squared_distance() {
-        assert_eq!(vec_a().squared_distance(&vec_b()), 27.0);
-    }
-
-    #[test]
-    fn distance() {
-        assert_eq!(vec_a().distance(&vec_b()), 5.196152422706632);
-    }
-
-    #[test]
-    fn squared_length() {
-        assert_eq!(vec_a().squared_length(), 14.0);
-    }
-
-    #[test]
-    fn length() {
-        assert_eq!(vec_a().length(), 3.7416573867739413);
-    }
-
-    #[test]
-    fn negate() {
-        assert_eq!(vec_a().negate().to_raw(), [-1.0, -2.0, -3.0]);
-    }
-
-    #[test]
-    fn normalize() {
-        assert_eq!(
-            Vec3::from_values(5.0, 0.0, 0.0).normalize().to_raw(),
-            [1.0, 0.0, 0.0]
+            (scalar + vec).approximate_eq(&Vec3::new(2.0, 3.0, 4.0)),
+            true
         );
     }
 
     #[test]
-    fn dot() {
-        assert_eq!(vec_a().dot(&vec_b()), 32.0);
+    fn add_assign_vec3_vec3() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        vec0 += vec1;
+        assert_eq!(vec0.approximate_eq(&Vec3::new(5.0, 7.0, 9.0)), true);
     }
 
     #[test]
-    fn cross() {
-        assert_eq!(vec_a().cross(&vec_b()).to_raw(), [-3.0, 6.0, -3.0]);
+    fn add_assign_vec3_scalar() {
+        let mut vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 1.0;
+        vec += scalar;
+        assert_eq!(vec.approximate_eq(&Vec3::new(2.0, 3.0, 4.0)), true);
     }
 
     #[test]
-    fn lerp() {
-        assert_eq!(vec_a().lerp(&vec_b(), 0.5).to_raw(), [2.5, 3.5, 4.5]);
-    }
-
-    #[test]
-    fn slerp() {
-        let vec_a = Vec3::from_values(1.0, 0.0, 0.0);
-        let vec_b = [0.0, 1.0, 0.0];
-        assert_eq!(vec_a.slerp(&vec_b, 0.0).to_raw(), [1.0, 0.0, 0.0]);
-        assert_eq!(vec_a.slerp(&vec_b, 1.0).to_raw(), [0.0, 1.0, 0.0]);
+    fn sub_vec3_vec3() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
         assert_eq!(
-            vec_a.slerp(&vec_b, 0.5).to_raw(),
-            [0.7071067811865475, 0.7071067811865475, 0.0]
+            (vec0 - vec1).approximate_eq(&Vec3::new(-3.0, -3.0, -3.0)),
+            true
         );
     }
 
     #[test]
-    fn transform_mat4() {
-        let mat = Mat4::from_values(
+    fn sub_vec3_scalar() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 1.0;
+        assert_eq!(
+            (vec - scalar).approximate_eq(&Vec3::new(0.0, 1.0, 2.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn sub_scalar_vec3() {
+        let scalar = 1.0;
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(
+            (scalar - vec).approximate_eq(&Vec3::new(0.0, -1.0, -2.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn sub_assign_vec3_vec3() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        vec0 -= vec1;
+        assert_eq!(vec0.approximate_eq(&Vec3::new(-3.0, -3.0, -3.0)), true);
+    }
+
+    #[test]
+    fn sub_assign_vec3_scalar() {
+        let mut vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 1.0;
+        vec -= scalar;
+        assert_eq!(vec.approximate_eq(&Vec3::new(0.0, 1.0, 2.0)), true);
+    }
+
+    #[test]
+    fn mul_vec3_vec3() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(
+            (vec0 * vec1).approximate_eq(&Vec3::new(4.0, 10.0, 18.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn mul_vec3_scalar() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 2.0;
+        assert_eq!(
+            (vec * scalar).approximate_eq(&Vec3::new(2.0, 4.0, 6.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn mul_scalar_vec3() {
+        let scalar = 3.0;
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(
+            (scalar * vec).approximate_eq(&Vec3::new(3.0, 6.0, 9.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn mul_mat3_vec3() {
+        let mat = Mat3::<f64>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!((mat * vec).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
+    }
+
+    #[test]
+    fn mul_mat4_vec3() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let mat = Mat4::<f64>::new(
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
-        assert_eq!(vec_a().transform_mat4(&mat).to_raw(), [1.0, 2.0, 3.0]);
+        assert_eq!((mat * vec).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
     }
 
     #[test]
-    fn transform_mat3() {
-        let mat = Mat3::from_values(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        assert_eq!(vec_a().transform_mat3(&mat).to_raw(), [1.0, 2.0, 3.0]);
-    }
-
-    #[test]
-    fn transform_quat() {
-        let quat = Quat::from_values(
+    fn mul_quat_vec3() {
+        let quat = Quat::<f64>::new(
             0.18257418567011074,
             0.3651483713402215,
             0.5477225570103322,
             0.730296742680443,
         );
-        assert_eq!(vec_a().transform_quat(&quat).to_raw(), [1.0, 2.0, 3.0]);
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!((quat * vec).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
     }
 
     #[test]
-    fn set() {
-        let mut mat = Vec3::new();
-        mat.set(3.0, 4.0, 5.0);
-
-        assert_eq!(mat.to_raw(), [3.0, 4.0, 5.0]);
+    fn mul_vec3_quat() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let quat = Quat::<f64>::new(
+            0.18257418567011074,
+            0.3651483713402215,
+            0.5477225570103322,
+            0.730296742680443,
+        );
+        assert_eq!((vec * quat).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
     }
 
     #[test]
-    fn set_slice() {
-        let mut mat = Vec3::new();
-        mat.set_slice(&[3.0, 4.0, 5.0]);
-
-        assert_eq!(mat.to_raw(), [3.0, 4.0, 5.0]);
+    fn mul_assign_vec3_vec3() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        vec0 *= vec1;
+        assert_eq!(vec0.approximate_eq(&Vec3::new(4.0, 10.0, 18.0)), true);
     }
 
     #[test]
-    fn add() {
-        assert_eq!((vec_a() + vec_b()).to_raw(), [5.0, 7.0, 9.0]);
+    fn mul_assign_vec3_scalar() {
+        let mut vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 4.0;
+        vec *= scalar;
+        assert_eq!(vec.approximate_eq(&Vec3::new(4.0, 8.0, 12.0)), true);
     }
 
     #[test]
-    fn sub() {
-        assert_eq!((vec_a() - vec_b()).to_raw(), [-3.0, -3.0, -3.0]);
+    fn div_vec3_vec3() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(
+            (vec0 / vec1).approximate_eq(&Vec3::new(0.25, 0.4, 0.5)),
+            true
+        );
     }
 
     #[test]
-    fn mul() {
-        assert_eq!((vec_a() * vec_b()).to_raw(), [4.0, 10.0, 18.0]);
+    fn div_vec3_scalar() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 2.0;
+        assert_eq!(
+            (vec / scalar).approximate_eq(&Vec3::new(0.5, 1.0, 1.5)),
+            true
+        );
     }
 
     #[test]
-    fn mul_scalar() {
-        assert_eq!((vec_a() * 2.0).to_raw(), [2.0, 4.0, 6.0]);
+    fn div_scalar_vec3() {
+        let scalar = 2.0;
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(
+            (scalar / vec).approximate_eq(&Vec3::new(2.0, 1.0, 0.6666666666666667)),
+            true
+        );
     }
 
     #[test]
-    fn mul_scalar_add() {
-        assert_eq!((vec_a() + vec_b() * 0.5).to_raw(), [3.0, 4.5, 6.0]);
+    fn div_assign_vec3_vec3() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        vec0 /= vec1;
+        assert_eq!(vec0.approximate_eq(&Vec3::new(0.25, 0.4, 0.5)), true);
     }
 
     #[test]
-    fn div() {
-        assert_eq!((vec_a() / vec_b()).to_raw(), [0.25, 0.4, 0.5]);
+    fn div_assign_vec3_scalar() {
+        let mut vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let scalar = 4.0;
+        vec /= scalar;
+        assert_eq!(vec.approximate_eq(&Vec3::new(0.25, 0.5, 0.75)), true);
     }
 
     #[test]
-    fn div_scalar() {
-        assert_eq!((vec_a() / 2.0).to_raw(), [0.5, 1.0, 1.5]);
+    fn neg() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!((-vec).approximate_eq(&Vec3::new(-1.0, -2.0, -3.0)), true);
     }
 
     #[test]
-    fn div_scalar_add() {
-        assert_eq!((vec_a() + vec_b() / 0.5).to_raw(), [9.0, 12.0, 15.0]);
+    fn min() {
+        let vec0 = Vec3::<f64>::new(1.0, 10.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 18.0);
+        assert_eq!(
+            vec0.min(&vec1).approximate_eq(&Vec3::new(1.0, 5.0, 3.0)),
+            true
+        );
     }
 
     #[test]
-    fn approximate_eq() {
-        let vec_a = Vec3::from_values(0.0, 1.0, 2.0);
-        let vec_b = Vec3::from_values(0.0, 1.0, 2.0);
-        let vec_c = Vec3::from_values(1.0, 2.0, 3.0);
-        let vec_d = Vec3::from_values(1e-16, 1.0, 2.0);
-
-        assert_eq!(true, vec_a.approximate_eq(&vec_b));
-        assert_eq!(false, vec_a.approximate_eq(&vec_c));
-        assert_eq!(true, vec_a.approximate_eq(&vec_d));
+    fn min_in_place() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 10.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 18.0);
+        vec0.min_in_place(&vec1);
+        assert_eq!(vec0.approximate_eq(&Vec3::new(1.0, 5.0, 3.0)), true);
     }
 
     #[test]
-    fn display() {
-        let out = vec_a().to_string();
-        assert_eq!(out, "vec3(1, 2, 3)");
+    fn max() {
+        let vec0 = Vec3::<f64>::new(1.0, 10.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 18.0);
+        assert_eq!(
+            vec0.max(&vec1).approximate_eq(&Vec3::new(4.0, 10.0, 18.0)),
+            true
+        );
     }
 
     #[test]
-    fn angle() {
-        assert_eq!(vec_a().angle(&vec_b()), 0.2257261285527342);
+    fn max_in_place() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 10.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 18.0);
+        vec0.max_in_place(&vec1);
+        assert_eq!(vec0.approximate_eq(&Vec3::new(4.0, 10.0, 18.0)), true);
+    }
+
+    #[test]
+    fn ceil() {
+        let vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        assert_eq!(vec.ceil().approximate_eq(&Vec3::new(3.0, 4.0, 2.0)), true);
+    }
+
+    #[test]
+    fn ceil_in_place() {
+        let mut vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        vec.ceil_in_place();
+        assert_eq!(vec.approximate_eq(&Vec3::new(3.0, 4.0, 2.0)), true);
+    }
+
+    #[test]
+    fn floor() {
+        let vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        assert_eq!(vec.floor().approximate_eq(&Vec3::new(2.0, 3.0, 1.0)), true);
+    }
+
+    #[test]
+    fn floor_in_place() {
+        let mut vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        vec.floor_in_place();
+        assert_eq!(vec.approximate_eq(&Vec3::new(2.0, 3.0, 1.0)), true);
+    }
+
+    #[test]
+    fn round() {
+        let vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        assert_eq!(vec.round().approximate_eq(&Vec3::new(3.0, 3.0, 1.0)), true);
+    }
+
+    #[test]
+    fn round_in_place() {
+        let mut vec = Vec3::new(
+            std::f64::consts::E,
+            std::f64::consts::PI,
+            std::f64::consts::SQRT_2,
+        );
+        vec.round_in_place();
+        assert_eq!(vec.approximate_eq(&Vec3::new(3.0, 3.0, 1.0)), true);
+    }
+
+    #[test]
+    fn squared_distance() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(vec0.squared_distance(&vec1).approximate_eq(&27.0), true);
+    }
+
+    #[test]
+    fn distance() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(
+            vec0.distance(&vec1).approximate_eq(&5.196152422706632),
+            true
+        );
+    }
+
+    #[test]
+    fn squared_length() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(vec.squared_length().approximate_eq(&14.0), true);
+    }
+
+    #[test]
+    fn length() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(vec.length().approximate_eq(&3.7416573867739413), true);
+    }
+
+    #[test]
+    fn inverse() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(
+            vec.inverse()
+                .approximate_eq(&Vec3::new(1.0, 0.5, 0.3333333333333333)),
+            true
+        );
+    }
+
+    #[test]
+    fn inverse_in_place() {
+        let mut vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        vec.inverse_in_place();
+        assert_eq!(
+            vec.approximate_eq(&Vec3::new(1.0, 0.5, 0.3333333333333333)),
+            true
+        );
+    }
+
+    #[test]
+    fn normalize() {
+        let vec = Vec3::<f64>::new(5.0, 2.0, 7.0);
+        assert_eq!(
+            vec.normalize().approximate_eq(&Vec3::new(
+                0.5661385170722978,
+                0.22645540682891913,
+                0.792593923901217
+            )),
+            true
+        );
+    }
+
+    #[test]
+    fn normalize_in_place() {
+        let mut vec0 = Vec3::<f64>::new(5.0, 2.0, 7.0);
+        vec0.normalize_in_place();
+        assert_eq!(
+            vec0.approximate_eq(&Vec3::new(
+                0.5661385170722978,
+                0.22645540682891913,
+                0.792593923901217
+            )),
+            true
+        );
+    }
+
+    #[test]
+    fn dot() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(vec0.dot(&vec1).approximate_eq(&32.0), true);
+    }
+
+    #[test]
+    fn lerp() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        let t = 0.5;
+        assert_eq!(
+            vec0.lerp(&vec1, t)
+                .approximate_eq(&Vec3::new(2.5, 3.5, 4.5)),
+            true
+        );
+    }
+
+    #[test]
+    fn slerp() {
+        let vec0 = Vec3::<f64>::new(1.0, 0.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 1.0, 0.0);
+        assert_eq!(
+            vec0.slerp(&vec1, 0.0)
+                .approximate_eq(&Vec3::new(1.0, 0.0, 0.0)),
+            true
+        );
+        assert_eq!(
+            vec0.slerp(&vec1, 1.0)
+                .approximate_eq(&Vec3::new(0.0, 1.0, 0.0)),
+            true
+        );
+        assert_eq!(
+            vec0.slerp(&vec1, 0.5).approximate_eq(&Vec3::new(
+                0.7071067811865475,
+                0.7071067811865475,
+                0.0
+            )),
+            true
+        );
     }
 
     #[test]
     fn rotate_x() {
-        let vec_a = Vec3::from_values(0.0, 1.0, 0.0);
-        let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
+        let vec0 = Vec3::<f64>::new(0.0, 1.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_x(&vec_b, std::f64::consts::PI).to_raw(),
-            [0.0, -1.0, 1.2246467991473532e-16]
+            vec0.rotate_x(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(0.0, -1.0, 1.2246467991473532e-16)),
+            true
         );
 
-        let vec_a = Vec3::from_values(2.0, 7.0, 0.0);
-        let vec_b = Vec3::from_values(2.0, 5.0, 0.0);
+        let vec0 = Vec3::<f64>::new(2.0, 7.0, 0.0);
+        let vec1 = Vec3::<f64>::new(2.0, 5.0, 0.0);
         assert_eq!(
-            vec_a.rotate_x(&vec_b, std::f64::consts::PI).to_raw(),
-            [2.0, 3.0, 2.4492935982947064e-16]
+            vec0.rotate_x(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(2.0, 3.0, 2.4492935982947064e-16)),
+            true
+        );
+    }
+
+    #[test]
+    fn rotate_x_in_place() {
+        let mut vec0 = Vec3::<f64>::new(0.0, 1.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
+        vec0.rotate_x_in_place(&vec1, std::f64::consts::PI);
+        assert_eq!(
+            vec0.approximate_eq(&Vec3::new(0.0, -1.0, 1.2246467991473532e-16)),
+            true
+        );
+
+        let mut vec0 = Vec3::<f64>::new(2.0, 7.0, 0.0);
+        let vec1 = Vec3::<f64>::new(2.0, 5.0, 0.0);
+        vec0.rotate_x_in_place(&vec1, std::f64::consts::PI);
+        assert_eq!(
+            vec0.approximate_eq(&Vec3::new(2.0, 3.0, 2.4492935982947064e-16)),
+            true
         );
     }
 
     #[test]
     fn rotate_y() {
-        let vec_a = Vec3::from_values(1.0, 0.0, 0.0);
-        let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
+        let vec0 = Vec3::<f64>::new(1.0, 0.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_y(&vec_b, std::f64::consts::PI).to_raw(),
-            [-1.0, 0.0, -1.2246467991473532e-16]
+            vec0.rotate_y(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(-1.0, 0.0, -1.2246467991473532e-16)),
+            true
         );
 
-        let vec_a = Vec3::from_values(-2.0, 3.0, 10.0);
-        let vec_b = Vec3::from_values(-4.0, 3.0, 10.0);
+        let vec0 = Vec3::<f64>::new(-2.0, 3.0, 10.0);
+        let vec1 = Vec3::<f64>::new(-4.0, 3.0, 10.0);
         assert_eq!(
-            vec_a.rotate_y(&vec_b, std::f64::consts::PI).to_raw(),
-            [-6.0, 3.0, 10.0]
+            vec0.rotate_y(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(-6.0, 3.0, 10.0)),
+            true
         );
     }
 
     #[test]
-    fn rotate_z() {
-        let vec_a = Vec3::from_values(0.0, 1.0, 0.0);
-        let vec_b = Vec3::from_values(0.0, 0.0, 0.0);
+    fn rotate_y_in_place() {
+        let mut vec0 = Vec3::<f64>::new(1.0, 0.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
+        vec0.rotate_y_in_place(&vec1, std::f64::consts::PI);
         assert_eq!(
-            vec_a.rotate_z(&vec_b, std::f64::consts::PI).to_raw(),
-            [-1.2246467991473532e-16, -1.0, 0.0]
+            vec0.approximate_eq(&Vec3::new(-1.0, 0.0, -1.2246467991473532e-16)),
+            true
         );
 
-        let vec_a = Vec3::from_values(0.0, 6.0, -5.0);
-        let vec_b = Vec3::from_values(0.0, 0.0, -5.0);
+        let mut vec0 = Vec3::<f64>::new(-2.0, 3.0, 10.0);
+        let vec1 = Vec3::<f64>::new(-4.0, 3.0, 10.0);
+        vec0.rotate_y_in_place(&vec1, std::f64::consts::PI);
+        assert_eq!(vec0.approximate_eq(&Vec3::new(-6.0, 3.0, 10.0)), true);
+    }
+
+    #[test]
+    fn rotate_z() {
+        let vec0 = Vec3::<f64>::new(0.0, 1.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
         assert_eq!(
-            vec_a.rotate_z(&vec_b, std::f64::consts::PI).to_raw(),
-            [-7.347880794884119e-16, -6.0, -5.0]
+            vec0.rotate_z(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(-1.2246467991473532e-16, -1.0, 0.0)),
+            true
         );
+
+        let vec0 = Vec3::<f64>::new(0.0, 6.0, -5.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, -5.0);
+        assert_eq!(
+            vec0.rotate_z(&vec1, std::f64::consts::PI)
+                .approximate_eq(&Vec3::new(-7.347880794884119e-16, -6.0, -5.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn rotate_z_in_place() {
+        let mut vec0 = Vec3::<f64>::new(0.0, 1.0, 0.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, 0.0);
+        vec0.rotate_z_in_place(&vec1, std::f64::consts::PI);
+        assert_eq!(
+            vec0.approximate_eq(&Vec3::new(-1.2246467991473532e-16, -1.0, 0.0)),
+            true
+        );
+
+        let mut vec0 = Vec3::<f64>::new(0.0, 6.0, -5.0);
+        let vec1 = Vec3::<f64>::new(0.0, 0.0, -5.0);
+        vec0.rotate_z_in_place(&vec1, std::f64::consts::PI);
+        assert_eq!(
+            vec0.approximate_eq(&Vec3::new(-7.347880794884119e-16, -6.0, -5.0)),
+            true
+        );
+    }
+
+    #[test]
+    fn angle() {
+        let vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
+        assert_eq!(vec0.angle(&vec1).approximate_eq(&0.2257261285527342), true);
+    }
+
+    #[test]
+    fn display() {
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(vec.to_string(), "vec3(1, 2, 3)");
     }
 }

@@ -1,6 +1,4 @@
-use crate::epsilon;
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {
     ZeroDeterminant,
     LengthSmallerThanEpsilon,
@@ -12,10 +10,9 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::ZeroDeterminant => f.write_str("determinant of the matrix is 0.0"),
-            Error::LengthSmallerThanEpsilon => f.write_fmt(format_args!(
-                "length of the vector smaller than epsilon({})",
-                epsilon::<f64>()
-            )),
+            Error::LengthSmallerThanEpsilon => {
+                f.write_fmt(format_args!("length of the vector smaller than epsilon"))
+            }
         }
     }
 }
