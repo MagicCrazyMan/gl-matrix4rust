@@ -1135,6 +1135,14 @@ impl super::GLF32<4> for Quat<f64> {
     }
 }
 
+#[cfg(feature = "gl")]
+impl super::GLF32Borrowed<4> for Quat<f32> {
+    #[inline(always)]
+    fn gl_f32_borrowed(&self) -> &[f32; 4] {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{error::Error, mat3::Mat3, mat4::Mat4, vec3::Vec3, ApproximateEq};

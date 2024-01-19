@@ -763,6 +763,14 @@ impl super::GLF32<2> for Vec2<f64> {
     }
 }
 
+#[cfg(feature = "gl")]
+impl super::GLF32Borrowed<2> for Vec2<f32> {
+    #[inline(always)]
+    fn gl_f32_borrowed(&self) -> &[f32; 2] {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{mat2::Mat2, mat2d::Mat2d, vec3::Vec3, ApproximateEq};
