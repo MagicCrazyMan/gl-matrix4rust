@@ -229,10 +229,11 @@ macro_rules! neg {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn neg(mut self) -> Self::Output {
-                self.0[0] = -self.0[0];
-                self.0[1] = -self.0[1];
-                self
+            fn neg(self) -> Self::Output {
+                Self([
+                    -self.0[0],
+                    -self.0[1],
+                ])
             }
         }
        )+
@@ -246,10 +247,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] + rhs.0[0];
-                self.0[1] = self.0[1] + rhs.0[1];
-                self
+            fn add(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] + rhs.0[0],
+                    self.0[1] + rhs.0[1],
+                ])
             }
         }
 
@@ -257,10 +259,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] + rhs;
-                self.0[1] = self.0[1] + rhs;
-                self
+            fn add(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] + rhs,
+                    self.0[1] + rhs,
+                ])
             }
         }
 
@@ -268,10 +271,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn add(self, mut rhs: Vec2<$t>) -> Self::Output {
-                rhs.0[0] = self + rhs.0[0];
-                rhs.0[1] = self + rhs.0[1];
-                rhs
+            fn add(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self + rhs.0[0],
+                    self + rhs.0[1],
+                ])
             }
         }
 
@@ -295,10 +299,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] - rhs.0[0];
-                self.0[1] = self.0[1] - rhs.0[1];
-                self
+            fn sub(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] - rhs.0[0],
+                    self.0[1] - rhs.0[1],
+                ])
             }
         }
 
@@ -306,10 +311,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] - rhs;
-                self.0[1] = self.0[1] - rhs;
-                self
+            fn sub(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] - rhs,
+                    self.0[1] - rhs,
+                ])
             }
         }
 
@@ -317,10 +323,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn sub(self, mut rhs: Vec2<$t>) -> Self::Output {
-                rhs.0[0] = self - rhs.0[0];
-                rhs.0[1] = self - rhs.0[1];
-                rhs
+            fn sub(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self - rhs.0[0],
+                    self - rhs.0[1],
+                ])
             }
         }
 
@@ -344,10 +351,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] * rhs.0[0];
-                self.0[1] = self.0[1] * rhs.0[1];
-                self
+            fn mul(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] * rhs.0[0],
+                    self.0[1] * rhs.0[1],
+                ])
             }
         }
 
@@ -355,10 +363,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] * rhs;
-                self.0[1] = self.0[1] * rhs;
-                self
+            fn mul(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] * rhs,
+                    self.0[1] * rhs,
+                ])
             }
         }
 
@@ -366,10 +375,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Vec2<$t>) -> Self::Output {
-                rhs.0[0] = self * rhs.0[0];
-                rhs.0[1] = self * rhs.0[1];
-                rhs
+            fn mul(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self * rhs.0[0],
+                    self * rhs.0[1],
+                ])
             }
         }
 
@@ -377,12 +387,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Vec2<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-                rhs.0[0] = self.m00() * x + self.m10() * y;
-                rhs.0[1] = self.m01() * x + self.m11() * y;
-                rhs
+            fn mul(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self.m00() * rhs.0[0] + self.m10() * rhs.0[1],
+                    self.m01() * rhs.0[0] + self.m11() * rhs.0[1],
+                ])
             }
         }
 
@@ -390,12 +399,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Vec2<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-                rhs.0[0] = self.a() * x + self.c() * y + self.tx();
-                rhs.0[1] = self.b() * x + self.d() * y + self.ty();
-                rhs
+            fn mul(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self.a() * rhs.0[0] + self.c() * rhs.0[1] + self.tx(),
+                    self.b() * rhs.0[0] + self.d() * rhs.0[1] + self.ty(),
+                ])
             }
         }
 
@@ -403,13 +411,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Vec2<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-
-                rhs.0[0] = self.m00() * x + self.m10() * y + self.m20();
-                rhs.0[1] = self.m01() * x + self.m11() * y + self.m21();
-                rhs
+            fn mul(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self.m00() * rhs.0[0] + self.m10() * rhs.0[1] + self.m20(),
+                    self.m01() * rhs.0[0] + self.m11() * rhs.0[1] + self.m21(),
+                ])
             }
         }
 
@@ -417,13 +423,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Vec2<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-
-                rhs.0[0] = self.m00() * x + self.m10() * y + self.m30();
-                rhs.0[1] = self.m01() * x + self.m11() * y + self.m31();
-                rhs
+            fn mul(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self.m00() * rhs.0[0] + self.m10() * rhs.0[1] + self.m30(),
+                    self.m01() * rhs.0[0] + self.m11() * rhs.0[1] + self.m31(),
+                ])
             }
         }
 
@@ -447,10 +451,12 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn div(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] / rhs.0[0];
-                self.0[1] = self.0[1] / rhs.0[1];
-                self
+            fn div(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] / rhs.0[0],
+                    self.0[1] / rhs.0[1],
+                
+                ])
             }
         }
 
@@ -458,10 +464,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn div(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] / rhs;
-                self.0[1] = self.0[1] / rhs;
-                self
+            fn div(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] / rhs,
+                    self.0[1] / rhs,
+                ])
             }
         }
 
@@ -469,10 +476,11 @@ macro_rules! math {
             type Output = Vec2<$t>;
 
             #[inline(always)]
-            fn div(self, mut rhs: Vec2<$t>) -> Self::Output {
-                rhs.0[0] = self / rhs.0[0];
-                rhs.0[1] = self / rhs.0[1];
-                rhs
+            fn div(self, rhs: Vec2<$t>) -> Self::Output {
+                Vec2::<$t>([
+                    self / rhs.0[0],
+                    self / rhs.0[1],
+                ])
             }
         }
 

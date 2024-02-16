@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
+    ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
     slice::SliceIndex,
 };
 
@@ -375,12 +375,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] + rhs.0[0];
-                self.0[1] = self.0[1] + rhs.0[1];
-                self.0[2] = self.0[2] + rhs.0[2];
-                self.0[3] = self.0[3] + rhs.0[3];
-                self
+            fn add(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] + rhs.0[0],
+                    self.0[1] + rhs.0[1],
+                    self.0[2] + rhs.0[2],
+                    self.0[3] + rhs.0[3],
+                ])
             }
         }
 
@@ -388,12 +389,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] + rhs;
-                self.0[1] = self.0[1] + rhs;
-                self.0[2] = self.0[2] + rhs;
-                self.0[3] = self.0[3] + rhs;
-                self
+            fn add(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] + rhs,
+                    self.0[1] + rhs,
+                    self.0[2] + rhs,
+                    self.0[3] + rhs,
+                ])
             }
         }
 
@@ -401,12 +403,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn add(self, mut rhs: Quat<$t>) -> Self::Output {
-                rhs.0[0] = self + rhs.0[0];
-                rhs.0[1] = self + rhs.0[1];
-                rhs.0[2] = self + rhs.0[2];
-                rhs.0[3] = self + rhs.0[3];
-                rhs
+            fn add(self, rhs: Quat<$t>) -> Self::Output {
+                Quat::<$t>([
+                    self + rhs.0[0],
+                    self + rhs.0[1],
+                    self + rhs.0[2],
+                    self + rhs.0[3],
+                ])
             }
         }
 
@@ -434,12 +437,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] - rhs.0[0];
-                self.0[1] = self.0[1] - rhs.0[1];
-                self.0[2] = self.0[2] - rhs.0[2];
-                self.0[3] = self.0[3] - rhs.0[3];
-                self
+            fn sub(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] - rhs.0[0],
+                    self.0[1] - rhs.0[1],
+                    self.0[2] - rhs.0[2],
+                    self.0[3] - rhs.0[3],
+                ])
             }
         }
 
@@ -447,12 +451,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] - rhs;
-                self.0[1] = self.0[1] - rhs;
-                self.0[2] = self.0[2] - rhs;
-                self.0[3] = self.0[3] - rhs;
-                self
+            fn sub(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] - rhs,
+                    self.0[1] - rhs,
+                    self.0[2] - rhs,
+                    self.0[3] - rhs,
+                ])
             }
         }
 
@@ -460,12 +465,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn sub(self, mut rhs: Quat<$t>) -> Self::Output {
-                rhs.0[0] = self - rhs.0[0];
-                rhs.0[1] = self - rhs.0[1];
-                rhs.0[2] = self - rhs.0[2];
-                rhs.0[3] = self - rhs.0[3];
-                rhs
+            fn sub(self, rhs: Quat<$t>) -> Self::Output {
+                Quat::<$t>([
+                    self - rhs.0[0],
+                    self - rhs.0[1],
+                    self - rhs.0[2],
+                    self - rhs.0[3],
+                ])
             }
         }
 
@@ -493,7 +499,7 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: Self) -> Self::Output {
+            fn mul(self, rhs: Self) -> Self::Output {
                 let ax = self.0[0];
                 let ay = self.0[1];
                 let az = self.0[2];
@@ -503,11 +509,12 @@ macro_rules! math {
                 let bz = rhs.0[2];
                 let bw = rhs.0[3];
 
-                self.0[0] = ax * bw + aw * bx + ay * bz - az * by;
-                self.0[1] = ay * bw + aw * by + az * bx - ax * bz;
-                self.0[2] = az * bw + aw * bz + ax * by - ay * bx;
-                self.0[3] = aw * bw - ax * bx - ay * by - az * bz;
-                self
+                Self([
+                    ax * bw + aw * bx + ay * bz - az * by,
+                    ay * bw + aw * by + az * bx - ax * bz,
+                    az * bw + aw * bz + ax * by - ay * bx,
+                    aw * bw - ax * bx - ay * by - az * bz,
+                ])
             }
         }
 
@@ -515,12 +522,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] * rhs;
-                self.0[1] = self.0[1] * rhs;
-                self.0[2] = self.0[2] * rhs;
-                self.0[3] = self.0[3] * rhs;
-                self
+            fn mul(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] * rhs,
+                    self.0[1] * rhs,
+                    self.0[2] * rhs,
+                    self.0[3] * rhs,
+                ])
             }
         }
 
@@ -528,12 +536,13 @@ macro_rules! math {
             type Output = Quat<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Quat<$t>) -> Self::Output {
-                rhs.0[0] = self * rhs.0[0];
-                rhs.0[1] = self * rhs.0[1];
-                rhs.0[2] = self * rhs.0[2];
-                rhs.0[3] = self * rhs.0[3];
-                rhs
+            fn mul(self, rhs: Quat<$t>) -> Self::Output {
+                Quat::<$t>([
+                    self * rhs.0[0],
+                    self * rhs.0[1],
+                    self * rhs.0[2],
+                    self * rhs.0[3],
+                ])
             }
         }
 
@@ -563,42 +572,6 @@ macro_rules! math {
                 self.0[1] *= rhs;
                 self.0[2] *= rhs;
                 self.0[3] *= rhs;
-            }
-        }
-
-        impl Div<$t> for Quat<$t> {
-            type Output = Quat<$t>;
-
-            #[inline(always)]
-            fn div(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] / rhs;
-                self.0[1] = self.0[1] / rhs;
-                self.0[2] = self.0[2] / rhs;
-                self.0[3] = self.0[3] / rhs;
-                self
-            }
-        }
-
-        impl Div<Quat<$t>> for $t {
-            type Output = Quat<$t>;
-
-            #[inline(always)]
-            fn div(self, mut rhs: Quat<$t>) -> Self::Output {
-                rhs.0[0] = self / rhs.0[0];
-                rhs.0[1] = self / rhs.0[1];
-                rhs.0[2] = self / rhs.0[2];
-                rhs.0[3] = self / rhs.0[2];
-                rhs
-            }
-        }
-
-        impl DivAssign<$t> for Quat<$t> {
-            #[inline(always)]
-            fn div_assign(&mut self, rhs: $t) {
-                self.0[0] /= rhs;
-                self.0[1] /= rhs;
-                self.0[2] /= rhs;
-                self.0[3] /= rhs;
             }
         }
 
@@ -1423,34 +1396,6 @@ mod tests {
         let scalar = 4.0;
         quat *= scalar;
         assert_eq!(quat.approximate_eq(&Quat::new(4.0, 8.0, 12.0, 16.0)), true);
-    }
-
-    #[test]
-    fn div_quat_scalar() {
-        let quat = Quat::<f64>::new(1.0, 2.0, 3.0, 4.0);
-        let scalar = 2.0;
-        assert_eq!(
-            (quat / scalar).approximate_eq(&Quat::new(0.5, 1.0, 1.5, 2.0)),
-            true
-        );
-    }
-
-    #[test]
-    fn div_scalar_quat() {
-        let scalar = 2.0;
-        let quat = Quat::<f64>::new(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(
-            (scalar / quat).approximate_eq(&Quat::new(2.0, 1.0, 0.6666666666666667, 0.5)),
-            true
-        );
-    }
-
-    #[test]
-    fn div_assign_quat_scalar() {
-        let mut quat = Quat::<f64>::new(1.0, 2.0, 3.0, 4.0);
-        let scalar = 4.0;
-        quat /= scalar;
-        assert_eq!(quat.approximate_eq(&Quat::new(0.25, 0.5, 0.75, 1.0)), true);
     }
 
     #[test]
