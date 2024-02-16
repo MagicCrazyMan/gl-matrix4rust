@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     slice::SliceIndex,
 };
 
@@ -242,14 +242,15 @@ macro_rules! neg {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn neg(mut self) -> Self::Output {
-                self.0[0] = -self.0[0];
-                self.0[1] = -self.0[1];
-                self.0[2] = -self.0[2];
-                self.0[3] = -self.0[3];
-                self.0[4] = -self.0[4];
-                self.0[5] = -self.0[5];
-                self
+            fn neg(self) -> Self::Output {
+                Self([
+                    -self.0[0],
+                    -self.0[1],
+                    -self.0[2],
+                    -self.0[3],
+                    -self.0[4],
+                    -self.0[5],
+                ])
             }
         }
        )+
@@ -263,14 +264,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] + rhs.0[0];
-                self.0[1] = self.0[1] + rhs.0[1];
-                self.0[2] = self.0[2] + rhs.0[2];
-                self.0[3] = self.0[3] + rhs.0[3];
-                self.0[4] = self.0[4] + rhs.0[4];
-                self.0[5] = self.0[5] + rhs.0[5];
-                self
+            fn add(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] + rhs.0[0],
+                    self.0[1] + rhs.0[1],
+                    self.0[2] + rhs.0[2],
+                    self.0[3] + rhs.0[3],
+                    self.0[4] + rhs.0[4],
+                    self.0[5] + rhs.0[5],
+                ])
             }
         }
 
@@ -278,14 +280,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn add(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] + rhs;
-                self.0[1] = self.0[1] + rhs;
-                self.0[2] = self.0[2] + rhs;
-                self.0[3] = self.0[3] + rhs;
-                self.0[4] = self.0[4] + rhs;
-                self.0[5] = self.0[5] + rhs;
-                self
+            fn add(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] + rhs,
+                    self.0[1] + rhs,
+                    self.0[2] + rhs,
+                    self.0[3] + rhs,
+                    self.0[4] + rhs,
+                    self.0[5] + rhs,
+                ])
             }
         }
 
@@ -293,14 +296,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn add(self, mut rhs: Mat2d<$t>) -> Self::Output {
-                rhs.0[0] = self + rhs.0[0];
-                rhs.0[1] = self + rhs.0[1];
-                rhs.0[2] = self + rhs.0[2];
-                rhs.0[3] = self + rhs.0[3];
-                rhs.0[4] = self + rhs.0[4];
-                rhs.0[5] = self + rhs.0[5];
-                rhs
+            fn add(self, rhs: Mat2d<$t>) -> Self::Output {
+                Mat2d::<$t>([
+                    self + rhs.0[0],
+                    self + rhs.0[1],
+                    self + rhs.0[2],
+                    self + rhs.0[3],
+                    self + rhs.0[4],
+                    self + rhs.0[5],
+                ])
             }
         }
 
@@ -332,14 +336,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: Self) -> Self::Output {
-                self.0[0] = self.0[0] - rhs.0[0];
-                self.0[1] = self.0[1] - rhs.0[1];
-                self.0[2] = self.0[2] - rhs.0[2];
-                self.0[3] = self.0[3] - rhs.0[3];
-                self.0[4] = self.0[4] - rhs.0[4];
-                self.0[5] = self.0[5] - rhs.0[5];
-                self
+            fn sub(self, rhs: Self) -> Self::Output {
+                Self([
+                    self.0[0] - rhs.0[0],
+                    self.0[1] - rhs.0[1],
+                    self.0[2] - rhs.0[2],
+                    self.0[3] - rhs.0[3],
+                    self.0[4] - rhs.0[4],
+                    self.0[5] - rhs.0[5],
+                ])
             }
         }
 
@@ -347,14 +352,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn sub(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] - rhs;
-                self.0[1] = self.0[1] - rhs;
-                self.0[2] = self.0[2] - rhs;
-                self.0[3] = self.0[3] - rhs;
-                self.0[4] = self.0[4] - rhs;
-                self.0[5] = self.0[5] - rhs;
-                self
+            fn sub(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] - rhs,
+                    self.0[1] - rhs,
+                    self.0[2] - rhs,
+                    self.0[3] - rhs,
+                    self.0[4] - rhs,
+                    self.0[5] - rhs,
+                ])
             }
         }
 
@@ -362,14 +368,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn sub(self, mut rhs: Mat2d<$t>) -> Self::Output {
-                rhs.0[0] = self - rhs.0[0];
-                rhs.0[1] = self - rhs.0[1];
-                rhs.0[2] = self - rhs.0[2];
-                rhs.0[3] = self - rhs.0[3];
-                rhs.0[4] = self - rhs.0[4];
-                rhs.0[5] = self - rhs.0[5];
-                rhs
+            fn sub(self, rhs: Mat2d<$t>) -> Self::Output {
+                Mat2d::<$t>([
+                    self - rhs.0[0],
+                    self - rhs.0[1],
+                    self - rhs.0[2],
+                    self - rhs.0[3],
+                    self - rhs.0[4],
+                    self - rhs.0[5],
+                ])
             }
         }
 
@@ -401,7 +408,7 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: Self) -> Self::Output {
+            fn mul(self, rhs: Self) -> Self::Output {
                 let a0 = self.0[0];
                 let a1 = self.0[1];
                 let a2 = self.0[2];
@@ -416,13 +423,14 @@ macro_rules! math {
                 let b4 = rhs.0[4];
                 let b5 = rhs.0[5];
 
-                self.0[0] = a0 * b0 + a2 * b1;
-                self.0[1] = a1 * b0 + a3 * b1;
-                self.0[2] = a0 * b2 + a2 * b3;
-                self.0[3] = a1 * b2 + a3 * b3;
-                self.0[4] = a0 * b4 + a2 * b5 + a4;
-                self.0[5] = a1 * b4 + a3 * b5 + a5;
-                self
+                Self([
+                    a0 * b0 + a2 * b1,
+                    a1 * b0 + a3 * b1,
+                    a0 * b2 + a2 * b3,
+                    a1 * b2 + a3 * b3,
+                    a0 * b4 + a2 * b5 + a4,
+                    a1 * b4 + a3 * b5 + a5,
+                ])
             }
         }
 
@@ -430,14 +438,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn mul(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] * rhs;
-                self.0[1] = self.0[1] * rhs;
-                self.0[2] = self.0[2] * rhs;
-                self.0[3] = self.0[3] * rhs;
-                self.0[4] = self.0[4] * rhs;
-                self.0[5] = self.0[5] * rhs;
-                self
+            fn mul(self, rhs: $t) -> Self::Output {
+                Self([
+                    self.0[0] * rhs,
+                    self.0[1] * rhs,
+                    self.0[2] * rhs,
+                    self.0[3] * rhs,
+                    self.0[4] * rhs,
+                    self.0[5] * rhs,
+                ])
             }
         }
 
@@ -445,14 +454,15 @@ macro_rules! math {
             type Output = Mat2d<$t>;
 
             #[inline(always)]
-            fn mul(self, mut rhs: Mat2d<$t>) -> Self::Output {
-                rhs.0[0] = self * rhs.0[0];
-                rhs.0[1] = self * rhs.0[1];
-                rhs.0[2] = self * rhs.0[2];
-                rhs.0[3] = self * rhs.0[3];
-                rhs.0[4] = self * rhs.0[4];
-                rhs.0[5] = self * rhs.0[5];
-                rhs
+            fn mul(self, rhs: Mat2d<$t>) -> Self::Output {
+                Mat2d::<$t>([
+                    self * rhs.0[0],
+                    self * rhs.0[1],
+                    self * rhs.0[2],
+                    self * rhs.0[3],
+                    self * rhs.0[4],
+                    self * rhs.0[5],
+                ])
             }
         }
 
@@ -491,48 +501,6 @@ macro_rules! math {
                 self.0[3] *= rhs;
                 self.0[4] *= rhs;
                 self.0[5] *= rhs;
-            }
-        }
-
-        impl Div<$t> for Mat2d<$t> {
-            type Output = Mat2d<$t>;
-
-            #[inline(always)]
-            fn div(mut self, rhs: $t) -> Self::Output {
-                self.0[0] = self.0[0] / rhs;
-                self.0[1] = self.0[1] / rhs;
-                self.0[2] = self.0[2] / rhs;
-                self.0[3] = self.0[3] / rhs;
-                self.0[4] = self.0[4] / rhs;
-                self.0[5] = self.0[5] / rhs;
-                self
-            }
-        }
-
-        impl Div<Mat2d<$t>> for $t {
-            type Output = Mat2d<$t>;
-
-            #[inline(always)]
-            fn div(self, mut rhs: Mat2d<$t>) -> Self::Output {
-                rhs.0[0] = self / rhs.0[0];
-                rhs.0[1] = self / rhs.0[1];
-                rhs.0[2] = self / rhs.0[2];
-                rhs.0[3] = self / rhs.0[3];
-                rhs.0[4] = self / rhs.0[4];
-                rhs.0[5] = self / rhs.0[5];
-                rhs
-            }
-        }
-
-        impl DivAssign<$t> for Mat2d<$t> {
-            #[inline(always)]
-            fn div_assign(&mut self, rhs: $t) {
-                self.0[0] = self.0[0] / rhs;
-                self.0[1] = self.0[1] / rhs;
-                self.0[2] = self.0[2] / rhs;
-                self.0[3] = self.0[3] / rhs;
-                self.0[4] = self.0[4] / rhs;
-                self.0[5] = self.0[5] / rhs;
             }
         }
 
