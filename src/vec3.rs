@@ -458,15 +458,7 @@ macro_rules! math {
 
             #[inline(always)]
             fn mul(self, rhs: Vec3<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-                let z = rhs.0[2];
-
-                Vec3::<$t>([
-                    x * self.m00() + y * self.m10() + z * self.m20(),
-                    x * self.m01() + y * self.m11() + z * self.m21(),
-                    x * self.m02() + y * self.m12() + z * self.m22(),
-                ])
+                rhs.transform_mat3(&self)
             }
         }
 
@@ -475,102 +467,7 @@ macro_rules! math {
 
             #[inline(always)]
             fn mul(self, rhs: Vec3<$t>) -> Self::Output {
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-                let z = rhs.0[2];
-
-                let [m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15] = self.raw();
-
-                let mut w = *m03 * x + *m07 * y + *m11 * z + *m15;
-                w = if w == $zero { $one } else { w };
-
-                Vec3::<$t>([
-                    (*m00 * x + *m04 * y + *m08 * z + *m12) / w,
-                    (*m01 * x + *m05 * y + *m09 * z + *m13) / w,
-                    (*m02 * x + *m06 * y + *m10 * z + *m14) / w,
-                ])
-            }
-        }
-
-        impl Mul<Vec3<$t>> for Quat<$t> {
-            type Output = Vec3<$t>;
-
-            #[inline(always)]
-            fn mul(self, rhs: Vec3<$t>) -> Self::Output {
-                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
-                let qx = *self.x();
-                let qy = *self.y();
-                let qz = *self.z();
-                let qw = *self.w();
-                let x = rhs.0[0];
-                let y = rhs.0[1];
-                let z = rhs.0[2];
-                // var qvec = [qx, qy, qz];
-                // var uv = vec3.cross([], qvec, a);
-                let mut uvx = qy * z - qz * y;
-                let mut uvy = qz * x - qx * z;
-                let mut uvz = qx * y - qy * x;
-                // var uuv = vec3.cross([], qvec, uv);
-                let mut uuvx = qy * uvz - qz * uvy;
-                let mut uuvy = qz * uvx - qx * uvz;
-                let mut uuvz = qx * uvy - qy * uvx;
-                // vec3.scale(uv, uv, 2 * w);
-                let w2 = qw * $two;
-                uvx = uvx * w2;
-                uvy = uvy * w2;
-                uvz = uvz * w2;
-                // vec3.scale(uuv, uuv, 2);
-                uuvx = uuvx * $two;
-                uuvy = uuvy * $two;
-                uuvz = uuvz * $two;
-                // return vec3.add(out, a, vec3.add(out, uv, uuv));
-
-                Vec3::<$t>([
-                    x + uvx + uuvx,
-                    y + uvy + uuvy,
-                    z + uvz + uuvz,
-                ])
-            }
-        }
-
-        impl Mul<Quat<$t>> for Vec3<$t> {
-            type Output = Vec3<$t>;
-
-            #[inline(always)]
-            fn mul(self, rhs: Quat<$t>) -> Self::Output {
-                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
-                let qx = *rhs.x();
-                let qy = *rhs.y();
-                let qz = *rhs.z();
-                let qw = *rhs.w();
-                let x = self.0[0];
-                let y = self.0[1];
-                let z = self.0[2];
-                // var qvec = [qx, qy, qz];
-                // var uv = vec3.cross([], qvec, a);
-                let mut uvx = qy * z - qz * y;
-                let mut uvy = qz * x - qx * z;
-                let mut uvz = qx * y - qy * x;
-                // var uuv = vec3.cross([], qvec, uv);
-                let mut uuvx = qy * uvz - qz * uvy;
-                let mut uuvy = qz * uvx - qx * uvz;
-                let mut uuvz = qx * uvy - qy * uvx;
-                // vec3.scale(uv, uv, 2 * w);
-                let w2 = qw * $two;
-                uvx = uvx * w2;
-                uvy = uvy * w2;
-                uvz = uvz * w2;
-                // vec3.scale(uuv, uuv, 2);
-                uuvx = uuvx * $two;
-                uuvy = uuvy * $two;
-                uuvz = uuvz * $two;
-                // return vec3.add(out, a, vec3.add(out, uv, uuv));
-
-                Self([
-                    x + uvx + uuvx,
-                    y + uvy + uuvy,
-                    z + uvz + uuvz,
-                ])
+                rhs.transform_mat4(&self)
             }
         }
 
@@ -889,6 +786,136 @@ macro_rules! math {
                     ay * factor1 + b.y() * factor2 + c.y() * factor3 + d.y() * factor4,
                     az * factor1 + b.z() * factor2 + c.z() * factor3 + d.z() * factor4,
                 )
+            }
+
+            #[inline(always)]
+            pub fn transform_mat3(self, mat: &Mat3<$t>) -> Self {
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+
+                Self([
+                    x * mat.m00() + y * mat.m10() + z * mat.m20(),
+                    x * mat.m01() + y * mat.m11() + z * mat.m21(),
+                    x * mat.m02() + y * mat.m12() + z * mat.m22(),
+                ])
+            }
+
+            #[inline(always)]
+            pub fn transform_mat3_in_place(&mut self, mat: &Mat3<$t>) {
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+
+                self.0[0] = x * mat.m00() + y * mat.m10() + z * mat.m20();
+                self.0[1] = x * mat.m01() + y * mat.m11() + z * mat.m21();
+                self.0[2] = x * mat.m02() + y * mat.m12() + z * mat.m22();
+            }
+
+            #[inline(always)]
+            pub fn transform_mat4(self, rhs: &Mat4<$t>) -> Self {
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+
+                let [m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15] = rhs.raw();
+
+                let mut w = *m03 * x + *m07 * y + *m11 * z + *m15;
+                w = if w == $zero { $one } else { w };
+
+                Self([
+                    (*m00 * x + *m04 * y + *m08 * z + *m12) / w,
+                    (*m01 * x + *m05 * y + *m09 * z + *m13) / w,
+                    (*m02 * x + *m06 * y + *m10 * z + *m14) / w,
+                ])
+            }
+
+            #[inline(always)]
+            pub fn transform_mat4_in_place(&mut self, rhs: &Mat4<$t>) {
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+
+                let [m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11, m12, m13, m14, m15] = rhs.raw();
+
+                let mut w = *m03 * x + *m07 * y + *m11 * z + *m15;
+                w = if w == $zero { $one } else { w };
+
+                self.0[0] = (*m00 * x + *m04 * y + *m08 * z + *m12) / w;
+                self.0[1] = (*m01 * x + *m05 * y + *m09 * z + *m13) / w;
+                self.0[2] = (*m02 * x + *m06 * y + *m10 * z + *m14) / w;
+            }
+
+            #[inline(always)]
+            pub fn transform_quat(self, quat: &Quat<$t>) -> Self {
+                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
+                let qx = *quat.x();
+                let qy = *quat.y();
+                let qz = *quat.z();
+                let qw = *quat.w();
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+                // var qvec = [qx, qy, qz];
+                // var uv = vec3.cross([], qvec, a);
+                let mut uvx = qy * z - qz * y;
+                let mut uvy = qz * x - qx * z;
+                let mut uvz = qx * y - qy * x;
+                // var uuv = vec3.cross([], qvec, uv);
+                let mut uuvx = qy * uvz - qz * uvy;
+                let mut uuvy = qz * uvx - qx * uvz;
+                let mut uuvz = qx * uvy - qy * uvx;
+                // vec3.scale(uv, uv, 2 * w);
+                let w2 = qw * $two;
+                uvx = uvx * w2;
+                uvy = uvy * w2;
+                uvz = uvz * w2;
+                // vec3.scale(uuv, uuv, 2);
+                uuvx = uuvx * $two;
+                uuvy = uuvy * $two;
+                uuvz = uuvz * $two;
+                // return vec3.add(out, a, vec3.add(out, uv, uuv));
+
+                Self([
+                    x + uvx + uuvx,
+                    y + uvy + uuvy,
+                    z + uvz + uuvz,
+                ])
+            }
+
+            #[inline(always)]
+            pub fn transform_quat_in_place(&mut self, quat: &Quat<$t>) {
+                // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
+                let qx = *quat.x();
+                let qy = *quat.y();
+                let qz = *quat.z();
+                let qw = *quat.w();
+                let x = self.0[0];
+                let y = self.0[1];
+                let z = self.0[2];
+                // var qvec = [qx, qy, qz];
+                // var uv = vec3.cross([], qvec, a);
+                let mut uvx = qy * z - qz * y;
+                let mut uvy = qz * x - qx * z;
+                let mut uvz = qx * y - qy * x;
+                // var uuv = vec3.cross([], qvec, uv);
+                let mut uuvx = qy * uvz - qz * uvy;
+                let mut uuvy = qz * uvx - qx * uvz;
+                let mut uuvz = qx * uvy - qy * uvx;
+                // vec3.scale(uv, uv, 2 * w);
+                let w2 = qw * $two;
+                uvx = uvx * w2;
+                uvy = uvy * w2;
+                uvz = uvz * w2;
+                // vec3.scale(uuv, uuv, 2);
+                uuvx = uuvx * $two;
+                uuvy = uuvy * $two;
+                uuvz = uuvz * $two;
+                // return vec3.add(out, a, vec3.add(out, uv, uuv));
+
+                self.0[0] = x + uvx + uuvx;
+                self.0[1] = y + uvy + uuvy;
+                self.0[2] = z + uvz + uuvz;
             }
 
             #[inline(always)]
@@ -1469,30 +1496,6 @@ mod tests {
     }
 
     #[test]
-    fn mul_quat_vec3() {
-        let quat = Quat::<f64>::new(
-            0.18257418567011074,
-            0.3651483713402215,
-            0.5477225570103322,
-            0.730296742680443,
-        );
-        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
-        assert_eq!((quat * vec).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
-    }
-
-    #[test]
-    fn mul_vec3_quat() {
-        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
-        let quat = Quat::<f64>::new(
-            0.18257418567011074,
-            0.3651483713402215,
-            0.5477225570103322,
-            0.730296742680443,
-        );
-        assert_eq!((vec * quat).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
-    }
-
-    #[test]
     fn mul_assign_vec3_vec3() {
         let mut vec0 = Vec3::<f64>::new(1.0, 2.0, 3.0);
         let vec1 = Vec3::<f64>::new(4.0, 5.0, 6.0);
@@ -1776,6 +1779,30 @@ mod tests {
             )),
             true
         );
+    }
+
+    #[test]
+    fn transform_quat() {
+        let quat = Quat::<f64>::new(
+            0.18257418567011074,
+            0.3651483713402215,
+            0.5477225570103322,
+            0.730296742680443,
+        );
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
+    }
+
+    #[test]
+    fn transform_quat_in_place() {
+        let quat = Quat::<f64>::new(
+            0.18257418567011074,
+            0.3651483713402215,
+            0.5477225570103322,
+            0.730296742680443,
+        );
+        let vec = Vec3::<f64>::new(1.0, 2.0, 3.0);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(1.0, 2.0, 3.0)), true);
     }
 
     #[test]

@@ -1414,7 +1414,7 @@ mod tests {
 
         let vec = Vec3::<f64>::new(0.0, 1.0, 0.0);
         assert_eq!(
-            (vec * quat).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
             true
         );
 
@@ -1427,7 +1427,7 @@ mod tests {
         .transpose();
         let quat = Quat::<f64>::from_mat3(&mat).normalize();
         let vec = Vec3::<f64>::new(3.0, 2.0, -1.0);
-        assert_eq!((quat * vec).approximate_eq(&(mat * vec)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&(mat * vec)), true);
 
         let mat = Mat3::<f64>::from_mat4(&Mat4::<f64>::from_look_at(
             &Vec3::new(0.0, 0.0, 0.0),
@@ -1439,7 +1439,7 @@ mod tests {
         let quat = Quat::<f64>::from_mat3(&mat).normalize();
         let vec = Vec3::<f64>::new(3.0, 2.0, -1.0);
         assert_eq!(
-            (quat * vec).approximate_eq(&Vec3::new(-1.0, -2.0, 3.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, -2.0, 3.0)),
             true
         );
 
@@ -1452,7 +1452,7 @@ mod tests {
         .transpose();
         let quat = Quat::<f64>::from_mat3(&mat).normalize();
         let vec = Vec3::<f64>::new(3.0, 2.0, -1.0);
-        assert_eq!((quat * vec).approximate_eq(&(mat * vec)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&(mat * vec)), true);
 
         Ok(())
     }
@@ -1473,13 +1473,13 @@ mod tests {
         let quat =
             Quat::<f64>::from_rotation_to(&Vec3::new(0.0, 1.0, 0.0), &Vec3::new(0.0, 1.0, 0.0));
         let vec = Vec3::<f64>::new(0.0, 1.0, 0.0);
-        assert_eq!((quat * vec).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
 
         let quat =
             Quat::<f64>::from_rotation_to(&Vec3::new(1.0, 0.0, 0.0), &Vec3::new(-1.0, 0.0, 0.0));
         let vec = Vec3::<f64>::new(1.0, 0.0, 0.0);
         assert_eq!(
-            (quat * vec).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
             true
         );
 
@@ -1487,7 +1487,7 @@ mod tests {
             Quat::<f64>::from_rotation_to(&Vec3::new(0.0, 1.0, 0.0), &Vec3::new(0.0, -1.0, 0.0));
         let vec = Vec3::<f64>::new(0.0, 1.0, 0.0);
         assert_eq!(
-            (quat * vec).approximate_eq(&Vec3::new(0.0, -1.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, -1.0, 0.0)),
             true
         );
 
@@ -1495,7 +1495,7 @@ mod tests {
             Quat::<f64>::from_rotation_to(&Vec3::new(0.0, 0.0, 1.0), &Vec3::new(0.0, 0.0, -1.0));
         let vec = Vec3::<f64>::new(0.0, 0.0, 1.0);
         assert_eq!(
-            (quat * vec).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
             true
         );
     }
@@ -1508,10 +1508,10 @@ mod tests {
             &Vec3::new(0.0, 1.0, 0.0),
         );
         let vec = Vec3::<f64>::new(0.0, 0.0, -1.0);
-        assert_eq!((quat * vec).approximate_eq(&Vec3::new(1.0, 0.0, 0.0)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(1.0, 0.0, 0.0)), true);
 
         let vec = Vec3::<f64>::new(1.0, 0.0, 0.0);
-        assert_eq!((quat * vec).approximate_eq(&Vec3::new(0.0, 0.0, 1.0)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 0.0, 1.0)), true);
 
         let quat = Quat::<f64>::from_axes(
             &Vec3::new(0.0, 0.0, -1.0),
@@ -1536,7 +1536,7 @@ mod tests {
         let quat = Quat::<f64>::from_euler(-90.0, 0.0, 0.0);
         let vec = Vec3::<f64>::new(0.0, 1.0, 0.0);
         assert_eq!(
-            (quat * vec).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 0.0, -1.0)),
             true
         );
     }
@@ -1825,7 +1825,7 @@ mod tests {
         let quat = Quat::<f64>::new_identity();
         let quat = quat.rotate_x(90.0f64.to_radians());
 
-        assert_eq!((vec * quat).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
     }
 
     #[test]
@@ -1834,7 +1834,7 @@ mod tests {
         let mut quat = Quat::<f64>::new_identity();
         quat.rotate_x_in_place(90.0f64.to_radians());
 
-        assert_eq!((vec * quat).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
+        assert_eq!(vec.transform_quat(&quat).approximate_eq(&Vec3::new(0.0, 1.0, 0.0)), true);
     }
 
     #[test]
@@ -1844,7 +1844,7 @@ mod tests {
         let quat = quat.rotate_y(90.0f64.to_radians());
 
         assert_eq!(
-            (vec * quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
             true
         );
     }
@@ -1856,7 +1856,7 @@ mod tests {
         quat.rotate_y_in_place(90.0f64.to_radians());
 
         assert_eq!(
-            (vec * quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
             true
         );
     }
@@ -1868,7 +1868,7 @@ mod tests {
         let quat = quat.rotate_z(90.0f64.to_radians());
 
         assert_eq!(
-            (vec * quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
             true
         );
     }
@@ -1880,7 +1880,7 @@ mod tests {
         quat.rotate_z_in_place(90.0f64.to_radians());
 
         assert_eq!(
-            (vec * quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
+            vec.transform_quat(&quat).approximate_eq(&Vec3::new(-1.0, 0.0, 0.0)),
             true
         );
     }

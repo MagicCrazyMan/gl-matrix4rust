@@ -1347,7 +1347,7 @@ mod tests {
         let m = Mat3::<f64>::from_quat(&q);
         let v = Vec3::<f64>::new(0.0, 0.0, -1.0);
 
-        assert_eq!((m * v).approximate_eq(&(q * v)), true);
+        assert_eq!((m * v).approximate_eq(&(v.transform_quat(&q))), true);
         assert_eq!((m * v).approximate_eq(&Vec3::new(1.0, 0.0, 0.0)), true);
     }
 
